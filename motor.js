@@ -18,6 +18,19 @@
 
   function checkItens(cl) { return (cl && cl.checkItems) || []; }
 
+  /* O Trello NAO entrega os itens dos checklists ao Power-Up (checkItems vem vazio), so os contadores em
+   * card.badges: checkItems, checkItemsChecked e checkItemsEarliestDue (prazo mais antigo entre os pendentes).
+   * Reconstroi um checklist "aproximado": sem nomes e com no maximo 1 prazo (o mais antigo). */
+  function checklistsDeBadges(b) {
+    if (!b || !b.checkItems) return [];
+    const itens = [];
+    for (let i = 0; i < b.checkItemsChecked; i++) itens.push({ state: "complete", name: null });
+    for (let j = 0; j < b.checkItems - b.checkItemsChecked; j++) {
+      itens.push({ state: "incomplete", name: null, due: j === 0 ? (b.checkItemsEarliestDue || null) : null });
+    }
+    return [{ name: null, aprox: true, checkItems: itens }];
+  }
+
   function progressoChecklists(checklists) {
     let total = 0, feitos = 0;
     for (const c of checklists) for (const i of checkItens(c)) { total++; if (i.state === "complete") feitos++; }
@@ -124,7 +137,8 @@
     // G-04 atraso_oculto
     const dueVencido = !!card.due && iso(card.due) < agora;
     const venc = (concluido || backlog || dueVencido) ? 0 : itensVencidos(checklists, agora);
-    if (venc > 0) add("atraso_oculto", venc);
+    // Checklist aproximado (so contadores): sabe-se que ha item vencido, nao quantos.
+    if (venc > 0) add("atraso_oculto", checklists.some((c) => c.aprox) ? null : venc);
 
     // G-06 sem_responsavel
     if (regras.fases_sem_responsavel.includes(lista) && !(card.idMembers || []).length) add("sem_responsavel");
@@ -164,7 +178,7 @@
     const v = a.valor;
     switch (a.tipo) {
       case "quase_pronto": return v + "% do checklist";
-      case "atraso_oculto": return v === 1 ? "1 item vencido" : v + " itens vencidos";
+      case "atraso_oculto": return v === null ? "itens de checklist vencidos" : v === 1 ? "1 item vencido" : v + " itens vencidos";
       case "sem_prazo": return "sem prazo cadastrado";
       case "sem_interacao": return v + "+ dias sem interação";
       case "sem_responsavel": return "sem responsável atribuído";
@@ -204,18 +218,33 @@
   /* Texto de status semanal montado SO do que existe no card (checklist, prazo, alertas); nao inventa nada. */
   function textoStatus(card, listaNome, checklists, alertas, regras, hoje) {
     const feitos = [], proximos = [];
-    for (const c of checklists) for (const i of checkItens(c)) (i.state === "complete" ? feitos : proximos).push(i.name || "(item sem nome)");
+    let nFeitos = 0, nTotal = 0;
+    for (const c of checklists) for (const i of checkItens(c)) {
+      nTotal++;
+      if (i.state === "complete") nFeitos++;
+      if (i.name) (i.state === "complete" ? feitos : proximos).push(i.name);
+    }
     const pct = progressoChecklists(checklists);
     const riscos = ordenar(alertas, regras).filter((a) => regras.nivel[a.tipo] !== "verde").map(frase);
     const L = [];
     L.push("Status — " + card.name + " (" + hoje + ")");
     L.push("Fase: " + (listaNome || "—") + (pct === null ? "" : " · progresso " + pct + "% do checklist"));
-    L.push("Feito: " + (feitos.length ? feitos.slice(-3).join("; ") : "nenhum item concluído"));
-    L.push("Próximo: " + (proximos.length ? proximos.slice(0, 3).join("; ") : "sem itens pendentes no checklist"));
+    // Sem nomes de item (o Trello so entrega contadores ao Power-Up): diz a conta, nao inventa o conteudo.
+    if (nTotal === 0) {
+      L.push("Feito: sem checklist neste card");
+      L.push("Próximo: sem checklist neste card");
+    } else if (!feitos.length && !proximos.length) {
+      L.push("Feito: " + nFeitos + " de " + nTotal + " itens do checklist concluídos");
+      L.push("Próximo: " + (nTotal - nFeitos ? "faltam " + (nTotal - nFeitos) + " itens (descreva o próximo passo)" : "checklist todo concluído"));
+    } else {
+      L.push("Feito: " + (feitos.length ? feitos.slice(-3).join("; ") : "nenhum item concluído"));
+      L.push("Próximo: " + (proximos.length ? proximos.slice(0, 3).join("; ") : "sem itens pendentes no checklist"));
+    }
     L.push("Risco: " + (riscos.length ? riscos.join("; ") : "nenhum sinal automático"));
     L.push("(Rascunho gerado só do Trello. Revise antes de enviar.)");
     return L.join("\n");
   }
 
-  return { avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando };
+  return { avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
+    checklistsDeBadges };
 });
