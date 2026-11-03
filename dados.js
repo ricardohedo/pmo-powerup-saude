@@ -43,18 +43,21 @@ window.PmoDados = (function () {
     const cd = camposDef(defs.customFields);
     const ck = checklists(c.checklists, c.badges);
     const alertas = PmoMotor.ordenar(PmoMotor.avaliarCard(card(c), lista.name, cd, ck, new Date(), r), r);
-    return { card: card(c), lista: lista.name, checklists: ck, alertas, regras: r, nivel: PmoMotor.semaforo(alertas, r) };
+    const valores = PmoMotor.valoresCustomfield(card(c), cd);
+    return { card: card(c), lista: lista.name, checklists: ck, alertas, regras: r, nivel: PmoMotor.semaforo(alertas, r),
+      valores, pontos: PmoMotor.pontuar(alertas, valores, r) };
   }
 
   async function quadro(t) {
-    const [r, cards, listas, defs] = await Promise.all([regras(), t.cards("all"), t.lists("id", "name"), t.board("customFields")]);
+    const [r, cards, listas, defs, eu] = await Promise.all([regras(), t.cards("all"), t.lists("id", "name"), t.board("customFields"), t.member("id")]);
     const nomes = {}; for (const l of listas) nomes[l.id] = l.name;
     const cd = camposDef(defs.customFields), agora = new Date();
     const itens = cards.map((c) => {
       const ck = checklists(c.checklists, c.badges), cm = card(c);
-      return { card: cm, listaNome: nomes[c.idList], checklists: ck, alertas: PmoMotor.avaliarCard(cm, nomes[c.idList], cd, ck, agora, r) };
+      return { card: cm, listaNome: nomes[c.idList], checklists: ck, valores: PmoMotor.valoresCustomfield(cm, cd),
+        alertas: PmoMotor.avaliarCard(cm, nomes[c.idList], cd, ck, agora, r) };
     }).filter((i) => !i.card.closed);
-    return { regras: r, resumo: PmoMotor.resumoQuadro(itens, r, agora), itens };
+    return { regras: r, resumo: PmoMotor.resumoQuadro(itens, r, agora), itens, meuId: eu && eu.id };
   }
 
   return { regras, cardEmFoco, quadro };

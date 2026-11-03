@@ -54,6 +54,12 @@ TrelloPowerUp.initialize({
     }
   },
 
+  "card-back-section": (t) => ({
+    title: "Saúde do projeto",
+    icon: ICONE,
+    content: { type: "iframe", url: t.signUrl("./secao.html"), height: 200 },
+  }),
+
   "card-buttons": () => [{
     icon: ICONE,
     text: "Status semanal",
@@ -61,6 +67,10 @@ TrelloPowerUp.initialize({
   }],
 
   "board-buttons": () => [{
+    icon: ICONE,
+    text: "Onde atuar",
+    callback: (t) => t.modal({ title: "Onde atuar", url: "./atuar.html", height: 600 }),
+  }, {
     icon: ICONE,
     text: "Painel PMO",
     callback: (t) => t.modal({ title: "Painel de saúde do quadro", url: "./painel.html", height: 560 }),

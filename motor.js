@@ -194,6 +194,44 @@
     return [...alertas].sort((a, b) => regras.ordem.indexOf(a.tipo) - regras.ordem.indexOf(b.tipo));
   }
 
+  /* Pontuacao de prioridade: a MESMA de mensagens.pontuacao (pmo_v2). valores = campos do card (Prioridade, Urgente). */
+  function pontuar(alertas, valores, regras) {
+    const risco = new Set(regras.risco);
+    let pts = 0;
+    for (const a of alertas) {
+      if (!risco.has(a.tipo)) continue;
+      pts += regras.pesos[a.tipo] + (a.tipo === "atrasado" && Number.isInteger(a.valor) ? Math.min(a.valor, regras.teto_pontos_atraso) : 0);
+    }
+    let base = pts;
+    if (!pts) {
+      let m = 0;
+      for (const a of alertas) if (a.tipo === "sem_interacao" && Number.isInteger(a.valor)) m = Math.max(m, a.valor);
+      base = m / regras.divisor_sem_interacao;
+    }
+    const v = valores || {};
+    return base + (regras.bonus_prioridade[v[regras.motor.campo_prioridade]] || 0) +
+      (v[regras.motor.campo_urgente] === "Sim" ? regras.bonus_urgente : 0);
+  }
+
+  /* "Onde atuar": cards que pedem acao, do mais ao menos urgente, cada um com o motivo e o que fazer.
+   * itens = [{card, listaNome, alertas, valores}]; meuId (opcional) = so os cards em que a pessoa e membro. */
+  function ondeAtuar(itens, regras, meuId) {
+    const meus = itens.filter((i) => !meuId || (i.card.idMembers || []).includes(meuId));
+    const pedem = [], vitorias = [];
+    for (const i of meus) {
+      const acao = i.alertas.filter((a) => regras.nivel[a.tipo] !== "verde");
+      if (i.alertas.some((a) => a.tipo === "quase_pronto")) vitorias.push({ nome: i.card.name, url: i.card.url, lista: i.listaNome });
+      if (!acao.length) continue;
+      const ord = ordenar(acao, regras);
+      pedem.push({ nome: i.card.name, url: i.card.url, lista: i.listaNome, pontos: pontuar(i.alertas, i.valores, regras),
+        motivos: ord.map(frase), fazer: regras.acao[ord[0].tipo] || "", tipo: ord[0].tipo });
+    }
+    pedem.sort((a, b) => b.pontos - a.pontos || a.nome.localeCompare(b.nome));
+    const topo = regras.top, lim = regras.limite_lista_recolhida;
+    return { comece: pedem.slice(0, topo), depois: pedem.slice(topo, lim), resto: Math.max(0, pedem.length - lim),
+      vitorias, total: meus.length, semAtencao: meus.length - pedem.length };
+  }
+
   /* Painel do quadro: cards = [{card, listaNome, checklists, alertas}] (alertas de avaliarCard). */
   function resumoQuadro(itens, regras, agora) {
     const r = { total: itens.length, vermelho: 0, amarelo: 0, verde: 0, por_tipo: {}, atrasos_longos: [],
@@ -246,5 +284,5 @@
   }
 
   return { avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
-    checklistsDeBadges };
+    checklistsDeBadges, pontuar, ondeAtuar, valoresCustomfield };
 });

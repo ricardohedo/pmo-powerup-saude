@@ -13,6 +13,12 @@
     "sem_prazo": "Preencha 'Início planejado' e 'Fim planejado' no card.",
     "sem_responsavel": "Adicione no card quem é o responsável."
   },
+  "bonus_prioridade": {
+    "Alta": 30,
+    "Máxima": 50,
+    "Média": 10
+  },
+  "bonus_urgente": 30,
   "campos_execucao": [
     "Início planejado",
     "Fim planejado",
@@ -28,6 +34,7 @@
   ],
   "dias_prazo_proximo": 7,
   "dias_sem_interacao": 7,
+  "divisor_sem_interacao": 10,
   "fases_execucao": [
     "priorizados(prontos para iniciar)",
     "em execução",
@@ -50,6 +57,7 @@
     "sem_prazo": "📌 Em execução sem prazo cadastrado",
     "sem_responsavel": "🙋 Em execução sem responsável atribuído"
   },
+  "limite_lista_recolhida": 15,
   "listas_concluido": [
     "concluido",
     "concluídos",
@@ -60,6 +68,8 @@
     "rastreador de projetos"
   ],
   "motor": {
+    "campo_prioridade": "Prioridade",
+    "campo_urgente": "Urgente",
     "corpo_min_secao": 3,
     "lista_backlog": "backlog de projetos",
     "lista_execucao": "em execução",
@@ -102,6 +112,20 @@
   "painel_atraso_dias": 30,
   "painel_prazo_pct_max": 25,
   "perfil": "atual",
+  "pesos": {
+    "atrasado": 100,
+    "atraso_oculto": 60,
+    "prazo_proximo": 40,
+    "sem_comentario_pausado": 30
+  },
   "progresso_min_quase_pronto": 90,
-  "sem_interacao_fases": []
+  "risco": [
+    "atrasado",
+    "atraso_oculto",
+    "prazo_proximo",
+    "sem_comentario_pausado"
+  ],
+  "sem_interacao_fases": [],
+  "teto_pontos_atraso": 60,
+  "top": 3
 }
