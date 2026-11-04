@@ -34,6 +34,7 @@ window.PmoDados = (function () {
       id: c.id, name: c.name, url: c.url || c.shortUrl, desc: c.desc || "", due: c.due || null, closed: !!c.closed,
       idList: c.idList, labels: c.labels || [], idMembers: (c.members || []).map((m) => m.id),
       dateLastActivity: c.dateLastActivity || null, customFieldItems: c.customFieldItems || [],
+      badges: c.badges || null,           // o Trello entrega a contagem de anexos em badges.attachments (usada na evidencia)
     };
   }
 
@@ -44,13 +45,15 @@ window.PmoDados = (function () {
     const ck = checklists(c.checklists, c.badges);
     const alertas = PmoMotor.ordenar(PmoMotor.avaliarCard(card(c), lista.name, cd, ck, new Date(), r), r);
     const valores = PmoMotor.valoresCustomfield(card(c), cd);
-    const prio = PmoMotor.avaliarProjeto({ card: card(c), listaNome: lista.name, alertas, valores, checklists: ck }, r, new Date());
-    return { card: card(c), lista: lista.name, checklists: ck, alertas, regras: r, nivel: PmoMotor.semaforo(alertas, r),
+    const itemFoco = { card: card(c), listaNome: lista.name, alertas, valores, checklists: ck };
+    const prio = PmoMotor.avaliarProjeto(itemFoco, r, new Date());
+    return { semEvidencia: PmoMotor.semEvidencia(itemFoco, r, new Date()), card: card(c), lista: lista.name, checklists: ck, alertas, regras: r, nivel: PmoMotor.semaforo(alertas, r),
       valores, pontos: PmoMotor.pontuar(alertas, valores, r), prioridade: prio.prioridade, risco: prio.risco, diasPrazo: prio.dias };
   }
 
   async function quadro(t) {
-    const [r, cards, listas, defs, eu] = await Promise.all([regras(), t.cards("all"), t.lists("id", "name"), t.board("customFields"), t.member("id")]);
+    const [r, cards, listas, defs, eu, bm] = await Promise.all([regras(), t.cards("all"), t.lists("id", "name"), t.board("customFields"), t.member("id"), t.board("members")]);
+    const nomesMembros = {}; for (const m of (bm && bm.members) || []) nomesMembros[m.id] = m.fullName || m.username || "Sem nome";
     const nomes = {}; for (const l of listas) nomes[l.id] = l.name;
     const cd = camposDef(defs.customFields), agora = new Date();
     const itens = cards.map((c) => {
@@ -58,9 +61,10 @@ window.PmoDados = (function () {
       const item = { card: cm, listaNome: nomes[c.idList], checklists: ck, valores: PmoMotor.valoresCustomfield(cm, cd),
         alertas: PmoMotor.avaliarCard(cm, nomes[c.idList], cd, ck, agora, r) };
       item.prio = PmoMotor.avaliarProjeto(item, r, agora);
+      item.semEvidencia = PmoMotor.semEvidencia(item, r, agora);
       return item;
     }).filter((i) => !i.card.closed);
-    return { regras: r, resumo: PmoMotor.resumoQuadro(itens, r, agora), itens, meuId: eu && eu.id };
+    return { regras: r, resumo: PmoMotor.resumoQuadro(itens, r, agora), itens, meuId: eu && eu.id, membros: nomesMembros };
   }
 
   return { regras, cardEmFoco, quadro };

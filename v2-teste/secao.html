@@ -42,6 +42,7 @@ t.render(async () => {
   if (d.prioridade) h += "<p class='nota'>" + esc(r.fazer_prioridade[d.prioridade]) + "</p>";
   if (d.risco) h += "<div class='risco " + d.risco + "'><b>⏳ " + esc(r.rotulo_risco[d.risco]) + "</b>" +
     "<small>Prazo em " + d.diasPrazo + (d.diasPrazo === 1 ? " dia" : " dias") + " e " + (pct === null ? "sem checklist" : pct + "% do checklist") + ". " + esc(r.fazer_risco[d.risco]) + "</small></div>";
+  if (d.semEvidencia) h += "<div class='risco'><b>📎 " + esc(r.rotulo_evidencia) + "</b><small>Concluído há pouco e sem anexo no card. " + esc(r.fazer_evidencia) + "</small></div>";
   if (pct !== null) h += "<div>Checklist: " + feitos + " de " + itens + " itens (" + pct + "%)</div><div class='prog'><i style='width:" + pct + "%'></i></div>";
   if (d.alertas.length) {
     h += "<ul>" + d.alertas.map((a) => "<li class='" + r.nivel[a.tipo] + "'><b>" + esc(PmoMotor.frase(a)) + "</b><small>👉 " + esc(r.acao[a.tipo] || "") + "</small></li>").join("") + "</ul>";

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carga da equipe</title>
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./motor.js"></script>
+<script src="./dados.js"></script>
+<style>
+ body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
+ table{border-collapse:collapse;width:100%} th,td{padding:7px 8px;border-bottom:1px solid #dfe1e6;text-align:right}
+ th:first-child,td:first-child{text-align:left} th{font-size:12px;color:#5e6c84;font-weight:600}
+ .barra{display:inline-block;height:8px;background:#0c66e4;border-radius:4px;vertical-align:middle;margin-left:6px}
+ .rojo{color:#c0392b;font-weight:600} .mudo{color:#8993a4} .sem td:first-child{font-style:italic}
+ .nota{color:#5e6c84;font-size:12px;margin-top:12px} .ok{background:#e3fcef;border-radius:4px;padding:10px}
+</style>
+</head>
+<body>
+<div id="raiz">Lendo o quadro…</div>
+<script>
+const t = TrelloPowerUp.iframe();
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const num = (n, destaque) => n ? (destaque ? "<span class='rojo'>" + n + "</span>" : n) : "<span class='mudo'>0</span>";
+t.render(async () => {
+  const q = await PmoDados.quadro(t);
+  const carga = PmoMotor.cargaDaEquipe(q.itens, q.regras);
+  const linhas = Object.keys(carga).map((id) => ({ id, nome: id === "__sem__" ? "Sem responsável" : (q.membros[id] || "Membro fora do quadro"), ...carga[id] }));
+  linhas.sort((a, b) => (a.id === "__sem__") - (b.id === "__sem__") || b.ativos - a.ativos || a.nome.localeCompare(b.nome));
+  const maior = Math.max(1, ...linhas.map((l) => l.ativos));
+  const total = linhas.length ? "" : "<div class='ok'>Nenhum projeto ativo neste quadro.</div>";
+  const tabela = linhas.length ? "<table><tr><th>Pessoa</th><th>Projetos ativos</th><th>Em execução</th><th>Atrasados</th><th>Sem prazo</th></tr>" +
+    linhas.map((l) => "<tr" + (l.id === "__sem__" ? " class='sem'" : "") + "><td>" + esc(l.nome) + "</td><td>" + l.ativos +
+      "<span class='barra' style='width:" + Math.round(l.ativos / maior * 80) + "px'></span></td><td>" + num(l.execucao) +
+      "</td><td>" + num(l.atrasados, true) + "</td><td>" + num(l.semPrazo, true) + "</td></tr>").join("") + "</table>" : "";
+  document.getElementById("raiz").innerHTML = total + tabela +
+    "<p class='nota'>Ativo = projeto aberto fora de Backlog e Concluídos. Um projeto com 2 responsáveis conta para os dois. " +
+    "É um espelho da divisão, não um julgamento: em muitas áreas o responsável do card é o dono do projeto, não quem executa. Só leitura; nada é alterado.</p>";
+  t.sizeTo("#raiz").catch(() => {});
+});
+</script>
+</body>
+</html>

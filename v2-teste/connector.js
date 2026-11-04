@@ -25,6 +25,7 @@ TrelloPowerUp.initialize({
         ? { text: d.prioridade + " " + d.regras.rotulo_prioridade[d.prioridade] + (n ? " · " + n : ""), color: COR_P[d.prioridade] }
         : { text: ROTULO[d.nivel] + (n ? " · " + n : ""), color: COR[d.nivel] }];
       if (d.risco) selos.push({ text: "⏳ " + d.regras.rotulo_risco[d.risco], color: d.risco === "alto" ? "red" : "yellow" });
+      if (d.semEvidencia) selos.push({ text: "📎 " + d.regras.rotulo_evidencia, color: "orange" });
       return selos;
     } catch (e) {
       return [{ text: "PMO: erro — " + erro(e), color: "orange" }];
@@ -81,6 +82,10 @@ TrelloPowerUp.initialize({
     icon: ICONE,
     text: "Linha do tempo",
     callback: (t) => t.modal({ title: "Linha do tempo de entregas", url: "./linha.html", height: 600 }),
+  }, {
+    icon: ICONE,
+    text: "Carga da equipe",
+    callback: (t) => t.modal({ title: "Carga da equipe", url: "./equipe.html", height: 520 }),
   }, {
     icon: ICONE,
     text: "Painel PMO",

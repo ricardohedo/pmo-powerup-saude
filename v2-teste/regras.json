@@ -38,6 +38,8 @@
   "dias_prazo_proximo": 7,
   "dias_sem_interacao": 7,
   "divisor_sem_interacao": 10,
+  "evidencia_dias": 30,
+  "evidencia_min_anexos": 1,
   "fases_execucao": [
     "priorizados(prontos para iniciar)",
     "em execução",
@@ -46,6 +48,7 @@
   "fases_sem_responsavel": [
     "em execução"
   ],
+  "fazer_evidencia": "Anexe no card o que comprova a entrega (documento, print ou link) ou volte o card para a lista certa.",
   "fazer_prioridade": {
     "P1": "Exige ação agora: ajuste o prazo ou peça apoio para destravar.",
     "P2": "Precisa de acompanhamento: veja o primeiro motivo e atualize o card.",
@@ -158,6 +161,7 @@
     "sem_responsavel"
   ],
   "risco_agravantes_para_alto": 1,
+  "rotulo_evidencia": "Sem evidência",
   "rotulo_prioridade": {
     "P1": "Crítico",
     "P2": "Atenção",

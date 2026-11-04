@@ -239,14 +239,51 @@
     return n >= regras.risco_agravantes_para_alto ? "alto" : "medio";
   }
 
+  /* "Concluido sem evidencia": a MESMA de src/pmo/evidencia.py. Prova = anexo no card (badges.attachments, contado pelo Trello).
+   * So cobra card em Concluidos mexido nos ultimos evidencia_dias dias (a data de conclusao nao existe; vale a ultima atividade).
+   * Sem a contagem de anexos (undefined/null) nao avalia. NAO e um gatilho de alerta. */
+  function semEvidencia(it, regras, agora) {
+    const lista = (it.listaNome || "").trim().toLowerCase();
+    if (it.card.closed || regras.listas_ignorar.some((t) => lista.includes(t)) || !regras.listas_concluido.includes(lista)) return false;
+    const anexos = (it.card.badges || {}).attachments, ultima = it.card.dateLastActivity;
+    if (anexos === undefined || anexos === null || !ultima) return false;
+    return diasDesde(ultima, agora) <= regras.evidencia_dias && anexos < regras.evidencia_min_anexos;
+  }
+
+  /* Projeto ativo = card aberto, fora das listas ignoradas, nao concluido e nao backlog. */
+  function projetoAtivo(it, regras) {
+    const lista = (it.listaNome || "").trim().toLowerCase();
+    return !it.card.closed && !regras.listas_ignorar.some((t) => lista.includes(t)) &&
+      !regras.listas_concluido.includes(lista) && lista !== regras.motor.lista_backlog;
+  }
+
+  /* Carga da equipe: a MESMA de src/pmo/capacidade.py. Por responsavel do card: ativos, em execucao, atrasados, sem prazo.
+   * Sem selo de "sobrecarregado" (o responsavel costuma ser o dono do projeto). itens = [{card, listaNome, alertas}].
+   * Chave "__sem__" = projeto ativo sem responsavel. */
+  function cargaDaEquipe(itens, regras) {
+    const por = {};
+    for (const it of itens) {
+      if (!projetoAtivo(it, regras)) continue;
+      const lista = (it.listaNome || "").trim().toLowerCase();
+      const tipos = new Set((it.alertas || []).map((a) => a.tipo));
+      const donos = (it.card.idMembers || []).length ? it.card.idMembers : ["__sem__"];
+      for (const m of donos) {
+        const l = (por[m] = por[m] || { ativos: 0, execucao: 0, atrasados: 0, semPrazo: 0 });
+        l.ativos++;
+        if (lista === regras.motor.lista_execucao) l.execucao++;
+        if (tipos.has("atrasado")) l.atrasados++;
+        if (tipos.has("sem_prazo")) l.semPrazo++;
+      }
+    }
+    return por;
+  }
+
   /* Prioridade e risco de UM item do quadro ({card, listaNome, alertas, valores, checklists}). */
   function avaliarProjeto(it, regras, agora) {
-    const lista = (it.listaNome || "").trim().toLowerCase();
     const pct = progressoChecklists(it.checklists || []);
     const prioridadeNivel = prioridade(it.alertas || [], pct, regras);
     let risco = null, dias = null;
-    const ativo = !it.card.closed && !regras.listas_ignorar.some((t) => lista.includes(t)) &&
-      !regras.listas_concluido.includes(lista) && lista !== regras.motor.lista_backlog;
+    const ativo = projetoAtivo(it, regras);
     const fimIso = (it.valores || {})["Fim planejado"];
     if (ativo && fimIso) {
       dias = diasEntre(dataLocal(agora, regras), dataLocal(new Date(fimIso), regras));
@@ -371,5 +408,5 @@
   }
 
   return { avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
-    checklistsDeBadges, pontuar, ondeAtuar, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto };
+    checklistsDeBadges, pontuar, ondeAtuar, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto, cargaDaEquipe, semEvidencia };
 });
