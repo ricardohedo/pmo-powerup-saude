@@ -27,8 +27,11 @@ TrelloPowerUp.initialize({
     content: { type: "iframe", url: t.signUrl("./secao.html"), height: 220 },
   }),
   "card-buttons": () => [{
-    icon: ICONE, text: "Depende de outra área",
-    callback: (t) => t.popup({ title: "Depende de outra área", url: "./vinculo.html", height: 230 }),
+    icon: ICONE, text: "Pedir a outra área",
+    callback: (t) => t.popup({ title: "Pedir a outra área", url: "./pedir.html", height: 330 }),
+  }, {
+    icon: ICONE, text: "Card inteiro depende de outra área",
+    callback: (t) => t.popup({ title: "Card inteiro depende de outra área", url: "./vinculo.html", height: 230 }),
   }],
   "board-buttons": () => [{
     icon: ICONE, text: "Interdependências",

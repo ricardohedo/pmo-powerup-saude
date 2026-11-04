@@ -54,8 +54,8 @@ async function ver() {
     const { id } = await t.card("id");
     const [s, d] = await Promise.all([Interdep.status(id), Interdep.deps(id)]);
     if (!s.vinculos.length && !d.itens.length) {
-      c.innerHTML = "<small>Nenhuma dependência de outra área. Use o botão <b>Depende de outra área</b> (card inteiro) ou escreva no item do checklist " +
-        "<b>[DEPENDE: Processos até 20/11] o que você precisa</b>.</small>";
+      c.innerHTML = "<small>Nenhuma dependência de outra área. Precisa de algo de outra área? Use o botão <b>Pedir a outra área</b> (na linha de botões do card): " +
+        "escolha a área, escreva o que precisa e o prazo.</small>";
       return ajustar();
     }
     c.innerHTML = blocoItens(d) + blocoCards(s.vinculos);

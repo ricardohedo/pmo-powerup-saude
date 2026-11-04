@@ -40,6 +40,7 @@ window.Interdep = (function () {
     quadro: (id) => chamar("quadro", { board: id }),
     bloqueios: (id) => chamar("bloqueios", { board: id }),
     vincular: (card, destino) => chamar("vincular", { card, destino }, true),
+    pedir: (card, destino, texto, prazo) => chamar("pedir", { card, destino, texto, prazo }, true),
     sincronizar: (card) => chamar("sincronizar", { card }, true),
     desvincular: (card, copia) => chamar("desvincular", { card, copia }, true),
   };

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<style>
+body{font:14px system-ui;padding:4px}label{display:block;margin:8px 0 2px;font-weight:600}
+select,input,textarea,button{width:100%;box-sizing:border-box;margin:0}textarea{min-height:64px;resize:vertical}
+button{margin-top:10px}small{color:#626f86}#m{margin-top:8px}.ok{color:#1f845a}.er{color:#c9372c}
+</style>
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./api.js"></script>
+</head>
+<body>
+<label for="a">De qual área você precisa?</label>
+<select id="a"></select>
+<label for="x">O que você precisa dela?</label>
+<textarea id="x" maxlength="200" placeholder="Ex.: Novo fluxo de cadastro aprovado"></textarea>
+<label for="p">Para quando? <small>(opcional)</small></label>
+<input type="date" id="p">
+<button class="mod-primary" id="b">Pedir</button>
+<small>O pedido vira um item no checklist “Pedidos a outras áreas” deste card e já chega ao card da outra área. Quando ela marcar como entregue, aparece “Liberado” aqui.</small>
+<div id="m"></div>
+<script>
+const t = TrelloPowerUp.iframe();
+const m = document.getElementById("m"), b = document.getElementById("b"), sel = document.getElementById("a");
+function msg(txt, cls) { m.className = cls || ""; m.textContent = txt; t.sizeTo("body"); }
+(async () => {
+  const { id } = await t.card("id");
+  try { (await Interdep.areas(id)).forEach((x) => sel.add(new Option(x.nome, x.id))); } catch (e) { msg(e.message, "er"); }
+  b.onclick = async () => {
+    const texto = document.getElementById("x").value.trim();
+    if (texto.length < 3) return msg("Escreva o que você precisa da outra área.", "er");
+    b.disabled = true; msg("Enviando…");
+    try {
+      const r = await Interdep.pedir(id, sel.value, texto, document.getElementById("p").value);
+      msg(r.jaExistia ? "Esse pedido já existia." : "Pedido enviado para " + r.area + ".", "ok");
+      setTimeout(() => t.closePopup(), 1400);
+    } catch (e) { b.disabled = false; msg(e.message, "er"); }
+  };
+  t.sizeTo("body");
+})();
+</script>
+</body>
+</html>
