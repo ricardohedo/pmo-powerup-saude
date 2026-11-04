@@ -57,7 +57,7 @@ TrelloPowerUp.initialize({
   "card-back-section": (t) => ({
     title: "Saúde do projeto",
     icon: ICONE,
-    content: { type: "iframe", url: t.signUrl("./secao.html"), height: 200 },
+    content: { type: "iframe", url: t.signUrl("./secao.html"), height: 260 },
   }),
 
   "card-buttons": () => [{

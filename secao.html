@@ -12,10 +12,10 @@
  body{font:14px/1.45 system-ui,sans-serif;margin:0;padding:4px 2px;color:#172b4d}
  .topo{display:flex;align-items:center;gap:8px;margin-bottom:8px}
  .sel{display:inline-block;padding:2px 10px;border-radius:10px;color:#fff;font-weight:600}
- .vermelho{background:#c0392b}.amarelo{background:#b8860b}.verde{background:#2e7d4f}
+ .sel.vermelho{background:#c0392b}.sel.amarelo{background:#b8860b}.sel.verde{background:#2e7d4f}
  .prog{height:6px;background:#dfe1e6;border-radius:3px;overflow:hidden;margin:2px 0 10px}.prog i{display:block;height:100%;background:#2e7d4f}
  ul{margin:0 0 8px;padding-left:0;list-style:none}
- li{padding:6px 8px;border-left:4px solid #c0392b;background:#f7f8f9;border-radius:3px;margin-bottom:5px}
+ li{padding:6px 8px;border-left:4px solid #c0392b;background:#f7f8f9;color:#172b4d;border-radius:3px;margin-bottom:5px}
  li.amarelo{border-left-color:#b8860b} li.verde{border-left-color:#2e7d4f}
  li small{display:block;color:#5e6c84}
  .nota{color:#5e6c84;font-size:12px;margin:6px 0 0}
@@ -40,7 +40,8 @@ t.render(async () => {
   }
   h += "<p class='nota'>Fase: " + esc(d.lista) + ". Só leitura: o Power-Up mostra, não altera o card.</p>";
   document.getElementById("raiz").innerHTML = h;
-  t.sizeTo("#raiz");
+  t.sizeTo("#raiz").catch(() => {});
+  setTimeout(() => t.sizeTo("#raiz").catch(() => {}), 400);   // de novo depois do layout (evita barra de rolagem)
 });
 </script>
 </body>
