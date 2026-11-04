@@ -47,7 +47,7 @@ window.PmoDados = (function () {
     const valores = PmoMotor.valoresCustomfield(card(c), cd);
     const itemFoco = { card: card(c), listaNome: lista.name, alertas, valores, checklists: ck };
     const prio = PmoMotor.avaliarProjeto(itemFoco, r, new Date());
-    return { semEvidencia: PmoMotor.semEvidencia(itemFoco, r, new Date()), card: card(c), lista: lista.name, checklists: ck, alertas, regras: r, nivel: PmoMotor.semaforo(alertas, r),
+    return { semEvidencia: r.funcoes.evidencia && PmoMotor.semEvidencia(itemFoco, r, new Date()),   // funcao opcional (pmo.toml) card: card(c), lista: lista.name, checklists: ck, alertas, regras: r, nivel: PmoMotor.semaforo(alertas, r),
       valores, pontos: PmoMotor.pontuar(alertas, valores, r), prioridade: prio.prioridade, risco: prio.risco, diasPrazo: prio.dias };
   }
 
@@ -61,7 +61,7 @@ window.PmoDados = (function () {
       const item = { card: cm, listaNome: nomes[c.idList], checklists: ck, valores: PmoMotor.valoresCustomfield(cm, cd),
         alertas: PmoMotor.avaliarCard(cm, nomes[c.idList], cd, ck, agora, r) };
       item.prio = PmoMotor.avaliarProjeto(item, r, agora);
-      item.semEvidencia = PmoMotor.semEvidencia(item, r, agora);
+      item.semEvidencia = r.funcoes.evidencia && PmoMotor.semEvidencia(item, r, agora);   // funcao opcional (pmo.toml)
       return item;
     }).filter((i) => !i.card.closed);
     return { regras: r, resumo: PmoMotor.resumoQuadro(itens, r, agora), itens, meuId: eu && eu.id, membros: nomesMembros };

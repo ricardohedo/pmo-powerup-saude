@@ -37,7 +37,9 @@ window.PmoTendencia = (function () {
   function automatico(t) {
     if (jaTentou) return;
     jaTentou = true;
-    garantirHoje(t).catch((e) => console.warn("[PMO Power-Up] tendencia:", e));
+    // Funcao opcional (pmo.toml, [powerup_funcoes]): desligada = nao grava NADA.
+    PmoDados.regras().then((r) => (r.funcoes.tendencia ? garantirHoje(t) : null))
+      .catch((e) => console.warn("[PMO Power-Up] tendencia:", e));
   }
 
   return { ler, garantirHoje, automatico };

@@ -74,28 +74,16 @@ TrelloPowerUp.initialize({
     callback: (t) => t.popup({ title: "Status semanal (rascunho)", url: "./status.html", height: 320 }),
   }],
 
-  "board-buttons": (t) => {
-    PmoTendencia.automatico(t);          // guarda o retrato do dia (1a abertura do dia), sem travar nada
-    return [{
-    icon: ICONE,
-    text: "Onde atuar",
-    callback: (t) => t.modal({ title: "Onde atuar", url: "./atuar.html", height: 600 }),
-  }, {
-    icon: ICONE,
-    text: "Linha do tempo",
-    callback: (t) => t.modal({ title: "Linha do tempo de entregas", url: "./linha.html", height: 600 }),
-  }, {
-    icon: ICONE,
-    text: "Carga da equipe",
-    callback: (t) => t.modal({ title: "Carga da equipe", url: "./equipe.html", height: 520 }),
-  }, {
-    icon: ICONE,
-    text: "Tendência",
-    callback: (t) => t.modal({ title: "Tendência do quadro", url: "./tendencia.html", height: 560 }),
-  }, {
-    icon: ICONE,
-    text: "Painel PMO",
-    callback: (t) => t.modal({ title: "Painel de saúde do quadro", url: "./painel.html", height: 560 }),
-  }];
+  "board-buttons": async (t) => {
+    PmoTendencia.automatico(t);          // guarda o retrato do dia (so se a Tendencia estiver ligada), sem travar nada
+    const f = (await PmoDados.regras()).funcoes;   // funcoes opcionais: ligadas/desligadas no pmo.toml (regras.json)
+    const botao = (text, title, url, height) => ({ icon: ICONE, text, callback: (tt) => tt.modal({ title, url, height }) });
+    return [
+      botao("Onde atuar", "Onde atuar", "./atuar.html", 600),
+      botao("Linha do tempo", "Linha do tempo de entregas", "./linha.html", 600),
+      ...(f.carga_equipe ? [botao("Carga da equipe", "Carga da equipe", "./equipe.html", 520)] : []),
+      ...(f.tendencia ? [botao("Tendência", "Tendência do quadro", "./tendencia.html", 560)] : []),
+      botao("Painel PMO", "Painel de saúde do quadro", "./painel.html", 560),
+    ];
   },
 });

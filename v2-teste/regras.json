@@ -59,6 +59,11 @@
     "alto": "Prazo curto, pouco andado e com sinais de parada: confirme se cabe ou replaneje já.",
     "medio": "Prazo curto e pouco andado: vai caber? Se não, ajuste o 'Fim planejado' e comente."
   },
+  "funcoes": {
+    "carga_equipe": true,
+    "evidencia": true,
+    "tendencia": true
+  },
   "fuso_horas": -3,
   "grupos": {
     "atrasado": "🔴 Atrasado",

@@ -31,7 +31,7 @@ t.render(async () => {
     "<h3>Atrasos de " + q.regras.painel_atraso_dias + "+ dias</h3>" + lista(r.atrasos_longos, (x) => "<li>" + link(x) + " — " + x.dias + "d</li>", "Nenhum.") +
     "<h3>Prazo curto e pouco andado</h3>" + lista(r.prazo_curto_pouco_andado, (x) => "<li>" + link(x) + " — vence em " + x.dias + "d, " + (x.pct === null ? "sem checklist" : x.pct + "% feito") + "</li>", "Nenhum.") +
     "<h3>Quase prontos (vale reconhecer)</h3>" + lista(r.quase_prontos, (x) => "<li>" + link(x) + "</li>", "Nenhum.") +
-    "<h3>Concluídos sem evidência (últimos " + q.regras.evidencia_dias + " dias)</h3>" + lista(q.itens.filter((i) => i.semEvidencia).map((i) => ({ nome: i.card.name, url: i.card.url })), (x) => "<li>" + link(x) + "</li>", "Nenhum.") +
+    (q.regras.funcoes.evidencia ? "<h3>Concluídos sem evidência (últimos " + q.regras.evidencia_dias + " dias)</h3>" + lista(q.itens.filter((i) => i.semEvidencia).map((i) => ({ nome: i.card.name, url: i.card.url })), (x) => "<li>" + link(x) + "</li>", "Nenhum.") : "") +
     "<h3>Cadastro incompleto</h3>" + lista(r.cadastro, (x) => "<li>" + link(x) + " — falta: " + esc(x.falta) + "</li>", "Nenhum.") +
     "<h3>Por tipo de sinal</h3>" + lista(q.regras.ordem.filter((k) => r.por_tipo[k]), (k) => "<li>" + esc(g[k]) + ": " + r.por_tipo[k] + "</li>", "Nenhum.") +
     "<p class='nota'>" + r.total + " cards abertos lidos. Pausado e em revisão sem comentário usam a contagem de comentários do Trello. Só leitura; nada é alterado.</p>";
