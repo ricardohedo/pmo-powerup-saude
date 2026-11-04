@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <style>
-body{font:14px system-ui;margin:0;padding:4px}.l{border:1px solid #dfe1e6;border-radius:6px;padding:8px;margin:0 0 8px}
+html,body{overflow:hidden}body{font:14px system-ui;margin:0;padding:4px}.l{border:1px solid #dfe1e6;border-radius:6px;padding:8px;margin:0 0 8px}
 .t{display:inline-block;border-radius:3px;padding:1px 6px;color:#fff;font-size:12px}
 .red{background:#c9372c}.yellow{background:#b38600}.green{background:#1f845a}.gray{background:#8590a2}
 small{color:#626f86}.x{float:right;font-size:12px}
@@ -23,7 +23,7 @@ async function ver() {
     const s = await Interdep.status(id);
     if (!s.vinculos.length) {
       c.innerHTML = "<small>Nenhuma dependência de outra área. Use o botão <b>Depende de outra área</b>.</small>";
-      return t.sizeTo("#c");
+      return t.sizeTo("body");
     }
     c.innerHTML = s.vinculos.map((v) => {
       const g = Interdep.sinal(v), e = Interdep.esc;
@@ -44,7 +44,7 @@ async function ver() {
   } catch (e) {
     c.innerHTML = "<small>Não consegui ler o status: " + Interdep.esc(e.message) + "</small>";
   }
-  t.sizeTo("#c");
+  t.sizeTo("body");
 }
 t.render(ver);
 </script>
