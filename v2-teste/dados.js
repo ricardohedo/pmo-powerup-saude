@@ -47,8 +47,11 @@ window.PmoDados = (function () {
     const valores = PmoMotor.valoresCustomfield(card(c), cd);
     const itemFoco = { card: card(c), listaNome: lista.name, alertas, valores, checklists: ck };
     const prio = PmoMotor.avaliarProjeto(itemFoco, r, new Date());
-    return { semEvidencia: r.funcoes.evidencia && PmoMotor.semEvidencia(itemFoco, r, new Date()),   // funcao opcional (pmo.toml) card: card(c), lista: lista.name, checklists: ck, alertas, regras: r, nivel: PmoMotor.semaforo(alertas, r),
-      valores, pontos: PmoMotor.pontuar(alertas, valores, r), prioridade: prio.prioridade, risco: prio.risco, diasPrazo: prio.dias };
+    // semEvidencia e uma funcao opcional (liga/desliga no pmo.toml, [powerup_funcoes])
+    const semEvidencia = r.funcoes.evidencia && PmoMotor.semEvidencia(itemFoco, r, new Date());
+    return { card: card(c), lista: lista.name, checklists: ck, alertas, regras: r, nivel: PmoMotor.semaforo(alertas, r),
+      valores, pontos: PmoMotor.pontuar(alertas, valores, r), prioridade: prio.prioridade, risco: prio.risco,
+      diasPrazo: prio.dias, semEvidencia };
   }
 
   async function quadro(t) {
