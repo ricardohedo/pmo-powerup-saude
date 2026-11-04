@@ -1,0 +1,174 @@
+{
+  "_aviso": "GERADO por tools/gerar_regras_powerup.py a partir de pmo.toml. Nao editar a mao.",
+  "acao": {
+    "atrasado": "No card: ajuste o 'Fim planejado' ou comente o que está travando.",
+    "atraso_oculto": "No checklist: marque o que já foi feito ou ajuste o prazo dos itens vencidos.",
+    "cadastro_incompleto": "Complete os campos que faltam no card.",
+    "checklist_pendente_concluido": "Marque os itens que faltam ou volte o card para a lista certa.",
+    "em_revisao_sem_comentario": "Comente no card o que está em revisão e o que falta.",
+    "prazo_proximo": "Vai caber no prazo? Se não, ajuste o 'Fim planejado' e comente o motivo.",
+    "quase_pronto": "Falta só formalizar: mova o card para Concluídos.",
+    "sem_comentario_pausado": "Registre num comentário o motivo da pausa.",
+    "sem_interacao": "Comente no card o que está acontecendo (ou marque um item do checklist).",
+    "sem_prazo": "Preencha 'Início planejado' e 'Fim planejado' no card.",
+    "sem_responsavel": "Adicione no card quem é o responsável."
+  },
+  "bonus_prioridade": {
+    "Alta": 30,
+    "Máxima": 50,
+    "Média": 10
+  },
+  "bonus_urgente": 30,
+  "campos_execucao": [
+    "Início planejado",
+    "Fim planejado",
+    "Prioridade",
+    "Urgente"
+  ],
+  "campos_obrigatorios": [
+    "Área solicitante",
+    "Início planejado",
+    "Fim planejado",
+    "Prioridade",
+    "Urgente"
+  ],
+  "ceo_dias_prazo_amarelo": 14,
+  "ceo_pct_prazo_amarelo": 50,
+  "dias_marcos": 30,
+  "dias_prazo_proximo": 7,
+  "dias_sem_interacao": 7,
+  "divisor_sem_interacao": 10,
+  "fases_execucao": [
+    "priorizados(prontos para iniciar)",
+    "em execução",
+    "em revisão"
+  ],
+  "fases_sem_responsavel": [
+    "em execução"
+  ],
+  "fazer_prioridade": {
+    "P1": "Exige ação agora: ajuste o prazo ou peça apoio para destravar.",
+    "P2": "Precisa de acompanhamento: veja o primeiro motivo e atualize o card.",
+    "P3": "Orientação: melhore o cadastro ou encerre o que já está pronto.",
+    "P4": "Só registro: nada a fazer além de formalizar."
+  },
+  "fazer_risco": {
+    "alto": "Prazo curto, pouco andado e com sinais de parada: confirme se cabe ou replaneje já.",
+    "medio": "Prazo curto e pouco andado: vai caber? Se não, ajuste o 'Fim planejado' e comente."
+  },
+  "fuso_horas": -3,
+  "grupos": {
+    "atrasado": "🔴 Atrasado",
+    "atraso_oculto": "🕵️ Atraso oculto — itens de checklist vencidos",
+    "cadastro_incompleto": "🧾 Cadastro incompleto (campo obrigatório vazio)",
+    "checklist_pendente_concluido": "📋 Concluído com checklist pendente",
+    "em_revisao_sem_comentario": "📝 Em Revisão sem comentário explicando",
+    "prazo_proximo": "📅 Prazo próximo (7 dias ou menos)",
+    "quase_pronto": "🎉 Quase pronto — só falta formalizar o encerramento",
+    "sem_comentario_pausado": "🚫 Pausado/Impedimento sem comentário explicando",
+    "sem_interacao": "⚠️ Sem interação",
+    "sem_prazo": "📌 Em execução sem prazo cadastrado",
+    "sem_responsavel": "🙋 Em execução sem responsável atribuído"
+  },
+  "limite_lista_recolhida": 15,
+  "listas_concluido": [
+    "concluido",
+    "concluídos",
+    "concluidos"
+  ],
+  "listas_ignorar": [
+    "nova demanda — criar aqui",
+    "rastreador de projetos"
+  ],
+  "motor": {
+    "campo_prioridade": "Prioridade",
+    "campo_urgente": "Urgente",
+    "corpo_min_secao": 3,
+    "lista_backlog": "backlog de projetos",
+    "lista_execucao": "em execução",
+    "palavras_max_titulo": 6,
+    "titulos_conhecidos": [
+      "OBJETIVO",
+      "ESCOPO"
+    ]
+  },
+  "nao_avaliados": [
+    "sem_comentario_pausado",
+    "em_revisao_sem_comentario"
+  ],
+  "nivel": {
+    "atrasado": "vermelho",
+    "atraso_oculto": "vermelho",
+    "cadastro_incompleto": "vermelho",
+    "checklist_pendente_concluido": "verde",
+    "em_revisao_sem_comentario": "vermelho",
+    "prazo_proximo": "amarelo",
+    "quase_pronto": "verde",
+    "sem_comentario_pausado": "vermelho",
+    "sem_interacao": "vermelho",
+    "sem_prazo": "vermelho",
+    "sem_responsavel": "vermelho"
+  },
+  "ordem": [
+    "atrasado",
+    "prazo_proximo",
+    "atraso_oculto",
+    "sem_comentario_pausado",
+    "em_revisao_sem_comentario",
+    "sem_responsavel",
+    "sem_prazo",
+    "cadastro_incompleto",
+    "sem_interacao",
+    "checklist_pendente_concluido",
+    "quase_pronto"
+  ],
+  "painel_atraso_dias": 30,
+  "painel_prazo_pct_max": 25,
+  "perfil": "atual",
+  "pesos": {
+    "atrasado": 100,
+    "atraso_oculto": 60,
+    "prazo_proximo": 40,
+    "sem_comentario_pausado": 30
+  },
+  "prioridade_gatilhos": {
+    "atrasado": "P2",
+    "atraso_oculto": "P2",
+    "cadastro_incompleto": "P3",
+    "checklist_pendente_concluido": "P3",
+    "em_revisao_sem_comentario": "P2",
+    "prazo_proximo": "P2",
+    "quase_pronto": "P4",
+    "sem_comentario_pausado": "P2",
+    "sem_interacao": "P2",
+    "sem_prazo": "P2",
+    "sem_responsavel": "P2"
+  },
+  "prioridade_p1_prazo_dias": 1,
+  "progresso_min_quase_pronto": 90,
+  "risco": [
+    "atrasado",
+    "atraso_oculto",
+    "prazo_proximo",
+    "sem_comentario_pausado"
+  ],
+  "risco_agravantes": [
+    "sem_interacao",
+    "atraso_oculto",
+    "sem_responsavel"
+  ],
+  "risco_agravantes_para_alto": 1,
+  "rotulo_prioridade": {
+    "P1": "Crítico",
+    "P2": "Atenção",
+    "P3": "Preventivo",
+    "P4": "Informativo"
+  },
+  "rotulo_risco": {
+    "alto": "Risco alto de atrasar",
+    "medio": "Risco de atrasar"
+  },
+  "sem_interacao_fases": [],
+  "teto_pontos_atraso": 60,
+  "top": 3
+}

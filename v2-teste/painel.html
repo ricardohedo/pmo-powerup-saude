@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel de saúde do quadro</title>
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./motor.js"></script>
+<script src="./dados.js"></script>
+<style>
+ body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
+ .sem{display:flex;gap:8px;margin-bottom:14px}
+ .sem div{flex:1;border-radius:6px;padding:10px;text-align:center;color:#fff}
+ .sem b{display:block;font-size:26px}
+ .v{background:#c0392b}.a{background:#b8860b}.g{background:#2e7d4f}
+ h3{margin:16px 0 6px} ul{margin:0;padding-left:18px} .nota{color:#5e6c84;font-size:12px}
+</style>
+</head>
+<body>
+<div id="raiz">Lendo o quadro…</div>
+<script>
+const t = TrelloPowerUp.iframe();
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const lista = (arr, f, vazio) => arr.length ? "<ul>" + arr.slice(0, 8).map(f).join("") + (arr.length > 8 ? "<li>… e mais " + (arr.length - 8) + "</li>" : "") + "</ul>" : "<p class='nota'>" + vazio + "</p>";
+t.render(async () => {
+  const q = await PmoDados.quadro(t), r = q.resumo, g = q.regras.grupos;
+  const link = (x) => "<a href='" + esc(x.url) + "' target='_blank'>" + esc(x.nome) + "</a>";
+  document.getElementById("raiz").innerHTML =
+    "<div class='sem'><div class='v'><b>" + r.vermelho + "</b>Atenção</div><div class='a'><b>" + r.amarelo + "</b>De olho</div><div class='g'><b>" + r.verde + "</b>Em dia</div></div>" +
+    "<h3>Atrasos de " + q.regras.painel_atraso_dias + "+ dias</h3>" + lista(r.atrasos_longos, (x) => "<li>" + link(x) + " — " + x.dias + "d</li>", "Nenhum.") +
+    "<h3>Prazo curto e pouco andado</h3>" + lista(r.prazo_curto_pouco_andado, (x) => "<li>" + link(x) + " — vence em " + x.dias + "d, " + (x.pct === null ? "sem checklist" : x.pct + "% feito") + "</li>", "Nenhum.") +
+    "<h3>Quase prontos (vale reconhecer)</h3>" + lista(r.quase_prontos, (x) => "<li>" + link(x) + "</li>", "Nenhum.") +
+    "<h3>Cadastro incompleto</h3>" + lista(r.cadastro, (x) => "<li>" + link(x) + " — falta: " + esc(x.falta) + "</li>", "Nenhum.") +
+    "<h3>Por tipo de sinal</h3>" + lista(q.regras.ordem.filter((k) => r.por_tipo[k]), (k) => "<li>" + esc(g[k]) + ": " + r.por_tipo[k] + "</li>", "Nenhum.") +
+    "<p class='nota'>" + r.total + " cards abertos lidos. Não avaliado neste piloto (precisa ler comentários): pausado sem comentário e em revisão sem comentário. Só leitura; nada é alterado.</p>";
+  t.sizeTo("#raiz");
+});
+</script>
+</body>
+</html>

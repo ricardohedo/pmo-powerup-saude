@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Saúde do projeto</title>
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./motor.js"></script>
+<script src="./dados.js"></script>
+<style>
+ body{font:14px/1.45 system-ui,sans-serif;margin:0;padding:4px 2px;color:#172b4d}
+ .topo{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+ .sel{display:inline-block;padding:2px 10px;border-radius:10px;color:#fff;font-weight:600}
+ .sel.vermelho{background:#c0392b}.sel.amarelo{background:#b8860b}.sel.verde{background:#2e7d4f}
+ .sel.P1{background:#c0392b}.sel.P2{background:#d9730d}.sel.P3{background:#b8860b}.sel.P4{background:#2e7d4f}
+ .risco{padding:6px 8px;border-left:4px solid #b8860b;background:#fff7e0;border-radius:3px;margin-bottom:8px}.risco.alto{border-left-color:#c0392b;background:#fdecea}
+ .risco small{display:block;color:#5e6c84}
+ .prog{height:6px;background:#dfe1e6;border-radius:3px;overflow:hidden;margin:2px 0 10px}.prog i{display:block;height:100%;background:#2e7d4f}
+ ul{margin:0 0 8px;padding-left:0;list-style:none}
+ li{padding:6px 8px;border-left:4px solid #c0392b;background:#f7f8f9;color:#172b4d;border-radius:3px;margin-bottom:5px}
+ li.amarelo{border-left-color:#b8860b} li.verde{border-left-color:#2e7d4f}
+ li small{display:block;color:#5e6c84}
+ .nota{color:#5e6c84;font-size:12px;margin:6px 0 0}
+</style>
+</head>
+<body>
+<div id="raiz">Lendo o card…</div>
+<script>
+const t = TrelloPowerUp.iframe();
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const ROTULO = { vermelho: "Atenção", amarelo: "De olho", verde: "Em dia" };
+t.render(async () => {
+  const d = await PmoDados.cardEmFoco(t), r = d.regras;
+  const pct = PmoMotor.progressoChecklists(d.checklists);
+  const itens = d.checklists.reduce((n, c) => n + (c.checkItems || []).length, 0);
+  const feitos = d.checklists.reduce((n, c) => n + (c.checkItems || []).filter((i) => i.state === "complete").length, 0);
+  let h = "<div class='topo'>" + (d.prioridade
+      ? "<span class='sel " + d.prioridade + "'>" + d.prioridade + " " + esc(r.rotulo_prioridade[d.prioridade]) + "</span>"
+      : "<span class='sel " + d.nivel + "'>" + ROTULO[d.nivel] + "</span>") +
+    (d.alertas.length ? "<span>" + d.alertas.length + (d.alertas.length === 1 ? " sinal" : " sinais") + " neste projeto</span>" : "<span>Nenhum sinal automático.</span>") + "</div>";
+  if (d.prioridade) h += "<p class='nota'>" + esc(r.fazer_prioridade[d.prioridade]) + "</p>";
+  if (d.risco) h += "<div class='risco " + d.risco + "'><b>⏳ " + esc(r.rotulo_risco[d.risco]) + "</b>" +
+    "<small>Prazo em " + d.diasPrazo + (d.diasPrazo === 1 ? " dia" : " dias") + " e " + (pct === null ? "sem checklist" : pct + "% do checklist") + ". " + esc(r.fazer_risco[d.risco]) + "</small></div>";
+  if (pct !== null) h += "<div>Checklist: " + feitos + " de " + itens + " itens (" + pct + "%)</div><div class='prog'><i style='width:" + pct + "%'></i></div>";
+  if (d.alertas.length) {
+    h += "<ul>" + d.alertas.map((a) => "<li class='" + r.nivel[a.tipo] + "'><b>" + esc(PmoMotor.frase(a)) + "</b><small>👉 " + esc(r.acao[a.tipo] || "") + "</small></li>").join("") + "</ul>";
+  }
+  h += "<p class='nota'>Fase: " + esc(d.lista) + ". Só leitura: o Power-Up mostra, não altera o card.</p>";
+  document.getElementById("raiz").innerHTML = h;
+  t.sizeTo("#raiz").catch(() => {});
+  setTimeout(() => t.sizeTo("#raiz").catch(() => {}), 400);   // de novo depois do layout (evita barra de rolagem)
+});
+</script>
+</body>
+</html>
