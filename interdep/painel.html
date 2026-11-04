@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <style>
-body{font:14px system-ui;padding:8px}h3{margin:14px 0 6px}table{border-collapse:collapse;width:100%}
-td,th{border-bottom:1px solid #dfe1e6;padding:6px;text-align:left}
-.t{border-radius:3px;padding:1px 6px;color:#fff;font-size:12px}
-.red{background:#c9372c}.yellow{background:#b38600}.green{background:#1f845a}.gray{background:#8590a2}small{color:#626f86}
+body{font:14px system-ui;padding:8px}h3{margin:16px 0 6px}table{border-collapse:collapse;width:100%}
+td,th{border-bottom:1px solid #dfe1e6;padding:6px;text-align:left;vertical-align:top}
+.t{border-radius:3px;padding:1px 6px;color:#fff;font-size:12px;white-space:nowrap}
+.red{background:#c9372c}.orange{background:#c25100}.yellow{background:#b38600}.green{background:#1f845a}.gray{background:#8590a2}small{color:#626f86}
 </style>
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
 <script src="./api.js"></script>
@@ -16,24 +16,48 @@ td,th{border-bottom:1px solid #dfe1e6;padding:6px;text-align:left}
 <div id="c">Carregando…</div>
 <script>
 const t = TrelloPowerUp.iframe();
-function tabela(tit, itens, quem) {
-  const e = Interdep.esc;
-  if (!itens.length) return "<h3>" + tit + "</h3><small>Nada por aqui.</small>";
+const e = Interdep.esc;
+function vazio(tit) { return "<h3>" + tit + "</h3><small>Nada por aqui.</small>"; }
+
+function tabelaCards(tit, itens, quem) {
+  if (!itens.length) return vazio(tit);
   return "<h3>" + tit + " (" + itens.length + ")</h3><table><tr><th>Situação</th><th>Meu card</th><th>" + quem +
     "</th><th>Lista</th><th>Prazo</th><th>Checklist</th></tr>" +
-    itens.map((v) => {
-      const g = Interdep.sinal(v);
+    itens.map((v) => { const g = Interdep.sinal(v);
       return '<tr><td><span class="t ' + g.cor + '">' + g.txt + "</span></td><td>" + e(v.meu_card) + "</td><td>" + e(v.area) +
-        "</td><td>" + e(v.lista) + "</td><td>" + Interdep.dataBr(v.prazo) + "</td><td>" + Interdep.pct(v) + "</td></tr>";
-    }).join("") + "</table>";
+        "</td><td>" + e(v.lista) + "</td><td>" + Interdep.dataBr(v.prazo) + "</td><td>" + Interdep.pct(v) + "</td></tr>"; }).join("") + "</table>";
 }
+
+function tabelaEspero(itens) {
+  const tit = "Itens que espero de outras áreas";
+  if (!itens.length) return vazio(tit);
+  const ord = itens.slice().sort((a, b) => Interdep.sinalItem(a).ordem - Interdep.sinalItem(b).ordem);
+  return "<h3>" + tit + " (" + itens.length + ")</h3><table><tr><th>Situação</th><th>Meu card</th><th>O que preciso</th><th>Área</th><th>Prazo</th></tr>" +
+    ord.map((i) => { const g = Interdep.sinalItem(i);
+      return '<tr><td><span class="t ' + g.cor + '">' + e(g.txt) + "</span></td><td>" + e(i.meu_card) + "</td><td>" + e(i.texto) + "</td><td>" + e(i.area) +
+        "</td><td>" + Interdep.dataBr(i.prazo) + "</td></tr>"; }).join("") + "</table>";
+}
+
+function tabelaEsperam(itens) {
+  const tit = "Itens que outras áreas esperam de mim";
+  if (!itens.length) return vazio(tit);
+  const ord = itens.slice().sort((a, b) => (b.atrasado - a.atrasado) || (a.feito - b.feito));
+  return "<h3>" + tit + " (" + itens.length + ")</h3><table><tr><th>Situação</th><th>Quem espera</th><th>O que entregar</th><th>Meu card</th><th>Prazo</th></tr>" +
+    ord.map((i) => { const cor = i.feito ? "green" : i.atrasado ? "red" : "yellow", txt = i.feito ? "Entregue" : i.atrasado ? "Atrasado" : "A entregar";
+      return '<tr><td><span class="t ' + cor + '">' + txt + "</span></td><td>" + e(i.quem) + "</td><td>" + e(i.texto) + "</td><td>" + e(i.meu_card) +
+        "</td><td>" + Interdep.dataBr(i.prazo) + "</td></tr>"; }).join("") + "</table>";
+}
+
 t.render(async () => {
   const c = document.getElementById("c");
   try {
-    const b = await t.board("id"), q = await Interdep.quadro(b.id);
-    c.innerHTML = "<b>" + Interdep.esc(q.area) + "</b>" + tabela("O que eu espero de outras áreas", q.dependo, "Área") +
-      tabela("O que outras áreas esperam de mim", q.devo, "Área que espera");
-  } catch (e) { c.textContent = "Não consegui ler: " + e.message; }
+    const b = await t.board("id");
+    const [q, k] = await Promise.all([Interdep.quadro(b.id), Interdep.bloqueios(b.id)]);
+    c.innerHTML = "<b>" + e(q.area) + "</b>" +
+      tabelaEspero(k.espero) + tabelaEsperam(k.esperam) +
+      tabelaCards("Cards inteiros que espero de outras áreas", q.dependo, "Área") +
+      tabelaCards("Cards inteiros que outras áreas esperam de mim", q.devo, "Área que espera");
+  } catch (err) { c.textContent = "Não consegui ler: " + err.message; }
   t.sizeTo("#c");
 });
 </script>

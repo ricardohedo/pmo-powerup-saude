@@ -1,16 +1,23 @@
 /* Power-Up "PMO BigBox - Interdependencia entre areas" (PILOTO, so quadros de teste).
- * Mostra no card o que ele depende de outras areas (e o que deve a elas) e liga uma nova dependencia pelo botao.
- * Quem escreve no Trello e o backend (credencial do PMO), nunca o navegador do gestor. */
+ * Mostra no card o que ele depende de outras areas (card inteiro e itens de checklist [DEPENDE: Area]).
+ * Quem escreve no Trello e o backend (credencial do PMO), nunca o navegador do gestor.
+ * Selo: so consulta o backend se o card JA tem vinculo (anexo INTERDEP), para nao disparar uma chamada por card a cada renderizacao do quadro. */
 const ICONE = new URL("./icone.svg", location.href).href;
-const COR = { red: "red", yellow: "yellow", green: "green", gray: "light-gray" };
+const COR = { red: "red", orange: "orange", yellow: "yellow", green: "green", gray: "light-gray" };
 
 TrelloPowerUp.initialize({
   "card-badges": async (t) => {
     try {
+      const { attachments } = await t.card("attachments");
+      if (!(attachments || []).some((a) => /^INTERDEP/.test(a.name || ""))) return [];
       const { id } = await t.card("id");
-      const s = await Interdep.status(id);
-      if (!s.vinculos.length) return [];
-      return [{ text: "Interdep · " + s.vinculos.length, color: COR[Interdep.pior(s.vinculos).cor] }];
+      const [s, d] = await Promise.all([Interdep.status(id), Interdep.deps(id)]);
+      const sinais = s.vinculos.map(Interdep.sinal).concat(d.itens.map(Interdep.sinalItem));
+      if (!sinais.length) return [];
+      const p = Interdep.pior(sinais);
+      const bloq = d.itens.filter((i) => i.situacao !== "liberado").length;
+      const texto = bloq ? "Aguarda outra área · " + bloq : "Interdep · " + sinais.length;
+      return [{ text: texto, color: COR[p.cor] }];
     } catch (e) {
       return [{ text: "Interdep: indisponível", color: "orange" }];
     }

@@ -4,10 +4,12 @@
 <meta charset="utf-8">
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <style>
-html,body{overflow:hidden}body{font:14px system-ui;margin:0;padding:4px}.l{border:1px solid #dfe1e6;border-radius:6px;padding:8px;margin:0 0 8px}
+html,body{overflow:hidden}body{font:14px system-ui;margin:0;padding:4px}
+h4{margin:10px 0 6px;font-size:13px;color:#44546f}
+.l{border:1px solid #dfe1e6;border-radius:6px;padding:8px;margin:0 0 8px}
 .t{display:inline-block;border-radius:3px;padding:1px 6px;color:#fff;font-size:12px}
-.red{background:#c9372c}.yellow{background:#b38600}.green{background:#1f845a}.gray{background:#8590a2}
-small{color:#626f86}.x{float:right;font-size:12px}
+.red{background:#c9372c}.orange{background:#c25100}.yellow{background:#b38600}.green{background:#1f845a}.gray{background:#8590a2}
+small{color:#626f86}.x{float:right;font-size:12px}button{margin-top:4px}
 </style>
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
 <script src="./api.js"></script>
@@ -16,23 +18,47 @@ small{color:#626f86}.x{float:right;font-size:12px}
 <div id="c">Carregando…</div>
 <script>
 const t = TrelloPowerUp.iframe();
+const e = Interdep.esc;
+function ajustar() { t.sizeTo(document.getElementById("c").offsetHeight + 24); }
+
+function blocoCards(vinculos) {
+  if (!vinculos.length) return "";
+  return "<h4>Cards ligados a outras áreas</h4>" + vinculos.map((v) => {
+    const g = Interdep.sinal(v);
+    const papel = v.direcao === "depende" ? "(eu dependo deles)" : "(eles dependem de mim)";
+    const desfazer = v.direcao === "depende" ? '<a class="x" href="#" data-u="' + e(v.url) + '">desfazer</a>' : "";
+    return '<div class="l"><span class="t ' + g.cor + '">' + g.txt + "</span> <b>" + e(v.area) + "</b> <small>" + papel + "</small>" + desfazer +
+      "<br>" + e(v.nome) + "<br><small>Lista: " + e(v.lista) + " · Prazo: " + Interdep.dataBr(v.prazo) + " · Checklist: " + Interdep.pct(v) +
+      '</small><br><a href="' + e(v.url) + '" target="_blank">abrir card</a></div>';
+  }).join("");
+}
+
+function blocoItens(d) {
+  if (!d.itens.length) return "";
+  const linhas = d.itens.map((i) => {
+    const g = Interdep.sinalItem(i);
+    return '<div class="l"><span class="t ' + g.cor + '">' + e(g.txt) + "</span> <b>" + e(i.area) + "</b><br>" + e(i.texto) +
+      "<br><small>Prazo: " + Interdep.dataBr(i.prazo) + " · no checklist “" + e(i.checklist) + "”" +
+      (i.copiaUrl ? ' · <a href="' + e(i.copiaUrl) + '" target="_blank">abrir card na área</a>' : "") + "</small></div>";
+  }).join("");
+  const botao = d.pendentesDeSincronizar
+    ? '<button class="mod-primary" id="sinc">Enviar ' + d.pendentesDeSincronizar + " item(ns) às outras áreas</button>"
+    : "";
+  return "<h4>Itens do checklist que dependem de outras áreas</h4>" + linhas + botao +
+    "<br><small>Só mostra o estado; o item do seu checklist continua sendo seu.</small>";
+}
+
 async function ver() {
   const c = document.getElementById("c");
   try {
     const { id } = await t.card("id");
-    const s = await Interdep.status(id);
-    if (!s.vinculos.length) {
-      c.innerHTML = "<small>Nenhuma dependência de outra área. Use o botão <b>Depende de outra área</b>.</small>";
-      return t.sizeTo(document.getElementById("c").offsetHeight + 24);
+    const [s, d] = await Promise.all([Interdep.status(id), Interdep.deps(id)]);
+    if (!s.vinculos.length && !d.itens.length) {
+      c.innerHTML = "<small>Nenhuma dependência de outra área. Use o botão <b>Depende de outra área</b> (card inteiro) ou escreva no item do checklist " +
+        "<b>[DEPENDE: Processos até 20/11] o que você precisa</b>.</small>";
+      return ajustar();
     }
-    c.innerHTML = s.vinculos.map((v) => {
-      const g = Interdep.sinal(v), e = Interdep.esc;
-      const papel = v.direcao === "depende" ? "(eu dependo deles)" : "(eles dependem de mim)";
-      const desfazer = v.direcao === "depende" ? '<a class="x" href="#" data-u="' + e(v.url) + '">desfazer</a>' : "";
-      return '<div class="l"><span class="t ' + g.cor + '">' + g.txt + "</span> <b>" + e(v.area) + "</b> <small>" + papel + "</small>" + desfazer +
-        "<br>" + e(v.nome) + "<br><small>Lista: " + e(v.lista) + " · Prazo: " + Interdep.dataBr(v.prazo) + " · Checklist: " + Interdep.pct(v) +
-        '</small><br><a href="' + e(v.url) + '" target="_blank">abrir card</a></div>';
-    }).join("");
+    c.innerHTML = blocoItens(d) + blocoCards(s.vinculos);
     c.querySelectorAll("a[data-u]").forEach((a) => {
       a.onclick = async (ev) => {
         ev.preventDefault();
@@ -41,10 +67,16 @@ async function ver() {
         ver();
       };
     });
-  } catch (e) {
-    c.innerHTML = "<small>Não consegui ler o status: " + Interdep.esc(e.message) + "</small>";
+    const b = document.getElementById("sinc");
+    if (b) b.onclick = async () => {
+      b.disabled = true; b.textContent = "Enviando…";
+      try { await Interdep.sincronizar(id); } catch (err) { alert(err.message); }
+      ver();
+    };
+  } catch (err) {
+    c.innerHTML = "<small>Não consegui ler o status: " + e(err.message) + "</small>";
   }
-  t.sizeTo(document.getElementById("c").offsetHeight + 24);
+  ajustar();
 }
 t.render(ver);
 </script>
