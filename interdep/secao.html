@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<style>
+body{font:14px system-ui;margin:0;padding:4px}.l{border:1px solid #dfe1e6;border-radius:6px;padding:8px;margin:0 0 8px}
+.t{display:inline-block;border-radius:3px;padding:1px 6px;color:#fff;font-size:12px}
+.red{background:#c9372c}.yellow{background:#b38600}.green{background:#1f845a}.gray{background:#8590a2}
+small{color:#626f86}.x{float:right;font-size:12px}
+</style>
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./api.js"></script>
+</head>
+<body>
+<div id="c">Carregando…</div>
+<script>
+const t = TrelloPowerUp.iframe();
+async function ver() {
+  const c = document.getElementById("c");
+  try {
+    const { id } = await t.card("id");
+    const s = await Interdep.status(id);
+    if (!s.vinculos.length) {
+      c.innerHTML = "<small>Nenhuma dependência de outra área. Use o botão <b>Depende de outra área</b>.</small>";
+      return t.sizeTo("#c");
+    }
+    c.innerHTML = s.vinculos.map((v) => {
+      const g = Interdep.sinal(v), e = Interdep.esc;
+      const papel = v.direcao === "depende" ? "(eu dependo deles)" : "(eles dependem de mim)";
+      const desfazer = v.direcao === "depende" ? '<a class="x" href="#" data-u="' + e(v.url) + '">desfazer</a>' : "";
+      return '<div class="l"><span class="t ' + g.cor + '">' + g.txt + "</span> <b>" + e(v.area) + "</b> <small>" + papel + "</small>" + desfazer +
+        "<br>" + e(v.nome) + "<br><small>Lista: " + e(v.lista) + " · Prazo: " + Interdep.dataBr(v.prazo) + " · Checklist: " + Interdep.pct(v) +
+        '</small><br><a href="' + e(v.url) + '" target="_blank">abrir card</a></div>';
+    }).join("");
+    c.querySelectorAll("a[data-u]").forEach((a) => {
+      a.onclick = async (ev) => {
+        ev.preventDefault();
+        if (!confirm("Desfazer a dependência? A cópia na outra área será arquivada.")) return;
+        await Interdep.desvincular(id, a.dataset.u);
+        ver();
+      };
+    });
+  } catch (e) {
+    c.innerHTML = "<small>Não consegui ler o status: " + Interdep.esc(e.message) + "</small>";
+  }
+  t.sizeTo("#c");
+}
+t.render(ver);
+</script>
+</body>
+</html>

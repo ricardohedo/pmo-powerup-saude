@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<style>body{font:14px system-ui;padding:4px}select,button{width:100%;margin:6px 0}small{color:#626f86}#m{margin-top:6px}</style>
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./api.js"></script>
+</head>
+<body>
+<label>Este projeto depende de qual área?</label>
+<select id="a"></select>
+<button class="mod-primary" id="b">Criar dependência</button>
+<small>Cria um card com o mesmo nome no Backlog da outra área e liga os dois. Dá para desfazer na seção do card.</small>
+<div id="m"></div>
+<script>
+const t = TrelloPowerUp.iframe();
+(async () => {
+  const { id } = await t.card("id"), sel = document.getElementById("a"), m = document.getElementById("m");
+  try { (await Interdep.areas(id)).forEach((x) => sel.add(new Option(x.nome, x.id))); } catch (e) { m.textContent = e.message; }
+  document.getElementById("b").onclick = async () => {
+    m.textContent = "Criando…";
+    try {
+      const r = await Interdep.vincular(id, sel.value);
+      m.textContent = "Pronto: cópia criada em " + r.area + ".";
+      setTimeout(() => t.closePopup(), 1200);
+    } catch (e) { m.textContent = e.message; }
+  };
+  t.sizeTo("body");
+})();
+</script>
+</body>
+</html>

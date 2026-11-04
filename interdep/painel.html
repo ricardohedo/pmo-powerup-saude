@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<style>
+body{font:14px system-ui;padding:8px}h3{margin:14px 0 6px}table{border-collapse:collapse;width:100%}
+td,th{border-bottom:1px solid #dfe1e6;padding:6px;text-align:left}
+.t{border-radius:3px;padding:1px 6px;color:#fff;font-size:12px}
+.red{background:#c9372c}.yellow{background:#b38600}.green{background:#1f845a}.gray{background:#8590a2}small{color:#626f86}
+</style>
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./api.js"></script>
+</head>
+<body>
+<div id="c">Carregando…</div>
+<script>
+const t = TrelloPowerUp.iframe();
+function tabela(tit, itens, quem) {
+  const e = Interdep.esc;
+  if (!itens.length) return "<h3>" + tit + "</h3><small>Nada por aqui.</small>";
+  return "<h3>" + tit + " (" + itens.length + ")</h3><table><tr><th>Situação</th><th>Meu card</th><th>" + quem +
+    "</th><th>Lista</th><th>Prazo</th><th>Checklist</th></tr>" +
+    itens.map((v) => {
+      const g = Interdep.sinal(v);
+      return '<tr><td><span class="t ' + g.cor + '">' + g.txt + "</span></td><td>" + e(v.meu_card) + "</td><td>" + e(v.area) +
+        "</td><td>" + e(v.lista) + "</td><td>" + Interdep.dataBr(v.prazo) + "</td><td>" + Interdep.pct(v) + "</td></tr>";
+    }).join("") + "</table>";
+}
+t.render(async () => {
+  const c = document.getElementById("c");
+  try {
+    const b = await t.board("id"), q = await Interdep.quadro(b.id);
+    c.innerHTML = "<b>" + Interdep.esc(q.area) + "</b>" + tabela("O que eu espero de outras áreas", q.dependo, "Área") +
+      tabela("O que outras áreas esperam de mim", q.devo, "Área que espera");
+  } catch (e) { c.textContent = "Não consegui ler: " + e.message; }
+  t.sizeTo("#c");
+});
+</script>
+</body>
+</html>
