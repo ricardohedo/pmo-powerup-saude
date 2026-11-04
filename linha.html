@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linha do tempo de entregas</title>
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./motor.js"></script>
+<script src="./dados.js"></script>
+<style>
+ body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
+ .resumo{display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+ .resumo div{flex:1;min-width:110px;border-radius:6px;padding:8px;text-align:center;background:#f1f2f4}
+ .resumo b{display:block;font-size:22px}
+ .resumo .r b{color:#c0392b}
+ h3{margin:16px 0 6px} h3 small{color:#5e6c84;font-weight:400}
+ .lin{display:flex;gap:10px;align-items:center;padding:6px 8px;border-bottom:1px solid #eef0f3}
+ .data{width:46px;font-weight:600;color:#44546f;flex:none}
+ .nome{flex:1;min-width:0} .nome a{color:#172b4d;text-decoration:none} .nome a:hover{text-decoration:underline}
+ .nome small{display:block;color:#5e6c84}
+ .bar{width:70px;height:6px;background:#dfe1e6;border-radius:3px;overflow:hidden;flex:none}.bar i{display:block;height:100%;background:#2e7d4f}
+ .pt{width:8px;height:8px;border-radius:50%;flex:none}.pt.vermelho{background:#c0392b}.pt.amarelo{background:#b8860b}.pt.verde{background:#2e7d4f}
+ .alerta{color:#b8860b;font-size:12px;flex:none}
+ .atras .data{color:#c0392b}
+ .nota{color:#5e6c84;font-size:12px}
+</style>
+</head>
+<body>
+<div id="raiz">Lendo o quadro…</div>
+<script>
+const t = TrelloPowerUp.iframe();
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const dm = (iso) => iso ? iso.slice(8, 10) + "/" + iso.slice(5, 7) : "—";
+const plural = (n, a, b) => n + " " + (n === 1 ? a : b);
+
+function linha(x, atrasada) {
+  const pct = x.pct === null ? "" : "<div class='bar' title='" + x.pct + "% do checklist'><i style='width:" + x.pct + "%'></i></div>";
+  const sub = atrasada ? plural(x.dias, "dia", "dias") + " de atraso" : (x.dias === 0 ? "vence hoje" : x.dias === 1 ? "vence amanhã" : "em " + x.dias + " dias");
+  return "<div class='lin " + (atrasada ? "atras" : "") + "'><span class='data'>" + dm(x.fim) + "</span><span class='pt " + x.nivel + "'></span>" +
+    "<span class='nome'><a href='" + esc(x.url) + "' target='_blank'>" + esc(x.nome) + "</a><small>" + esc(x.lista || "") + " · " + sub + "</small></span>" +
+    (x.pouco ? "<span class='alerta'>⚠️ " + (x.pct || 0) + "% pronto</span>" : "") + pct + "</div>";
+}
+
+t.render(async () => {
+  const q = await PmoDados.quadro(t), r = PmoMotor.linhaDoTempo(q.itens, q.regras, new Date());
+  const pouco = r.janelas.reduce((n, j) => n + j.itens.filter((i) => i.pouco).length, 0);
+  let h = "<div class='resumo'><div class='r'><b>" + r.atrasadas.length + "</b>atrasados</div><div><b>" + r.proximas.length + "</b>vencem em " + q.regras.dias_marcos +
+    " dias</div><div><b>" + pouco + "</b>pouco andados</div><div><b>" + r.entregues.length + "</b>entregues no mês</div></div>";
+  if (r.atrasadas.length) h += "<h3>Atrasados <small>— prazo passou e não está concluído</small></h3>" + r.atrasadas.slice(0, 12).map((x) => linha(x, true)).join("") +
+    (r.atrasadas.length > 12 ? "<p class='nota'>… e mais " + (r.atrasadas.length - 12) + "</p>" : "");
+  for (const j of r.janelas) h += "<h3>" + dm(j.de) + " a " + dm(j.ate) + " <small>— " + plural(j.itens.length, "entrega", "entregas") + "</small></h3>" + j.itens.map((x) => linha(x, false)).join("");
+  if (!r.janelas.length) h += "<h3>Próximas entregas</h3><p class='nota'>Nenhuma entrega prevista nos próximos " + q.regras.dias_marcos + " dias.</p>";
+  if (r.semPrazo.length) h += "<h3>Sem prazo final cadastrado <small>— " + r.semPrazo.length + "</small></h3><p class='nota'>" +
+    r.semPrazo.slice(0, 8).map((x) => "<a href='" + esc(x.url) + "' target='_blank'>" + esc(x.nome) + "</a>").join(" · ") + (r.semPrazo.length > 8 ? " · …" : "") + "</p>";
+  if (r.entregues.length) h += "<h3>Entregues no mês <small>— " + r.entregues.length + "</small></h3>" + r.entregues.map((x) => "<div class='lin'><span class='data'>" + dm(x.fim) + "</span><span class='nome'><a href='" + esc(x.url) + "' target='_blank'>" + esc(x.nome) + "</a></span></div>").join("");
+  h += "<p class='nota'>" + r.total + " projetos no quadro. Mesma regra do painel da CEO: não concluído, com prazo final, até " + q.regras.dias_marcos +
+    " dias (calendário de Brasília). ⚠️ = prazo em até " + q.regras.ceo_dias_prazo_amarelo + " dias com menos de " + q.regras.ceo_pct_prazo_amarelo +
+    "% do checklist. A barra é o progresso do checklist. Só leitura; nada é alterado.</p>";
+  document.getElementById("raiz").innerHTML = h;
+  t.sizeTo("body");
+});
+</script>
+</body>
+</html>

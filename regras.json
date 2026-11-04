@@ -32,6 +32,9 @@
     "Prioridade",
     "Urgente"
   ],
+  "ceo_dias_prazo_amarelo": 14,
+  "ceo_pct_prazo_amarelo": 50,
+  "dias_marcos": 30,
   "dias_prazo_proximo": 7,
   "dias_sem_interacao": 7,
   "divisor_sem_interacao": 10,

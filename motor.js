@@ -232,6 +232,48 @@
       vitorias, total: meus.length, semAtencao: meus.length - pedem.length };
   }
 
+  // Data local (fuso do PMO, Brasilia) como "AAAA-MM-DD"; dias de calendario, igual ao Plano (plano.projetos_do_board).
+  function dataLocal(d, regras) { return new Date(d.getTime() + regras.fuso_horas * 3600000).toISOString().slice(0, 10); }
+  function diasEntre(a, b) { return Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / DIA_MS); }
+  function somaDias(a, n) { return new Date(Date.parse(a + "T00:00:00Z") + n * DIA_MS).toISOString().slice(0, 10); }
+
+  /* Linha do tempo de entregas: a MESMA regra do painel da CEO (ceo.marcos) e do Plano.
+   * itens = [{card, listaNome, alertas, valores, checklists}]. Retorna atrasadas, janelas de 7 dias, sem prazo, entregues no mes. */
+  function linhaDoTempo(itens, regras, agora) {
+    const hoje = dataLocal(agora, regras), mes = hoje.slice(0, 7);
+    const r = { hoje, atrasadas: [], proximas: [], janelas: [], semPrazo: [], entregues: [], total: 0 };
+    for (const it of itens) {
+      if (it.card.closed) continue;
+      const lista = (it.listaNome || "").trim().toLowerCase();
+      if (regras.listas_ignorar.some((t) => lista.includes(t))) continue;
+      r.total++;
+      const concluido = regras.listas_concluido.includes(lista), backlog = lista === regras.motor.lista_backlog;
+      const fimIso = (it.valores || {})["Fim planejado"];
+      const fim = fimIso ? dataLocal(new Date(fimIso), regras) : null;
+      const pct = progressoChecklists(it.checklists || []);
+      const base = { id: it.card.id, nome: it.card.name, url: it.card.url, lista: it.listaNome, fim, pct,
+        nivel: semaforo(it.alertas || [], regras) };
+      if (concluido) { if (fim && fim.startsWith(mes)) r.entregues.push(base); continue; }
+      if (backlog) continue;
+      if (!fim) { r.semPrazo.push(base); continue; }
+      const dias = diasEntre(hoje, fim);
+      if (dias < 0) r.atrasadas.push({ ...base, dias: -dias });
+      else if (dias <= regras.dias_marcos) {
+        r.proximas.push({ ...base, dias, pouco: dias <= regras.ceo_dias_prazo_amarelo && (pct || 0) < regras.ceo_pct_prazo_amarelo });
+      }
+    }
+    const porFim = (a, b) => (a.fim < b.fim ? -1 : a.fim > b.fim ? 1 : a.nome.localeCompare(b.nome));
+    r.atrasadas.sort((a, b) => b.dias - a.dias || a.nome.localeCompare(b.nome));
+    r.proximas.sort(porFim); r.entregues.sort(porFim);
+    for (const p of r.proximas) {
+      const i = Math.floor(p.dias / 7);
+      if (!r.janelas[i]) r.janelas[i] = { de: somaDias(hoje, i * 7), ate: somaDias(hoje, Math.min(i * 7 + 6, regras.dias_marcos)), itens: [] };
+      r.janelas[i].itens.push(p);
+    }
+    r.janelas = r.janelas.filter(Boolean);
+    return r;
+  }
+
   /* Painel do quadro: cards = [{card, listaNome, checklists, alertas}] (alertas de avaliarCard). */
   function resumoQuadro(itens, regras, agora) {
     const r = { total: itens.length, vermelho: 0, amarelo: 0, verde: 0, por_tipo: {}, atrasos_longos: [],
@@ -284,5 +326,5 @@
   }
 
   return { avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
-    checklistsDeBadges, pontuar, ondeAtuar, valoresCustomfield };
+    checklistsDeBadges, pontuar, ondeAtuar, valoresCustomfield, linhaDoTempo };
 });

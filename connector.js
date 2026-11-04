@@ -72,6 +72,10 @@ TrelloPowerUp.initialize({
     callback: (t) => t.modal({ title: "Onde atuar", url: "./atuar.html", height: 600 }),
   }, {
     icon: ICONE,
+    text: "Linha do tempo",
+    callback: (t) => t.modal({ title: "Linha do tempo de entregas", url: "./linha.html", height: 600 }),
+  }, {
+    icon: ICONE,
     text: "Painel PMO",
     callback: (t) => t.modal({ title: "Painel de saúde do quadro", url: "./painel.html", height: 560 }),
   }],
