@@ -73,6 +73,12 @@
     "sem_prazo": "📌 Em execução sem prazo cadastrado",
     "sem_responsavel": "🙋 Em execução sem responsável atribuído"
   },
+  "labels_pausado": [
+    "pausado",
+    "impedimento",
+    "dependência",
+    "dependencia"
+  ],
   "limite_lista_recolhida": 15,
   "listas_concluido": [
     "concluido",
@@ -89,16 +95,14 @@
     "corpo_min_secao": 3,
     "lista_backlog": "backlog de projetos",
     "lista_execucao": "em execução",
+    "lista_revisao": "em revisão",
     "palavras_max_titulo": 6,
     "titulos_conhecidos": [
       "OBJETIVO",
       "ESCOPO"
     ]
   },
-  "nao_avaliados": [
-    "sem_comentario_pausado",
-    "em_revisao_sem_comentario"
-  ],
+  "nao_avaliados": [],
   "nivel": {
     "atrasado": "vermelho",
     "atraso_oculto": "vermelho",
@@ -172,7 +176,15 @@
     "alto": "Risco alto de atrasar",
     "medio": "Risco de atrasar"
   },
+  "rotulo_tendencia": {
+    "estavel": "Estável",
+    "melhorando": "Melhorando",
+    "piorando": "Piorando"
+  },
   "sem_interacao_fases": [],
+  "tendencia_dias": 30,
+  "tendencia_janela_dias": 7,
+  "tendencia_limite_pp": 5,
   "teto_pontos_atraso": 60,
   "top": 3
 }

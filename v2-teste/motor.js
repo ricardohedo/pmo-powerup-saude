@@ -110,7 +110,7 @@
   /* Avalia UM card. card: {id, idList, closed, desc, due, labels, idMembers, dateLastActivity, customFieldItems}
    * listaNome: nome da lista do card; camposDef: {id: {name, type, options:{idOpcao: texto}}};
    * checklists: [{checkItems:[{state, due, dueComplete}]}]; agora: Date.
-   * Retorna [{tipo, valor}] (mesmos gatilhos do motor, sem "alerta uma vez" e sem os de comentario). */
+   * Retorna [{tipo, valor}] (mesmos 11 gatilhos do motor, sem "alerta uma vez"; os de comentario usam badges.comments). */
   function avaliarCard(card, listaNome, camposDef, checklists, agora, regras) {
     if (card.closed) return [];
     const lista = (listaNome || "").trim().toLowerCase();
@@ -139,6 +139,16 @@
     const venc = (concluido || backlog || dueVencido) ? 0 : itensVencidos(checklists, agora);
     // Checklist aproximado (so contadores): sabe-se que ha item vencido, nao quantos.
     if (venc > 0) add("atraso_oculto", checklists.some((c) => c.aprox) ? null : venc);
+
+    // G-05 sem_comentario_pausado e G-11 em_revisao_sem_comentario: o Trello entrega a CONTAGEM de comentarios do card
+    // (badges.comments; conferido ao vivo contra o motor Python, sem divergencia). Sem a contagem, nao avalia.
+    const comentarios = card.badges ? card.badges.comments : undefined;
+    if (comentarios !== undefined && comentarios !== null) {
+      const semComentario = !(comentarios > 0);
+      const nomes = (card.labels || []).map((l) => ((l && l.name) || "").trim().toLowerCase());
+      if (!concluido && nomes.some((n) => regras.labels_pausado.includes(n)) && semComentario) add("sem_comentario_pausado");
+      if (lista === regras.motor.lista_revisao && semComentario) add("em_revisao_sem_comentario");
+    }
 
     // G-06 sem_responsavel
     if (regras.fases_sem_responsavel.includes(lista) && !(card.idMembers || []).length) add("sem_responsavel");
@@ -186,6 +196,8 @@
       case "checklist_pendente_concluido": return "checklist ainda pendente";
       case "atrasado": return v === 0 ? "venceu hoje" : v + "d de atraso";
       case "cadastro_incompleto": return "falta: " + v;
+      case "sem_comentario_pausado": return "sem comentário obrigatório";
+      case "em_revisao_sem_comentario": return "sem comentário explicando";
       default: return a.tipo;
     }
   }
@@ -248,6 +260,46 @@
     const anexos = (it.card.badges || {}).attachments, ultima = it.card.dateLastActivity;
     if (anexos === undefined || anexos === null || !ultima) return false;
     return diasDesde(ultima, agora) <= regras.evidencia_dias && anexos < regras.evidencia_min_anexos;
+  }
+
+  /* Tendencia: as MESMAS contas de src/pmo/tendencia.py. O retrato do dia e {d, n, v, a, p1, atr, r}: projetos ativos,
+   * em Atencao (vermelho), de olho (amarelo), P1, atrasados e em risco. O Power-Up guarda um por dia no armazenamento
+   * do quadro (ver tendencia.js) e compara o de hoje com o de uns tendencia_janela_dias dias atras. */
+  function retrato(itens, regras, agora) {
+    const r = { d: dataLocal(agora, regras), n: 0, v: 0, a: 0, p1: 0, atr: 0, r: 0 };
+    for (const it of itens) {
+      if (!projetoAtivo(it, regras)) continue;
+      r.n++;
+      const s = semaforo(it.alertas || [], regras);
+      if (s === "vermelho") r.v++; else if (s === "amarelo") r.a++;
+      const p = avaliarProjeto(it, regras, agora);
+      if (p.prioridade === "P1") r.p1++;
+      if (p.risco) r.r++;
+      if ((it.alertas || []).some((a) => a.tipo === "atrasado")) r.atr++;
+    }
+    return r;
+  }
+
+  /* Troca o retrato do mesmo dia, junta o novo e poda o que passou de tendencia_dias dias. Ordem por data. */
+  function registrarRetrato(serie, ret, regras) {
+    const por = {};
+    for (const x of serie || []) por[x.d] = x;
+    por[ret.d] = ret;
+    const corte = somaDias(ret.d, -regras.tendencia_dias);
+    return Object.keys(por).sort().filter((d) => d >= corte).map((d) => por[d]);
+  }
+
+  /* null com menos de 2 retratos com projetos; senao {direcao, delta_pp, dias, de, para} (% de projetos em Atencao). */
+  function direcaoTendencia(serie, regras) {
+    const ord = (serie || []).filter((x) => x.n > 0).sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0));
+    if (ord.length < 2) return null;
+    const ultimo = ord[ord.length - 1];
+    const alvo = somaDias(ultimo.d, -regras.tendencia_janela_dias);
+    const antigos = ord.slice(0, -1).filter((x) => x.d <= alvo);
+    const ref = antigos.length ? antigos[antigos.length - 1] : ord[0];
+    const de = 100 * ref.v / ref.n, para = 100 * ultimo.v / ultimo.n, delta = para - de;
+    const rumo = delta <= -regras.tendencia_limite_pp ? "melhorando" : delta >= regras.tendencia_limite_pp ? "piorando" : "estavel";
+    return { direcao: rumo, delta_pp: delta, dias: diasEntre(ref.d, ultimo.d), de, para };
   }
 
   /* Projeto ativo = card aberto, fora das listas ignoradas, nao concluido e nao backlog. */
@@ -408,5 +460,6 @@
   }
 
   return { avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
-    checklistsDeBadges, pontuar, ondeAtuar, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto, cargaDaEquipe, semEvidencia };
+    checklistsDeBadges, pontuar, ondeAtuar, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto, cargaDaEquipe, semEvidencia,
+    retrato, registrarRetrato, direcaoTendencia, dataLocal };
 });

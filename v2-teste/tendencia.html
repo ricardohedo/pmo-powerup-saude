@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tendência do quadro</title>
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./motor.js"></script>
+<script src="./dados.js"></script>
+<script src="./tendencia.js"></script>
+<style>
+ body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
+ .topo{border-radius:6px;padding:12px 14px;margin-bottom:12px;color:#fff}
+ .topo.melhorando{background:#2e7d4f}.topo.piorando{background:#c0392b}.topo.estavel{background:#5e6c84}
+ .topo b{font-size:18px;display:block}
+ .ok{background:#f1f2f4;border-radius:6px;padding:10px 12px}
+ table{border-collapse:collapse;width:100%;margin-top:10px} th,td{padding:5px 8px;border-bottom:1px solid #dfe1e6;text-align:right}
+ th:first-child,td:first-child{text-align:left} th{font-size:12px;color:#5e6c84;font-weight:600}
+ .nota{color:#5e6c84;font-size:12px;margin-top:12px}
+</style>
+</head>
+<body>
+<div id="raiz">Lendo o quadro…</div>
+<script>
+const t = TrelloPowerUp.iframe();
+const dataBr = (iso) => iso.slice(8, 10) + "/" + iso.slice(5, 7);
+const sinal = (n) => (n > 0 ? "+" : n < 0 ? "−" : "") + Math.abs(n).toFixed(0);
+
+function grafico(serie) {            // % de projetos em Atencao por dia (barra simples em SVG)
+  const pts = serie.filter((x) => x.n > 0).map((x) => ({ d: x.d, p: 100 * x.v / x.n }));
+  if (pts.length < 2) return "";
+  const W = 560, H = 90, m = 6, max = Math.max(10, ...pts.map((x) => x.p));
+  const xy = pts.map((x, i) => [m + i * (W - 2 * m) / (pts.length - 1), H - m - (x.p / max) * (H - 2 * m)]);
+  return "<svg viewBox='0 0 " + W + " " + H + "' width='100%' height='" + H + "' role='img' aria-label='% de projetos em Atenção por dia'>" +
+    "<polyline fill='none' stroke='#c0392b' stroke-width='2' points='" + xy.map((p) => p.join(",")).join(" ") + "'/>" +
+    xy.map((p) => "<circle cx='" + p[0] + "' cy='" + p[1] + "' r='3' fill='#c0392b'/>").join("") + "</svg>" +
+    "<div class='nota'>% de projetos em Atenção, de " + dataBr(pts[0].d) + " a " + dataBr(pts[pts.length - 1].d) + " (pico do gráfico: " + max.toFixed(0) + "%).</div>";
+}
+
+t.render(async () => {
+  const regras = await PmoDados.regras();
+  const r = await PmoTendencia.garantirHoje(t);
+  const dir = PmoMotor.direcaoTendencia(r.serie, regras);
+  let h = "";
+  if (!dir) {
+    h = "<div class='ok'><b>Coletando…</b><br>O Power-Up guarda 1 retrato por dia, na primeira vez que alguém abre o quadro. " +
+      "A tendência aparece a partir do 2º dia com retrato. Retratos guardados até agora: " + r.serie.length + ".</div>";
+  } else {
+    const rotulo = regras.rotulo_tendencia[dir.direcao];
+    const seta = dir.direcao === "melhorando" ? "▼" : dir.direcao === "piorando" ? "▲" : "▬";
+    h = "<div class='topo " + dir.direcao + "'><b>" + seta + " " + rotulo + "</b>Projetos em Atenção: " + dir.de.toFixed(0) + "% → " + dir.para.toFixed(0) +
+      "% em " + dir.dias + (dir.dias === 1 ? " dia" : " dias") + " (" + sinal(dir.delta_pp) + " pontos). " +
+      (dir.direcao === "estavel" ? "Variação menor que " + regras.tendencia_limite_pp + " pontos." : "") + "</div>";
+  }
+  h += grafico(r.serie);
+  const ult = r.serie.slice(-10).reverse();
+  if (ult.length) {
+    h += "<table><tr><th>Dia</th><th>Ativos</th><th>Atenção</th><th>De olho</th><th>P1</th><th>Atrasados</th><th>Em risco</th></tr>" +
+      ult.map((x) => "<tr><td>" + dataBr(x.d) + "</td><td>" + x.n + "</td><td>" + x.v + "</td><td>" + x.a + "</td><td>" + x.p1 + "</td><td>" + x.atr + "</td><td>" + x.r + "</td></tr>").join("") + "</table>";
+  }
+  h += "<p class='nota'>" + (r.gravou ? "Retrato de hoje gravado agora. " : "") + (r.erro ? "Não consegui gravar o retrato de hoje (" + r.erro + "). " : "") +
+    "Os retratos ficam no armazenamento do próprio Power-Up neste quadro (até " + regras.tendencia_dias + " dias); só existe retrato nos dias em que alguém abre o quadro. " +
+    "Compara com cerca de " + regras.tendencia_janela_dias + " dias atrás; muda de rumo com variação de " + regras.tendencia_limite_pp + " pontos ou mais. O Power-Up não altera cards, listas nem comentários.</p>";
+  document.getElementById("raiz").innerHTML = h;
+  t.sizeTo("#raiz").catch(() => {});
+});
+</script>
+</body>
+</html>

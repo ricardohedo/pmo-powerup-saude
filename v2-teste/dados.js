@@ -67,5 +67,5 @@ window.PmoDados = (function () {
     return { regras: r, resumo: PmoMotor.resumoQuadro(itens, r, agora), itens, meuId: eu && eu.id, membros: nomesMembros };
   }
 
-  return { regras, cardEmFoco, quadro };
+  return { regras, cardEmFoco, quadro };   // regras() devolve o regras.json (usado tambem pela tendencia)
 })();

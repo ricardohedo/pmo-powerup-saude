@@ -74,7 +74,9 @@ TrelloPowerUp.initialize({
     callback: (t) => t.popup({ title: "Status semanal (rascunho)", url: "./status.html", height: 320 }),
   }],
 
-  "board-buttons": () => [{
+  "board-buttons": (t) => {
+    PmoTendencia.automatico(t);          // guarda o retrato do dia (1a abertura do dia), sem travar nada
+    return [{
     icon: ICONE,
     text: "Onde atuar",
     callback: (t) => t.modal({ title: "Onde atuar", url: "./atuar.html", height: 600 }),
@@ -88,7 +90,12 @@ TrelloPowerUp.initialize({
     callback: (t) => t.modal({ title: "Carga da equipe", url: "./equipe.html", height: 520 }),
   }, {
     icon: ICONE,
+    text: "Tendência",
+    callback: (t) => t.modal({ title: "Tendência do quadro", url: "./tendencia.html", height: 560 }),
+  }, {
+    icon: ICONE,
     text: "Painel PMO",
     callback: (t) => t.modal({ title: "Painel de saúde do quadro", url: "./painel.html", height: 560 }),
-  }],
+  }];
+  },
 });
