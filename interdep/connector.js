@@ -15,9 +15,9 @@ TrelloPowerUp.initialize({
       return [{ text: "Interdep: indisponível", color: "orange" }];
     }
   },
-  "card-back-section": () => ({
+  "card-back-section": (t) => ({
     title: "Interdependência entre áreas", icon: ICONE,
-    content: { type: "iframe", url: "./secao.html", height: 220 },
+    content: { type: "iframe", url: t.signUrl("./secao.html"), height: 220 },
   }),
   "card-buttons": () => [{
     icon: ICONE, text: "Depende de outra área",
