@@ -23,7 +23,7 @@ async function ver() {
     const s = await Interdep.status(id);
     if (!s.vinculos.length) {
       c.innerHTML = "<small>Nenhuma dependência de outra área. Use o botão <b>Depende de outra área</b>.</small>";
-      return t.sizeTo("body");
+      return t.sizeTo(document.getElementById("c").offsetHeight + 24);
     }
     c.innerHTML = s.vinculos.map((v) => {
       const g = Interdep.sinal(v), e = Interdep.esc;
@@ -44,7 +44,7 @@ async function ver() {
   } catch (e) {
     c.innerHTML = "<small>Não consegui ler o status: " + Interdep.esc(e.message) + "</small>";
   }
-  t.sizeTo("body");
+  t.sizeTo(document.getElementById("c").offsetHeight + 24);
 }
 t.render(ver);
 </script>
