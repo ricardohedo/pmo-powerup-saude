@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Preciso de ajuda</title>
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./motor.js?v=202611051157"></script>
+<script src="./dados.js?v=202611051157"></script>
+<style>
+ body{font:14px/1.45 system-ui,sans-serif;margin:0;padding:8px 10px;color:#172b4d}
+ h3{margin:4px 0 6px;font-size:15px}
+ .tag{display:inline-block;padding:1px 9px;border-radius:10px;color:#fff;font-weight:600;margin-right:6px}
+ .tag.P1{background:#c0392b}.tag.P2{background:#d9730d}.tag.P3{background:#b8860b}.tag.P4{background:#2e7d4f}.tag.nada{background:#2e7d4f}
+ .caixa{border-left:4px solid #c0392b;background:#f7f8f9;border-radius:3px;padding:6px 8px;margin:0 0 6px}
+ .caixa.risco{border-left-color:#b8860b;background:#fff7e0}
+ .caixa small{display:block;color:#5e6c84}
+ .fazer{margin-top:3px}
+ .nota{color:#5e6c84;font-size:12px;margin:8px 0 0}
+ a.pedir{display:inline-block;margin-top:6px;padding:5px 10px;border:1px solid #c1c7d0;border-radius:4px;color:#172b4d;text-decoration:none}
+</style>
+</head>
+<body>
+<div id="raiz">Lendo o card…</div>
+<script>
+const t = TrelloPowerUp.iframe();
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+t.render(async () => {
+  const d = await PmoDados.cardEmFoco(t), r = d.regras;
+  const pct = PmoMotor.progressoChecklists(d.checklists);
+  const e = PmoMotor.explicar(d.alertas, pct, d.diasPrazo, r);
+  let h = "<h3>Por que meu card está assim?</h3>";
+  h += "<div class='caixa' style='border-left-color:#2e7d4f'><span class='tag " + (e.prioridade || "nada") + "'>" +
+    (e.prioridade ? e.prioridade + " " + esc(r.rotulo_prioridade[e.prioridade]) : "Sem prioridade") + "</span>" + esc(e.porquePrioridade) +
+    (e.prioridade ? "<div class='fazer'>👉 " + esc(r.fazer_prioridade[e.prioridade]) + "</div>" : "") + "</div>";
+  if (e.sinais.length) {
+    h += "<h3>O que o PMO viu neste card</h3>";
+    h += e.sinais.map((s) => "<div class='caixa'><b>" + esc(s.frase) + "</b><small>Regra: " + esc(s.regra) + "</small><div class='fazer'>👉 " + esc(s.fazer) + "</div></div>").join("");
+  }
+  if (e.risco) h += "<div class='caixa risco'><b>⏳ " + esc(r.rotulo_risco[e.risco.nivel]) + "</b><small>" + esc(e.risco.texto) + "</small></div>";
+  const assunto = "Dúvida sobre o card: " + d.card.name;
+  const corpo = "Fase: " + d.lista + "\nPrioridade: " + (e.prioridade || "nenhuma") + "\nSinais: " + (e.sinais.map((s) => s.frase).join("; ") || "nenhum") + "\n\nMinha dúvida: ";
+  h += "<a class='pedir' target='_blank' href='mailto:?subject=" + encodeURIComponent(assunto) + "&body=" + encodeURIComponent(corpo) + "'>Ainda com dúvida? Pedir ajuda ao PMO</a>";
+  h += "<p class='nota'>Explicação gerada só pelas regras do PMO, sem IA: a mesma situação dá sempre a mesma resposta. Só leitura: nada no card é alterado.</p>";
+  document.getElementById("raiz").innerHTML = h;
+  t.sizeTo("#raiz").catch(() => {});
+  setTimeout(() => t.sizeTo("#raiz").catch(() => {}), 400);
+});
+</script>
+</body>
+</html>

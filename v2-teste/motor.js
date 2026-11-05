@@ -472,7 +472,52 @@
     return L.join("\n");
   }
 
-  return { avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
+  /* AJUDA AO GESTOR (sem IA): explica, com o numero real e o limite da regra, por que o card esta assim.
+   * So texto montado de alertas + regras.json: mesma entrada = mesma resposta. Nao decide nada, so explica. */
+  function dias(n) { return n + (n === 1 ? " dia" : " dias"); }
+  function regraDoAlerta(tipo, regras) {
+    switch (tipo) {
+      case "atrasado": return "O 'Fim planejado' já passou. Com " + dias(regras.painel_atraso_dias) + " de atraso ou mais o projeto vira P1 (Crítico).";
+      case "atraso_oculto": return "O card não está atrasado, mas há itens de checklist com prazo vencido e ainda abertos (atraso escondido).";
+      case "sem_interacao": return "Há " + dias(regras.dias_sem_interacao) + " ou mais sem interação (comentário ou movimentação) em projeto em andamento.";
+      case "prazo_proximo": return "O 'Fim planejado' está a " + dias(regras.dias_prazo_proximo) + " ou menos. Se faltar " + dias(regras.prioridade_p1_prazo_dias) + " ou menos e o checklist estiver abaixo de " + regras.painel_prazo_pct_max + "%, vira P1.";
+      case "quase_pronto": return "O checklist chegou a " + regras.progresso_min_quase_pronto + "% ou mais, mas o card ainda não está em Concluídos.";
+      case "sem_prazo": return "Projeto em andamento sem o 'Fim planejado' preenchido.";
+      case "sem_responsavel": return "Projeto em andamento sem nenhum membro atribuído ao card.";
+      case "cadastro_incompleto": return "Campos obrigatórios vazios: " + regras.campos_obrigatorios.join(", ") + " (e a descrição com as seções esperadas).";
+      case "checklist_pendente_concluido": return "O card está em Concluídos, mas ainda tem itens de checklist abertos.";
+      case "em_revisao_sem_comentario": return "O card está em Em Revisão sem nenhum comentário explicando o que falta.";
+      case "sem_comentario_pausado": return "O card tem a etiqueta Pausado/Impedimento e nenhum comentário explicando o motivo.";
+      default: return "";
+    }
+  }
+
+  /* Por que o card tem esta prioridade (espelha prioridade(): P1 por atraso, P1 por prazo curto, senao o gatilho mais grave). */
+  function porquePrioridade(alertas, pct, regras) {
+    const p = prioridade(alertas, pct, regras);
+    if (!p) return { prioridade: null, texto: "Sem prioridade: nenhum sinal que peça ação neste card agora." };
+    const por = {};
+    for (const a of alertas) por[a.tipo] = a.valor;
+    if (p === "P1" && Number.isInteger(por.atrasado) && por.atrasado >= regras.painel_atraso_dias)
+      return { prioridade: p, texto: "P1 porque o projeto está com " + dias(por.atrasado) + " de atraso (a partir de " + dias(regras.painel_atraso_dias) + " é Crítico)." };
+    if (p === "P1")
+      return { prioridade: p, texto: "P1 porque o prazo vence em " + dias(por.prazo_proximo) + " e o checklist " + (pct === null ? "não existe" : "está em " + pct + "%") + " (abaixo de " + regras.painel_prazo_pct_max + "%)." };
+    const causas = Object.keys(por).filter((t) => regras.prioridade_gatilhos[t] === p).sort((a, b) => regras.ordem.indexOf(a) - regras.ordem.indexOf(b));
+    return { prioridade: p, texto: p + " porque: " + causas.map((t) => frase({ tipo: t, valor: por[t] })).join("; ") + "." };
+  }
+
+  /* Tudo que a tela de ajuda mostra: prioridade, uma linha por sinal (frase, regra, o que fazer) e o risco. */
+  function explicar(alertas, pct, diasPrazo, regras) {
+    const prio = porquePrioridade(alertas, pct, regras);
+    const risco = riscoAntecipado(alertas, diasPrazo, pct, regras);
+    return {
+      prioridade: prio.prioridade, porquePrioridade: prio.texto,
+      sinais: ordenar(alertas, regras).map((a) => ({ tipo: a.tipo, frase: frase(a), regra: regraDoAlerta(a.tipo, regras), fazer: regras.acao[a.tipo] || "" })),
+      risco: risco ? { nivel: risco, texto: "Prazo em " + dias(diasPrazo) + " e " + (pct === null ? "sem checklist" : pct + "% do checklist") + " (alerta quando faltam " + dias(regras.ceo_dias_prazo_amarelo) + " ou menos e menos de " + regras.ceo_pct_prazo_amarelo + "%). " + regras.fazer_risco[risco] } : null,
+    };
+  }
+
+  return { explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
     checklistsDeBadges, pontuar, ondeAtuar, abaInicialMeus, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto, cargaDaEquipe, semEvidencia,
     retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal };
 });

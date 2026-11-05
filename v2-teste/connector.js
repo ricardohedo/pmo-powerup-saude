@@ -70,6 +70,10 @@ TrelloPowerUp.initialize({
 
   "card-buttons": () => [{
     icon: ICONE,
+    text: "Preciso de ajuda",
+    callback: (t) => t.popup({ title: "Preciso de ajuda", url: "./ajuda.html", height: 420 }),
+  }, {
+    icon: ICONE,
     text: "Status semanal",
     callback: (t) => t.popup({ title: "Status semanal (rascunho)", url: "./status.html", height: 320 }),
   }],
