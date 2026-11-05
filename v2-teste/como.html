@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Como o PMO mede os projetos</title>
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./motor.js?v=202611051248"></script>
+<script src="./dados.js?v=202611051248"></script>
+<style>
+ body{font:14px/1.5 system-ui,sans-serif;margin:0;padding:14px 18px;color:#172b4d;max-width:760px}
+ h2{margin:0 0 4px;font-size:20px} h3{margin:20px 0 6px;font-size:15px}
+ .sub{color:#5e6c84;margin:0 0 10px}
+ .bloco{border-left:4px solid #c1c7d0;background:#f7f8f9;border-radius:3px;padding:7px 10px;margin:0 0 7px}
+ .bloco.vermelho{border-left-color:#c0392b}.bloco.amarelo{border-left-color:#b8860b}.bloco.verde{border-left-color:#2e7d4f}
+ .bloco small{display:block;color:#5e6c84}
+ .tag{display:inline-block;padding:0 8px;border-radius:9px;color:#fff;font-size:12px;font-weight:600;margin-right:6px}
+ .tag.P1{background:#c0392b}.tag.P2{background:#d9730d}.tag.P3{background:#b8860b}.tag.P4{background:#2e7d4f}
+ .nota{color:#5e6c84;font-size:12px}
+</style>
+</head>
+<body>
+<div id="raiz">Lendo as regras…</div>
+<script>
+try { TrelloPowerUp.iframe(); } catch (e) { /* aberto fora do Trello: segue como pagina normal */ }
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const dias = (n) => n + (n === 1 ? " dia" : " dias");
+PmoDados.regras().then((r) => {
+  const tipos = r.ordem;
+  const grupoDe = (p) => Object.keys(r.prioridade_gatilhos).filter((t) => r.prioridade_gatilhos[t] === p);
+  let h = "<h2>Como o PMO mede os projetos</h2><p class='sub'>As mesmas regras valem aqui no Trello e nos avisos do Chat. Nenhuma é decidida por inteligência artificial: a mesma situação dá sempre o mesmo resultado.</p>";
+
+  h += "<h3>Prioridade do projeto (P1 a P4)</h3>";
+  h += "<div class='bloco'><span class='tag P1'>P1 " + esc(r.rotulo_prioridade.P1) + "</span> " + dias(r.painel_atraso_dias) + " ou mais de atraso, ou prazo em " + dias(r.prioridade_p1_prazo_dias) + " ou menos com checklist abaixo de " + r.painel_prazo_pct_max + "%.<small>" + esc(r.fazer_prioridade.P1) + "</small></div>";
+  for (const p of ["P2", "P3", "P4"]) {
+    h += "<div class='bloco'><span class='tag " + p + "'>" + p + " " + esc(r.rotulo_prioridade[p]) + "</span> " +
+      grupoDe(p).filter((t) => tipos.includes(t)).map((t) => esc(r.grupos[t].replace(/^\S+\s/, ""))).join("; ") + "<small>" + esc(r.fazer_prioridade[p]) + "</small></div>";
+  }
+
+  h += "<h3>Cada sinal: quando aparece e como resolver</h3>";
+  for (const t of tipos) {
+    h += "<div class='bloco " + (r.nivel[t] || "") + "'><b>" + esc(r.grupos[t] || t) + "</b><small>Quando: " + esc(PmoMotor.regraDoAlerta(t, r)) + "</small><small>👉 Para resolver: " + esc(r.acao[t] || "") + "</small></div>";
+  }
+
+  h += "<h3>Risco antecipado</h3><div class='bloco amarelo'>Aparece quando o prazo está a " + dias(r.ceo_dias_prazo_amarelo) + " ou menos e o checklist está abaixo de " + r.ceo_pct_prazo_amarelo + "%. Fica \"alto\" quando há também " + r.risco_agravantes_para_alto + " ou mais sinal de parada (" + r.risco_agravantes.map((t) => esc((r.grupos[t] || t).replace(/^\S+\s/, ""))).join(", ") + ").</div>";
+
+  h += "<h3>Pausado e Impedimento</h3><div class='bloco'>São etiquetas <b>manuais</b> (" + r.labels_pausado.map(esc).join(", ") + "). Quem pausa precisa deixar um comentário no card dizendo o motivo.</div>";
+
+  h += "<h3>Avisos antes de acontecer</h3><div class='bloco'>No card, a seção \"Saúde do projeto\" mostra a contagem regressiva quando faltam " + dias(r.aviso_antecipado_dias) + " ou menos para o card cair num alerta ou virar P1, e o que falta para mover o card para a próxima fase.</div>";
+
+  h += "<p class='nota'>Só leitura: o Power-Up explica a situação, não altera nada nos cards. Esta página é gerada do arquivo de regras do PMO e acompanha qualquer mudança nele.</p>";
+  document.getElementById("raiz").innerHTML = h;
+}).catch((e) => { document.getElementById("raiz").textContent = "Não consegui ler as regras: " + ((e && e.message) || e); });
+</script>
+</body>
+</html>

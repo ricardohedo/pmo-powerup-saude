@@ -6,8 +6,8 @@
 <title>Saúde do projeto</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611051239"></script>
-<script src="./dados.js?v=202611051239"></script>
+<script src="./motor.js?v=202611051248"></script>
+<script src="./dados.js?v=202611051248"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;margin:0;padding:4px 2px;color:#172b4d}
  .topo{display:flex;align-items:center;gap:8px;margin-bottom:8px}
@@ -47,6 +47,10 @@ t.render(async () => {
   if (d.alertas.length) {
     h += "<ul>" + d.alertas.map((a) => "<li class='" + r.nivel[a.tipo] + "'><b>" + esc(PmoMotor.frase(a)) + "</b><small>👉 " + esc(r.acao[a.tipo] || "") + "</small></li>").join("") + "</ul>";
   }
+  if (d.antecipacoes && d.antecipacoes.length) h += "<div class='risco'><b>⏰ Antes que aconteça</b>" + d.antecipacoes.map((x) => "<small>" + esc(x.texto) + "</small>").join("") + "</div>";
+  if (d.prontidao) h += d.prontidao.faltam.length
+    ? "<div class='risco'><b>🚦 Para mover para " + esc(d.prontidao.proxima) + " falta:</b>" + d.prontidao.faltam.map((x) => "<small>• " + esc(x.frase) + " — " + esc(x.fazer) + "</small>").join("") + "</div>"
+    : "<p class='nota'>✅ Pronto para mover para " + esc(d.prontidao.proxima) + " (nenhuma pendência pelas regras do PMO).</p>";
   h += "<p class='nota'>Fase: " + esc(d.lista) + ". Só leitura: o Power-Up mostra, não altera o card.</p>";
   document.getElementById("raiz").innerHTML = h;
   t.sizeTo("#raiz").catch(() => {});

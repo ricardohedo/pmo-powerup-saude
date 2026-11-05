@@ -537,7 +537,56 @@
     };
   }
 
-  return { indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
+  /* ANTES QUE ACONTECA (sem IA): quanto falta para o card cair num alerta/prioridade, se ninguem mexer.
+   * So mostra quando faltam ate aviso_antecipado_dias (pmo.toml) para cair no alerta (evita ruido tipo "avisa em 60 dias"). Mesma regra do avaliarCard (nao inventa limite).
+   * Retorna [{tipo, dias, texto}] do mais urgente ao menos. */
+  function antecipar(card, listaNome, alertas, camposDef, agora, regras) {
+    if (card.closed) return [];
+    const lista = (listaNome || "").trim().toLowerCase();
+    if (regras.listas_ignorar.some((t) => lista.includes(t)) || regras.listas_concluido.includes(lista) || lista === regras.motor.lista_backlog) return [];
+    const tem = (tipo) => alertas.find((a) => a.tipo === tipo);
+    const janela = regras.aviso_antecipado_dias, out = [];
+    const fasesOk = !regras.sem_interacao_fases.length || regras.sem_interacao_fases.includes(lista);
+    if (card.dateLastActivity && fasesOk && !tem("sem_interacao")) {
+      const falta = regras.dias_sem_interacao - diasDesde(card.dateLastActivity, agora);
+      if (falta > 0 && falta <= janela) out.push({ tipo: "sem_interacao", dias: falta, texto: "Entra em alerta de 'sem interação' em " + dias(falta) + " se ninguém mexer no card (limite: " + dias(regras.dias_sem_interacao) + ")." });
+    }
+    const fim = valoresCustomfield(card, camposDef)["Fim planejado"];
+    if (fim && !tem("prazo_proximo") && !tem("atrasado")) {
+      const d = Math.floor((iso(fim) - agora) / DIA_MS), falta = d - regras.dias_prazo_proximo;
+      if (d > regras.dias_prazo_proximo && falta <= janela) out.push({ tipo: "prazo_proximo", dias: falta, texto: "Entra em alerta de 'prazo próximo' em " + dias(falta) + " (o prazo é daqui a " + dias(d) + "; o aviso começa a " + dias(regras.dias_prazo_proximo) + " do prazo)." });
+    }
+    const atr = tem("atrasado");
+    if (atr && Number.isInteger(atr.valor) && atr.valor < regras.painel_atraso_dias) {
+      const falta = regras.painel_atraso_dias - atr.valor;
+      if (falta <= janela) out.push({ tipo: "atrasado", dias: falta, texto: "Vira P1 (Crítico) em " + dias(falta) + " se o atraso continuar (hoje " + dias(atr.valor) + "; limite: " + dias(regras.painel_atraso_dias) + ")." });
+    }
+    return out.sort((a, b) => a.dias - b.dias);
+  }
+
+  /* PRONTIDAO para a proxima fase (sem IA): reavalia o card COM O MOTOR como se ja estivesse na proxima lista e devolve o que
+   * apareceria como pendencia. Fases: Backlog > Priorizados > Em Execucao > Em Revisao > Concluidos. Sem proxima fase = null.
+   * Ignora o que nao depende da fase (atrasado, prazo proximo, sem interacao, quase pronto). */
+  const NOME_FASE = { execucao: "Em Execução", revisao: "Em Revisão", concluidos: "Concluídos" };
+  function prontidao(card, listaNome, camposDef, checklists, agora, regras) {
+    if (card.closed) return null;
+    const lista = (listaNome || "").trim().toLowerCase();
+    if (regras.listas_ignorar.some((t) => lista.includes(t))) return null;
+    const m = regras.motor, fe = regras.fases_execucao;
+    let prox = null, rotulo = null;
+    if (lista === m.lista_backlog) { prox = fe[0]; rotulo = "Priorizados"; }
+    else if (lista === fe[0]) { prox = m.lista_execucao; rotulo = NOME_FASE.execucao; }
+    else if (lista === m.lista_execucao) { prox = m.lista_revisao; rotulo = NOME_FASE.revisao; }
+    else if (lista === m.lista_revisao) { prox = regras.listas_concluido[1] || regras.listas_concluido[0]; rotulo = NOME_FASE.concluidos; }
+    if (!prox) return null;
+    const naoDependeDaFase = new Set(["atrasado", "prazo_proximo", "sem_interacao", "quase_pronto"]);
+    const faltam = ordenar(avaliarCard(card, prox, camposDef, checklists, agora, regras), regras)
+      .filter((a) => !naoDependeDaFase.has(a.tipo))
+      .map((a) => ({ tipo: a.tipo, frase: frase(a), fazer: regras.acao[a.tipo] || "" }));
+    return { proxima: rotulo, faltam };
+  }
+
+  return { antecipar, prontidao, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
     checklistsDeBadges, pontuar, ondeAtuar, abaInicialMeus, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto, cargaDaEquipe, semEvidencia,
     retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal };
 });

@@ -13,6 +13,7 @@
     "sem_prazo": "Preencha 'Início planejado' e 'Fim planejado' no card.",
     "sem_responsavel": "Adicione no card quem é o responsável."
   },
+  "aviso_antecipado_dias": 3,
   "bonus_prioridade": {
     "Alta": 30,
     "Máxima": 50,

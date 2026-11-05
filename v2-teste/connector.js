@@ -82,6 +82,7 @@ TrelloPowerUp.initialize({
       ...(f.carga_equipe ? [botao("Carga da equipe", "Carga da equipe", "./equipe.html", 520)] : []),
       ...(f.tendencia ? [botao("Tendência", "Tendência do quadro", "./tendencia.html", 560)] : []),
       botao("Painel PMO", "Painel de saúde do quadro", "./painel.html", 560),
+      botao("Como sou medido", "Como o PMO mede os projetos", "./como.html", 600),
     ];
   },
 });

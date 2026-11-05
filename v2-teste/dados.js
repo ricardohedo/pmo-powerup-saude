@@ -3,7 +3,7 @@
 window.PmoDados = (function () {
   let regrasP = null;
   function regras() {
-    if (!regrasP) regrasP = fetch("./regras.json?v=202611051239").then((r) => r.json());
+    if (!regrasP) regrasP = fetch("./regras.json?v=202611051248").then((r) => r.json());
     return regrasP;
   }
 
@@ -49,9 +49,12 @@ window.PmoDados = (function () {
     const prio = PmoMotor.avaliarProjeto(itemFoco, r, new Date());
     // semEvidencia e uma funcao opcional (liga/desliga no pmo.toml, [powerup_funcoes])
     const semEvidencia = r.funcoes.evidencia && PmoMotor.semEvidencia(itemFoco, r, new Date());
+    const agora = new Date();
     return { card: card(c), lista: lista.name, checklists: ck, alertas, regras: r, nivel: PmoMotor.semaforo(alertas, r),
       valores, pontos: PmoMotor.pontuar(alertas, valores, r), prioridade: prio.prioridade, risco: prio.risco,
-      diasPrazo: prio.dias, semEvidencia };
+      diasPrazo: prio.dias, semEvidencia,
+      antecipacoes: PmoMotor.antecipar(card(c), lista.name, alertas, cd, agora, r),          // "antes que aconteca"
+      prontidao: PmoMotor.prontidao(card(c), lista.name, cd, ck, agora, r) };                // "para mover para a proxima fase falta"
   }
 
   async function quadro(t) {
