@@ -190,6 +190,7 @@
   "tendencia_dias": 30,
   "tendencia_janela_dias": 7,
   "tendencia_limite_pp": 5,
+  "tendencia_max_caracteres": 3500,
   "teto_pontos_atraso": 60,
   "top": 3
 }

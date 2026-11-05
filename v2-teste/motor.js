@@ -280,13 +280,20 @@
     return r;
   }
 
-  /* Troca o retrato do mesmo dia, junta o novo e poda o que passou de tendencia_dias dias. Ordem por data. */
+  /* Caracteres que a serie ocupa no armazenamento do Power-Up: o conector grava JSON.stringify(serie) como TEXTO e o
+   * Trello serializa de novo (as aspas ganham barra), entao medimos a codificacao dupla. Igual a tendencia.tamanho_guardado. */
+  function tamanhoGuardado(serie) { return JSON.stringify(JSON.stringify(serie)).length; }
+
+  /* Troca o retrato do mesmo dia, junta o novo e poda o que passou de tendencia_dias dias. Ordem por data.
+   * Se ainda passar de tendencia_max_caracteres (o Trello recusa 4096 ou mais), descarta os dias mais antigos. */
   function registrarRetrato(serie, ret, regras) {
     const por = {};
     for (const x of serie || []) por[x.d] = x;
     por[ret.d] = ret;
     const corte = somaDias(ret.d, -regras.tendencia_dias);
-    return Object.keys(por).sort().filter((d) => d >= corte).map((d) => por[d]);
+    const guardada = Object.keys(por).sort().filter((d) => d >= corte).map((d) => por[d]);
+    while (guardada.length > 1 && tamanhoGuardado(guardada) > regras.tendencia_max_caracteres) guardada.shift();
+    return guardada;
   }
 
   /* null com menos de 2 retratos com projetos; senao {direcao, delta_pp, dias, de, para} (% de projetos em Atencao). */
@@ -364,6 +371,12 @@
     const topo = regras.top, lim = regras.limite_lista_recolhida;
     return { comece: pedem.slice(0, topo), depois: pedem.slice(topo, lim), resto: Math.max(0, pedem.length - lim),
       vitorias, emRisco, total: meus.length, semAtencao: meus.length - pedem.length };
+  }
+
+  /* Qual aba "Minhas acoes" abre primeiro: "so os meus" quando a pessoa esta logada e e membro de ao menos um card do quadro;
+   * senao "todos" (quem so acompanha o quadro, ou nao esta logado, ve o quadro inteiro em vez de uma tela vazia). */
+  function abaInicialMeus(itens, meuId) {
+    return !!meuId && (itens || []).some((i) => ((i.card && i.card.idMembers) || []).includes(meuId));
   }
 
   // Data local (fuso do PMO, Brasilia) como "AAAA-MM-DD"; dias de calendario, igual ao Plano (plano.projetos_do_board).
@@ -460,6 +473,6 @@
   }
 
   return { avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
-    checklistsDeBadges, pontuar, ondeAtuar, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto, cargaDaEquipe, semEvidencia,
-    retrato, registrarRetrato, direcaoTendencia, dataLocal };
+    checklistsDeBadges, pontuar, ondeAtuar, abaInicialMeus, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto, cargaDaEquipe, semEvidencia,
+    retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal };
 });

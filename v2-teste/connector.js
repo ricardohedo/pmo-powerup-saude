@@ -79,7 +79,7 @@ TrelloPowerUp.initialize({
     const f = (await PmoDados.regras()).funcoes;   // funcoes opcionais: ligadas/desligadas no pmo.toml (regras.json)
     const botao = (text, title, url, height) => ({ icon: ICONE, text, callback: (tt) => tt.modal({ title, url, height }) });
     return [
-      botao("Onde atuar", "Onde atuar", "./atuar.html", 600),
+      botao("Minhas ações", "Minhas ações: onde atuar primeiro", "./atuar.html", 600),
       botao("Linha do tempo", "Linha do tempo de entregas", "./linha.html", 600),
       ...(f.carga_equipe ? [botao("Carga da equipe", "Carga da equipe", "./equipe.html", 520)] : []),
       ...(f.tendencia ? [botao("Tendência", "Tendência do quadro", "./tendencia.html", 560)] : []),

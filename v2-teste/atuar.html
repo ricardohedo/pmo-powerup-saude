@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Onde atuar</title>
+<title>Minhas ações</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js"></script>
-<script src="./dados.js"></script>
+<script src="./motor.js?v=202611051052"></script>
+<script src="./dados.js?v=202611051052"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  .abas{display:flex;gap:6px;margin-bottom:12px}
@@ -30,7 +30,7 @@
 <script>
 const t = TrelloPowerUp.iframe();
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-let dados = null, soMeus = false;
+let dados = null, soMeus = false, primeiraVez = true;
 
 function cartao(x, i, destaque) {
   const lado = destaque ? "t1" : "t2";
@@ -42,9 +42,13 @@ function cartao(x, i, destaque) {
 
 function desenha() {
   const r = PmoMotor.ondeAtuar(dados.itens, dados.regras, soMeus ? dados.meuId : null);
-  let h = "";
+  const semLogin = soMeus && !dados.meuId;        // sem login o motor nao sabe quem e "eu": mostra o quadro inteiro e avisa
+  const pedem = r.comece.length + r.depois.length + r.resto;
+  let h = semLogin ? "<p class='nota'>Entre no Trello para ver só os seus projetos; abaixo, o quadro inteiro.</p>" : "";
+  if (r.total) h += "<p><b>" + (soMeus && !semLogin ? "Seus projetos" : "Todos os projetos do quadro") + ":</b> " + pedem +
+    " pedindo ação, de " + r.total + ".</p>";
   if (!r.total) h = "<p class='nota'>" + (soMeus ? "Você não é membro de nenhum card aberto neste quadro." : "Nenhum card aberto.") + "</p>";
-  else if (!r.comece.length) h = "<div class='ok'>🎉 Nada pedindo ação agora em " + r.total + " projetos.</div>";
+  else if (!r.comece.length) h += "<div class='ok'>🎉 Nada pedindo ação agora em " + r.total + " projetos.</div>";
   else {
     h += "<h3>Comece por estes " + r.comece.length + "</h3>" + r.comece.map((x, i) => cartao(x, i, true)).join("");
     if (r.depois.length) h += "<h3>Depois</h3>" + r.depois.map((x, i) => cartao(x, i + r.comece.length, false)).join("");
@@ -63,7 +67,11 @@ function desenha() {
   t.sizeTo("body");
 }
 
-t.render(async () => { dados = await PmoDados.quadro(t); desenha(); });
+t.render(async () => {
+  dados = await PmoDados.quadro(t);
+  if (primeiraVez) { soMeus = PmoMotor.abaInicialMeus(dados.itens, dados.meuId); primeiraVez = false; }   // depois disso vale a escolha da pessoa
+  desenha();
+});
 document.getElementById("todos").onclick = () => { soMeus = false; if (dados) desenha(); };
 document.getElementById("meus").onclick = () => { soMeus = true; if (dados) desenha(); };
 </script>

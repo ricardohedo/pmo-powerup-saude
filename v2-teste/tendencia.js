@@ -3,7 +3,9 @@
  * ESTE e o unico arquivo do Power-Up que escreve, e SO no armazenamento do Power-Up neste quadro (escopo "board",
  * visibilidade "shared", uma unica chave). Nunca escreve em cards, listas, etiquetas, membros nem comentarios do Trello. O teste
  * tests/test_powerup.py barra qualquer outro uso de escrita e exige exatamente este formato.
- * O retrato e pequeno ({d, n, v, a, p1, atr, r}, no maximo tendencia_dias dias): cerca de 2 KB.
+ * O retrato e pequeno ({d, n, v, a, p1, atr, r}, no maximo tendencia_dias dias): cerca de 2 KB. O Trello recusa 4096 caracteres
+ * ou mais por quadro; PmoMotor.registrarRetrato descarta os dias mais antigos se passar de tendencia_max_caracteres (pmo.toml),
+ * e um teste prova que o pior caso de tendencia_dias dias cabe.
  * Quando grava: na 1a abertura do quadro de cada dia (por qualquer pessoa com o Power-Up ligado) ou ao abrir "Tendencia".
  * Falha de escrita (ex.: quem abre so observa o quadro, ou o limite de armazenamento) nunca quebra o Power-Up. */
 window.PmoTendencia = (function () {
