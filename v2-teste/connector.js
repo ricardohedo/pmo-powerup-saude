@@ -72,12 +72,23 @@ TrelloPowerUp.initialize({
     callback: (t) => t.popup({ title: "Status semanal (rascunho)", url: "./status.html", height: 320 }),
   }],
 
+  // Menu da lista: "Ordenar por prioridade (P1-P4)". Funcao opcional (pmo.toml); reordena os cards na lista de quem clica.
+  "list-sorters": async (t) => {
+    const f = (await PmoDados.regras()).funcoes;
+    if (!f.ordenar_prioridade) return [];
+    return [{
+      text: "Prioridade PMO (P1 a P4)",
+      callback: async (tt, opts) => ({ sortedIds: await PmoDados.ordenarLista(tt, opts.cards) }),
+    }];
+  },
+
   "board-buttons": async (t) => {
     PmoTendencia.automatico(t);          // guarda o retrato do dia (so se a Tendencia estiver ligada), sem travar nada
     const f = (await PmoDados.regras()).funcoes;   // funcoes opcionais: ligadas/desligadas no pmo.toml (regras.json)
     const botao = (text, title, url, height) => ({ icon: ICONE, text, callback: (tt) => tt.modal({ title, url, height }) });
     return [
       botao("Minhas ações", "Minhas ações: onde atuar primeiro", "./atuar.html", 600),
+      botao("Atrasadas e a vencer", "Atrasadas e a vencer", "./prazos.html", 560),
       botao("Linha do tempo", "Linha do tempo de entregas", "./linha.html", 600),
       ...(f.carga_equipe ? [botao("Carga da equipe", "Carga da equipe", "./equipe.html", 520)] : []),
       ...(f.tendencia ? [botao("Tendência", "Tendência do quadro", "./tendencia.html", 560)] : []),

@@ -63,6 +63,8 @@
   "funcoes": {
     "carga_equipe": true,
     "evidencia": true,
+    "linha_de_base": true,
+    "ordenar_prioridade": true,
     "tendencia": true
   },
   "fuso_horas": -3,

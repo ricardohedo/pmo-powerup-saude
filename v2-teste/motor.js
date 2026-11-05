@@ -568,6 +568,56 @@
    * apareceria como pendencia. Fases: Backlog > Priorizados > Em Execucao > Em Revisao > Concluidos. Sem proxima fase = null.
    * Ignora o que nao depende da fase (atrasado, prazo proximo, sem interacao, quase pronto). */
   const NOME_FASE = { execucao: "Em Execução", revisao: "Em Revisão", concluidos: "Concluídos" };
+  /* ORDENAR LISTA por prioridade (list-sorters): P1 > P2 > P3 > P4 > sem prioridade; empate = pontuacao maior primeiro,
+   * depois a ordem atual. ids = cards da lista na ordem atual; itens = {card, alertas, valores, prio}. Devolve so os ids. */
+  function ordenarPorPrioridade(ids, itens, regras) {
+    const por = new Map(itens.map((i) => [i.card.id, i]));
+    const peso = (id) => {
+      const i = por.get(id);
+      if (!i) return [9, 0];
+      const p = i.prio && i.prio.prioridade;
+      return [p ? Number(p.slice(1)) : 5, -pontuar(i.alertas, i.valores, regras)];
+    };
+    return ids.map((id, pos) => ({ id, pos, k: peso(id) }))
+      .sort((a, b) => a.k[0] - b.k[0] || a.k[1] - b.k[1] || a.pos - b.pos).map((x) => x.id);
+  }
+  /* LINHA DE BASE: base = {e, i, f} (data do congelamento e Inicio/Fim planejados originais, AAAA-MM-DD). Compara com o
+   * Fim planejado de hoje. Sem base = null. dias > 0: escorregou; < 0: adiantou; 0: igual ao plano original. */
+  function desvioPlano(base, valores, regras) {
+    if (!base || !base.f) return null;
+    const br = (d) => d.slice(8, 10) + "/" + d.slice(5, 7);
+    const atual = valores["Fim planejado"] ? dataLocal(new Date(valores["Fim planejado"]), regras) : null;
+    if (!atual) return { dias: null, base: base.f, atual: null, texto: "O 'Fim planejado' saiu do card (o plano original previa " + br(base.f) + ")." };
+    const dias = diasEntre(base.f, atual);
+    const texto = dias === 0 ? "No plano: fim previsto em " + br(atual) + ", igual ao original."
+      : dias > 0 ? "Escorregou " + dias + (dias === 1 ? " dia" : " dias") + ": o plano original previa " + br(base.f) + " e hoje está em " + br(atual) + "."
+        : "Adiantou " + (-dias) + (dias === -1 ? " dia" : " dias") + ": o plano original previa " + br(base.f) + " e hoje está em " + br(atual) + ".";
+    return { dias, base: base.f, atual, texto };
+  }
+
+  /* ATRASADAS / A VENCER: usa os alertas que o motor ja calculou. Atrasadas: mais dias de atraso primeiro; a vencer: mais
+   * perto primeiro. "atrasado" valor 0 = vence hoje (conta como atrasada, como na regra). */
+  function listaPrazos(itens) {
+    const atrasadas = [], aVencer = [];
+    for (const i of itens) {
+      const a = i.alertas.find((x) => x.tipo === "atrasado"), p = i.alertas.find((x) => x.tipo === "prazo_proximo");
+      const base = { nome: i.card.name, url: i.card.url, lista: i.listaNome, prioridade: i.prio ? i.prio.prioridade : null };
+      if (a) atrasadas.push({ ...base, dias: a.valor });
+      else if (p) aVencer.push({ ...base, dias: p.valor });
+    }
+    atrasadas.sort((x, y) => y.dias - x.dias || x.nome.localeCompare(y.nome));
+    aVencer.sort((x, y) => x.dias - y.dias || x.nome.localeCompare(y.nome));
+    return { atrasadas, aVencer };
+  }
+  // "sem prazo" exige os DOIS campos; diz so o que falta de fato (o texto generico cita os dois mesmo faltando um).
+  function fazerEspecifico(tipo, card, camposDef, regras) {
+    if (tipo === "sem_prazo") {
+      const v = valoresCustomfield(card, camposDef);
+      const falta = ["Início planejado", "Fim planejado"].filter((n) => !v[n]);
+      if (falta.length === 1) return "Falta preencher: " + falta[0] + " (no próprio card).";
+    }
+    return regras.acao[tipo] || "";
+  }
   function prontidao(card, listaNome, camposDef, checklists, agora, regras, atuais) {
     if (card.closed) return null;
     const lista = (listaNome || "").trim().toLowerCase();
@@ -583,11 +633,11 @@
     const jaAbertos = new Set((atuais || []).map((a) => a.tipo));     // ja listados como sinal do card: a tela nao repete o texto
     const faltam = ordenar(avaliarCard(card, prox, camposDef, checklists, agora, regras), regras)
       .filter((a) => !naoDependeDaFase.has(a.tipo))
-      .map((a) => ({ tipo: a.tipo, frase: frase(a), fazer: regras.acao[a.tipo] || "", jaPendente: jaAbertos.has(a.tipo) }));
+      .map((a) => ({ tipo: a.tipo, frase: frase(a), fazer: fazerEspecifico(a.tipo, card, camposDef, regras), jaPendente: jaAbertos.has(a.tipo) }));
     return { proxima: rotulo, faltam };
   }
 
-  return { antecipar, prontidao, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
+  return { antecipar, prontidao, ordenarPorPrioridade, desvioPlano, listaPrazos, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
     checklistsDeBadges, pontuar, ondeAtuar, abaInicialMeus, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto, cargaDaEquipe, semEvidencia,
     retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal };
 });

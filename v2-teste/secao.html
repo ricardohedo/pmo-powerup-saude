@@ -6,8 +6,9 @@
 <title>Saúde do projeto</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611051254"></script>
-<script src="./dados.js?v=202611051254"></script>
+<script src="./motor.js?v=202611051531"></script>
+<script src="./dados.js?v=202611051531"></script>
+<script src="./base.js?v=202611051531"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;margin:0;padding:4px 2px;color:#172b4d}
  .topo{display:flex;align-items:center;gap:8px;margin-bottom:8px}
@@ -22,6 +23,7 @@
  li.amarelo{border-left-color:#b8860b} li.verde{border-left-color:#2e7d4f}
  li small{display:block;color:#5e6c84}
  .nota{color:#5e6c84;font-size:12px;margin:6px 0 0}
+ .base button{margin-top:4px;padding:4px 10px;border:1px solid #c1c7d0;border-radius:4px;background:#fff;cursor:pointer}
 </style>
 </head>
 <body>
@@ -30,7 +32,7 @@
 const t = TrelloPowerUp.iframe();
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const ROTULO = { vermelho: "Atenção", amarelo: "De olho", verde: "Em dia" };
-t.render(async () => {
+async function desenhar() {
   const d = await PmoDados.cardEmFoco(t), r = d.regras;
   const pct = PmoMotor.progressoChecklists(d.checklists);
   const itens = d.checklists.reduce((n, c) => n + (c.checkItems || []).length, 0);
@@ -51,11 +53,28 @@ t.render(async () => {
   if (d.prontidao) h += d.prontidao.faltam.length
     ? "<div class='risco'><b>🚦 Para mover para " + esc(d.prontidao.proxima) + " falta:</b>" + d.prontidao.faltam.map((x) => "<small>• " + (x.jaPendente ? esc(((d.regras.grupos && d.regras.grupos[x.tipo]) || x.frase).replace(/^\S+\s/, "")) + " (já listado acima)" : esc(x.frase) + " — " + esc(x.fazer)) + "</small>").join("") + "</div>"
     : "<p class='nota'>✅ Pronto para mover para " + esc(d.prontidao.proxima) + " (nenhuma pendência pelas regras do PMO).</p>";
-  h += "<p class='nota'>Fase: " + esc(d.lista) + ". Só leitura: o Power-Up mostra, não altera o card.</p>";
+  const fimAtual = d.valores["Fim planejado"] ? PmoMotor.dataLocal(new Date(d.valores["Fim planejado"]), r) : null;
+  const iniAtual = d.valores["Início planejado"] ? PmoMotor.dataLocal(new Date(d.valores["Início planejado"]), r) : null;
+  if (r.funcoes.linha_de_base) {
+    const base = await PmoBase.ler(t), des = PmoMotor.desvioPlano(base, d.valores, r);
+    h += "<div class='risco base" + (des && des.dias > 0 ? " alto" : "") + "'><b>📐 Plano original (linha de base)</b>" +
+      (des ? "<small>" + esc(des.texto) + " Congelado em " + esc(base.e.slice(8, 10) + "/" + base.e.slice(5, 7)) + ".</small>"
+        : "<small>Ainda não há plano congelado neste card.</small>") +
+      (fimAtual ? "<button id='congelar'>" + (base ? "Congelar de novo (substitui o plano original)" : "Congelar plano de hoje") + "</button>"
+        : "<small>Preencha o 'Fim planejado' para poder congelar.</small>") + "<small id='msgbase'></small></div>";
+  }
+  h += "<p class='nota'>Fase: " + esc(d.lista) + ". O Power-Up não altera o card" + (r.funcoes.linha_de_base ? " (a linha de base fica guardada só no armazenamento do Power-Up)" : "") + ".</p>";
   document.getElementById("raiz").innerHTML = h;
+  const bt = document.getElementById("congelar");
+  if (bt) bt.onclick = async () => {
+    bt.disabled = true;
+    const res = await PmoBase.congelar(t, PmoMotor.dataLocal(new Date(), r), iniAtual, fimAtual);
+    if (res.ok) desenhar(); else { bt.disabled = false; document.getElementById("msgbase").textContent = res.erro; }
+  };
   t.sizeTo("#raiz").catch(() => {});
   setTimeout(() => t.sizeTo("#raiz").catch(() => {}), 400);   // de novo depois do layout (evita barra de rolagem)
-});
+}
+t.render(desenhar);
 </script>
 </body>
 </html>

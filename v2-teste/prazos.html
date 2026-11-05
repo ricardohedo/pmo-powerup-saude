@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atrasadas e a vencer</title>
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./motor.js?v=202611051531"></script>
+<script src="./dados.js?v=202611051531"></script>
+<style>
+ body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
+ h3{margin:16px 0 6px} .nota{color:#5e6c84;font-size:12px}
+ .linha{border:1px solid #dfe1e6;border-left:5px solid #c0392b;border-radius:4px;padding:6px 10px;margin:0 0 6px;display:flex;gap:8px;align-items:baseline}
+ .linha.venc{border-left-color:#b8860b}
+ .linha a{color:#172b4d;text-decoration:none;flex:1} .linha a:hover{text-decoration:underline}
+ .dias{font-weight:600;white-space:nowrap} .lista{color:#5e6c84;font-size:12px}
+ .tag{display:inline-block;padding:0 7px;border-radius:9px;color:#fff;font-size:11px;font-weight:600;margin-right:6px}
+ .tag.P1{background:#c0392b}.tag.P2{background:#d9730d}.tag.P3{background:#b8860b}.tag.P4{background:#2e7d4f}
+ .ok{background:#e3fcef;border-radius:4px;padding:10px}
+</style>
+</head>
+<body>
+<div id="raiz">Lendo o quadro…</div>
+<script>
+const t = TrelloPowerUp.iframe();
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const plural = (n, a, b) => n + (n === 1 ? " " + a : " " + b);
+
+function linhas(lista, atrasada) {
+  return lista.map((x) => "<div class='linha" + (atrasada ? "" : " venc") + "'>" +
+    (x.prioridade ? "<span class='tag " + x.prioridade + "'>" + x.prioridade + "</span>" : "") +
+    "<a href='" + esc(x.url) + "' target='_blank'>" + esc(x.nome) + "</a><span class='lista'>" + esc(x.lista || "") + "</span>" +
+    "<span class='dias'>" + (atrasada ? (x.dias === 0 ? "vence hoje" : plural(x.dias, "dia de atraso", "dias de atraso"))
+      : (x.dias === 0 ? "vence hoje" : x.dias === 1 ? "vence amanhã" : "em " + plural(x.dias, "dia", "dias"))) + "</span></div>").join("");
+}
+
+t.render(async () => {
+  const q = await PmoDados.quadro(t), p = PmoMotor.listaPrazos(q.itens), r = q.regras;
+  let h = "";
+  if (!p.atrasadas.length && !p.aVencer.length) h = "<div class='ok'>✅ Nenhum projeto atrasado nem com prazo próximo neste quadro.</div>";
+  else {
+    h += "<h3>🔴 Atrasadas (" + p.atrasadas.length + ")</h3>" + (p.atrasadas.length ? linhas(p.atrasadas, true) : "<p class='nota'>Nenhuma.</p>");
+    h += "<h3>🟡 A vencer em " + plural(r.dias_prazo_proximo, "dia", "dias") + " ou menos (" + p.aVencer.length + ")</h3>" +
+      (p.aVencer.length ? linhas(p.aVencer, false) : "<p class='nota'>Nenhuma.</p>");
+  }
+  h += "<p class='nota'>Mesmas regras do PMO (atrasado e prazo próximo); só projetos ativos. O Power-Up mostra, não altera.</p>";
+  document.getElementById("raiz").innerHTML = h;
+  t.sizeTo("#raiz").catch(() => {});
+});
+</script>
+</body>
+</html>

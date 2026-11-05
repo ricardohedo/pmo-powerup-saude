@@ -3,7 +3,7 @@
 window.PmoDados = (function () {
   let regrasP = null;
   function regras() {
-    if (!regrasP) regrasP = fetch("./regras.json?v=202611051254").then((r) => r.json());
+    if (!regrasP) regrasP = fetch("./regras.json?v=202611051531").then((r) => r.json());
     return regrasP;
   }
 
@@ -73,5 +73,11 @@ window.PmoDados = (function () {
     return { regras: r, resumo: PmoMotor.resumoQuadro(itens, r, agora), itens, meuId: eu && eu.id, membros: nomesMembros };
   }
 
-  return { regras, cardEmFoco, quadro };   // regras() devolve o regras.json (usado tambem pela tendencia)
+  /* Ordem da lista por prioridade (so devolve a ordem; quem reordena e o Trello, na tela de quem clicou). */
+  async function ordenarLista(t, cardsDaLista) {
+    const q = await quadro(t);
+    return PmoMotor.ordenarPorPrioridade((cardsDaLista || []).map((c) => c.id), q.itens, q.regras);
+  }
+
+  return { regras, cardEmFoco, quadro, ordenarLista };   // regras() devolve o regras.json (usado tambem pela tendencia)
 })();
