@@ -502,6 +502,11 @@
     return r;
   }
 
+  /* O Portfolio so aparece (e so abre) nos quadros listados em regras.portfolio_so_nos_quadros (nome exato). */
+  function portfolioPermitido(nomeDoQuadro, regras) {
+    return (regras.portfolio_so_nos_quadros || []).includes(String(nomeDoQuadro || "").trim());
+  }
+
   /* Quais quadros o Portfolio le: do workspace certo, nome contem o texto, sem os prefixos excluidos (ex.: MODELO). */
   function quadrosDoPortfolio(boards, regras) {
     const excl = (regras.portfolio_excluir_prefixos || []).map((s) => s.toLowerCase());
@@ -744,7 +749,7 @@
     return { proxima: rotulo, faltam };
   }
 
-  return { antecipar, prontidao, ordenarPorPrioridade, desvioPlano, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, resumoArea, quadrosDoPortfolio, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
+  return { antecipar, prontidao, ordenarPorPrioridade, desvioPlano, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, resumoArea, quadrosDoPortfolio, portfolioPermitido, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
     checklistsDeBadges, pontuar, ondeAtuar, abaInicialMeus, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto, cargaDaEquipe, semEvidencia,
     retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal, diasEntre };
 });

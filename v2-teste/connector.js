@@ -87,12 +87,14 @@ TrelloPowerUp.initialize({
   "board-buttons": async (t) => {
     PmoTendencia.automatico(t);          // guarda o retrato do dia (so se a Tendencia estiver ligada), sem travar nada
     const f = (await PmoDados.regras()).funcoes;   // funcoes opcionais: ligadas/desligadas no pmo.toml (regras.json)
+    const nomeQuadro = f.portfolio ? ((await t.board("name")) || {}).name : "";
+    const regrasBt = f.portfolio ? await PmoDados.regras() : null;
     const botao = (text, title, url, height) => ({ icon: ICONE, text, callback: (tt) => tt.modal({ title, url, height }) });
     return [
       botao("Minhas ações", "Minhas ações: onde atuar primeiro", "./atuar.html", 600),
       botao("Atrasadas e a vencer", "Atrasadas, a vencer, marcos e datas do varejo", "./prazos.html", 560),
       botao("Impacto × esforço", "Matriz impacto × esforço", "./matriz.html", 600),
-      ...(f.portfolio ? [botao("Portfólio PMO", "Portfólio do PMO: as áreas", "./portfolio.html", 640)] : []),
+      ...(f.portfolio && PmoMotor.portfolioPermitido(nomeQuadro, regrasBt) ? [botao("Portfólio PMO", "Portfólio do PMO: as áreas", "./portfolio.html", 640)] : []),
       botao("Linha do tempo", "Linha do tempo de entregas", "./linha.html", 600),
       ...(f.carga_equipe ? [botao("Carga da equipe", "Carga da equipe", "./equipe.html", 520)] : []),
       ...(f.tendencia ? [botao("Tendência", "Tendência do quadro", "./tendencia.html", 560)] : []),

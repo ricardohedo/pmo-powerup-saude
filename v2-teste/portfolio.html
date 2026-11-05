@@ -6,10 +6,10 @@
 <title>Portfólio do PMO</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./app.js?v=202611051634"></script>
-<script src="./motor.js?v=202611051634"></script>
-<script src="./dados.js?v=202611051634"></script>
-<script src="./portfolio.js?v=202611051634"></script>
+<script src="./app.js?v=202611051705"></script>
+<script src="./motor.js?v=202611051705"></script>
+<script src="./dados.js?v=202611051705"></script>
+<script src="./portfolio.js?v=202611051705"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  table{border-collapse:collapse;width:100%;margin:8px 0} th,td{border:1px solid #dfe1e6;padding:4px 8px;text-align:left}
@@ -58,6 +58,8 @@ async function carregar(api) {
 
 t.render(async () => {
   try {
+    const regras0 = await PmoDados.regras(), quadro0 = (await t.board("name")) || {};
+    if (!PmoMotor.portfolioPermitido(quadro0.name, regras0)) { raiz.innerHTML = "O Portfólio só está disponível no quadro do PMO."; ajusta(); return; }
     const api = t.getRestApi();
     if (await api.isAuthorized()) return await carregar(api);
     raiz.innerHTML = "<p>Para mostrar as áreas, o Power-Up precisa <b>ler</b> os quadros do PMO com a sua conta do Trello. É só leitura; nada é alterado.</p><button class='bt' id='aut'>Autorizar leitura</button><p class='nota' id='msg'></p>";
