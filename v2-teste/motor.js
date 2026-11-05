@@ -568,7 +568,7 @@
    * apareceria como pendencia. Fases: Backlog > Priorizados > Em Execucao > Em Revisao > Concluidos. Sem proxima fase = null.
    * Ignora o que nao depende da fase (atrasado, prazo proximo, sem interacao, quase pronto). */
   const NOME_FASE = { execucao: "Em Execução", revisao: "Em Revisão", concluidos: "Concluídos" };
-  function prontidao(card, listaNome, camposDef, checklists, agora, regras) {
+  function prontidao(card, listaNome, camposDef, checklists, agora, regras, atuais) {
     if (card.closed) return null;
     const lista = (listaNome || "").trim().toLowerCase();
     if (regras.listas_ignorar.some((t) => lista.includes(t))) return null;
@@ -580,9 +580,10 @@
     else if (lista === m.lista_revisao) { prox = regras.listas_concluido[1] || regras.listas_concluido[0]; rotulo = NOME_FASE.concluidos; }
     if (!prox) return null;
     const naoDependeDaFase = new Set(["atrasado", "prazo_proximo", "sem_interacao", "quase_pronto"]);
+    const jaAbertos = new Set((atuais || []).map((a) => a.tipo));     // ja listados como sinal do card: a tela nao repete o texto
     const faltam = ordenar(avaliarCard(card, prox, camposDef, checklists, agora, regras), regras)
       .filter((a) => !naoDependeDaFase.has(a.tipo))
-      .map((a) => ({ tipo: a.tipo, frase: frase(a), fazer: regras.acao[a.tipo] || "" }));
+      .map((a) => ({ tipo: a.tipo, frase: frase(a), fazer: regras.acao[a.tipo] || "", jaPendente: jaAbertos.has(a.tipo) }));
     return { proxima: rotulo, faltam };
   }
 

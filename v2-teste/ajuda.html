@@ -6,8 +6,8 @@
 <title>Preciso de ajuda</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611051248"></script>
-<script src="./dados.js?v=202611051248"></script>
+<script src="./motor.js?v=202611051254"></script>
+<script src="./dados.js?v=202611051254"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;margin:0;padding:8px 10px;color:#172b4d}
  h3{margin:4px 0 6px;font-size:15px}
@@ -41,7 +41,7 @@ t.render(async () => {
   if (e.risco) h += "<div class='caixa risco'><b>⏳ " + esc(r.rotulo_risco[e.risco.nivel]) + "</b><small>" + esc(e.risco.texto) + "</small></div>";
   if (d.antecipacoes && d.antecipacoes.length) h += "<div class='caixa risco'><b>⏰ Antes que aconteça</b>" + d.antecipacoes.map((x) => "<small>" + esc(x.texto) + "</small>").join("") + "</div>";
   if (d.prontidao) h += d.prontidao.faltam.length
-    ? "<div class='caixa risco'><b>🚦 Para mover para " + esc(d.prontidao.proxima) + " falta:</b>" + d.prontidao.faltam.map((x) => "<small>• " + esc(x.frase) + " — " + esc(x.fazer) + "</small>").join("") + "</div>"
+    ? "<div class='caixa risco'><b>🚦 Para mover para " + esc(d.prontidao.proxima) + " falta:</b>" + d.prontidao.faltam.map((x) => "<small>• " + (x.jaPendente ? esc(((d.regras.grupos && d.regras.grupos[x.tipo]) || x.frase).replace(/^\S+\s/, "")) + " (já listado acima)" : esc(x.frase) + " — " + esc(x.fazer)) + "</small>").join("") + "</div>"
     : "<div class='caixa' style='border-left-color:#2e7d4f'>✅ Pronto para mover para " + esc(d.prontidao.proxima) + " (nenhuma pendência pelas regras do PMO).</div>";
   h += "<p><a href='./como.html' target='_blank'>Como o PMO mede os projetos (todas as regras)</a></p>";
   const assunto ="Dúvida sobre o card: " + d.card.name;
