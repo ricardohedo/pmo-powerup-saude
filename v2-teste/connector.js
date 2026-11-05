@@ -37,14 +37,8 @@ TrelloPowerUp.initialize({
       const d = await PmoDados.cardEmFoco(t);
       const badges = [{
         title: "Saúde do projeto", text: ROTULO[d.nivel], color: COR[d.nivel],
-        callback: (tt) => tt.popup({
-          title: "Por que " + ROTULO[d.nivel].toLowerCase() + "?",
-          items: (d.prioridade ? [{ text: d.prioridade + " " + d.regras.rotulo_prioridade[d.prioridade] + " — " + d.regras.fazer_prioridade[d.prioridade] }] : [])
-            .concat(d.risco ? [{ text: "⏳ " + d.regras.rotulo_risco[d.risco] + " — " + d.regras.fazer_risco[d.risco] }] : [])
-            .concat(d.alertas.length
-              ? d.alertas.map((a) => ({ text: PmoMotor.frase(a) + " — " + (d.regras.acao[a.tipo] || "") }))
-              : [{ text: "Nenhum sinal automático neste card." }]),
-        }),
+        // Clicar no selo abre a mesma tela do botao "Preciso de ajuda" (por que o card esta assim, com a regra e o limite).
+        callback: (tt) => tt.popup({ title: "Por que " + ROTULO[d.nivel].toLowerCase() + "?", url: "./ajuda.html", height: 420 }),
       }];
       const falta = pontosCadastro(d);
       if (falta.length) {
