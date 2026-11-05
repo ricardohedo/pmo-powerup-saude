@@ -6,9 +6,9 @@
 <title>Saúde do projeto</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611051531"></script>
-<script src="./dados.js?v=202611051531"></script>
-<script src="./base.js?v=202611051531"></script>
+<script src="./motor.js?v=202611051613"></script>
+<script src="./dados.js?v=202611051613"></script>
+<script src="./base.js?v=202611051613"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;margin:0;padding:4px 2px;color:#172b4d}
  .topo{display:flex;align-items:center;gap:8px;margin-bottom:8px}
@@ -32,6 +32,7 @@
 const t = TrelloPowerUp.iframe();
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const ROTULO = { vermelho: "Atenção", amarelo: "De olho", verde: "Em dia" };
+const ehMarco = (d) => (d.card.labels || []).some((l) => (d.regras.labels_marco || []).includes(((l && l.name) || "").trim().toLowerCase()));
 async function desenhar() {
   const d = await PmoDados.cardEmFoco(t), r = d.regras;
   const pct = PmoMotor.progressoChecklists(d.checklists);
@@ -45,6 +46,14 @@ async function desenhar() {
   if (d.risco) h += "<div class='risco " + d.risco + "'><b>⏳ " + esc(r.rotulo_risco[d.risco]) + "</b>" +
     "<small>Prazo em " + d.diasPrazo + (d.diasPrazo === 1 ? " dia" : " dias") + " e " + (pct === null ? "sem checklist" : pct + "% do checklist") + ". " + esc(r.fazer_risco[d.risco]) + "</small></div>";
   if (d.semEvidencia) h += "<div class='risco'><b>📎 " + esc(r.rotulo_evidencia) + "</b><small>Concluído há pouco e sem anexo no card. " + esc(r.fazer_evidencia) + "</small></div>";
+  if (d.valores["Fim planejado"] && !r.listas_concluido.includes((d.lista || "").trim().toLowerCase())) {
+    const hoje = PmoMotor.dataLocal(new Date(), r), fimIso = PmoMotor.dataLocal(new Date(d.valores["Fim planejado"]), r);
+    const du = PmoMotor.diasUteis(hoje, fimIso, r.feriados), cal = PmoMotor.diasEntre(hoje, fimIso);
+    h += "<p class='nota'>" + (ehMarco(d) ? "🚩 <b>Marco</b> · " : "") + "Prazo " + esc(fimIso.slice(8, 10) + "/" + fimIso.slice(5, 7)) + ": " +
+      (cal === 0 ? "vence hoje" : cal > 0 ? du + (du === 1 ? " dia útil" : " dias úteis") + " (" + cal + (cal === 1 ? " dia" : " dias") + " corridos)"
+        : "passou há " + (-du) + (du === -1 ? " dia útil" : " dias úteis") + " (" + (-cal) + (cal === -1 ? " dia" : " dias") + " corridos)") +
+      ". Dias úteis descontam fim de semana e os feriados do PMO.</p>";
+  }
   if (pct !== null) h += "<div>Checklist: " + feitos + " de " + itens + " itens (" + pct + "%)</div><div class='prog'><i style='width:" + pct + "%'></i></div>";
   if (d.alertas.length) {
     h += "<ul>" + d.alertas.map((a) => "<li class='" + r.nivel[a.tipo] + "'><b>" + esc(PmoMotor.frase(a)) + "</b><small>👉 " + esc(r.acao[a.tipo] || "") + "</small></li>").join("") + "</ul>";

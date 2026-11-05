@@ -35,6 +35,14 @@
   ],
   "ceo_dias_prazo_amarelo": 14,
   "ceo_pct_prazo_amarelo": 50,
+  "datas_varejo": {
+    "Black Friday": "2026-11-27",
+    "Dia das Mães": "2027-05-09",
+    "Natal": "2026-12-25",
+    "Páscoa": "2027-03-28",
+    "Réveillon": "2026-12-31"
+  },
+  "datas_varejo_aviso_dias_uteis": 25,
   "dias_marcos": 30,
   "dias_prazo_proximo": 7,
   "dias_sem_interacao": 7,
@@ -60,6 +68,18 @@
     "alto": "Prazo curto, pouco andado e com sinais de parada: confirme se cabe ou replaneje já.",
     "medio": "Prazo curto e pouco andado: vai caber? Se não, ajuste o 'Fim planejado' e comente."
   },
+  "feriados": [
+    "2026-01-01",
+    "2026-04-03",
+    "2026-04-21",
+    "2026-05-01",
+    "2026-06-04",
+    "2026-09-07",
+    "2026-10-12",
+    "2026-11-02",
+    "2026-11-20",
+    "2026-12-25"
+  ],
   "funcoes": {
     "carga_equipe": true,
     "evidencia": true,
@@ -81,6 +101,9 @@
     "sem_prazo": "📌 Em execução sem prazo cadastrado",
     "sem_responsavel": "🙋 Em execução sem responsável atribuído"
   },
+  "labels_marco": [
+    "marco"
+  ],
   "labels_pausado": [
     "pausado",
     "impedimento",
@@ -195,5 +218,6 @@
   "tendencia_limite_pp": 5,
   "tendencia_max_caracteres": 3500,
   "teto_pontos_atraso": 60,
-  "top": 3
+  "top": 3,
+  "wip_max_por_pessoa": 3
 }

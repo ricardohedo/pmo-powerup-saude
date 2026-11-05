@@ -24,6 +24,8 @@ TrelloPowerUp.initialize({
       const selos = [d.prioridade
         ? { text: d.prioridade + " " + d.regras.rotulo_prioridade[d.prioridade] + (n ? " · " + n : ""), color: COR_P[d.prioridade] }
         : { text: ROTULO[d.nivel] + (n ? " · " + n : ""), color: COR[d.nivel] }];
+      const marco = (d.card.labels || []).some((l) => (d.regras.labels_marco || []).includes(((l && l.name) || "").trim().toLowerCase()));
+      if (marco) selos.push({ text: "🚩 Marco", color: "blue" });
       if (d.risco) selos.push({ text: "⏳ " + d.regras.rotulo_risco[d.risco], color: d.risco === "alto" ? "red" : "yellow" });
       if (d.semEvidencia) selos.push({ text: "📎 " + d.regras.rotulo_evidencia, color: "orange" });
       return selos;
@@ -88,7 +90,8 @@ TrelloPowerUp.initialize({
     const botao = (text, title, url, height) => ({ icon: ICONE, text, callback: (tt) => tt.modal({ title, url, height }) });
     return [
       botao("Minhas ações", "Minhas ações: onde atuar primeiro", "./atuar.html", 600),
-      botao("Atrasadas e a vencer", "Atrasadas e a vencer", "./prazos.html", 560),
+      botao("Atrasadas e a vencer", "Atrasadas, a vencer, marcos e datas do varejo", "./prazos.html", 560),
+      botao("Impacto × esforço", "Matriz impacto × esforço", "./matriz.html", 600),
       botao("Linha do tempo", "Linha do tempo de entregas", "./linha.html", 600),
       ...(f.carga_equipe ? [botao("Carga da equipe", "Carga da equipe", "./equipe.html", 520)] : []),
       ...(f.tendencia ? [botao("Tendência", "Tendência do quadro", "./tendencia.html", 560)] : []),

@@ -404,6 +404,81 @@
   function diasEntre(a, b) { return Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / DIA_MS); }
   function somaDias(a, n) { return new Date(Date.parse(a + "T00:00:00Z") + n * DIA_MS).toISOString().slice(0, 10); }
 
+  /* DIAS UTEIS (so informativo; as regras de alerta seguem em dias de calendario, como o motor do pmo_v2): de "de" (exclusivo)
+   * ate "ate" (inclusivo), sem sabado, domingo nem feriado (regras.feriados). Prazo passado = numero negativo. */
+  function diasUteis(de, ate, feriados) {
+    const fer = new Set(feriados || []);
+    const util = (iso) => { const w = new Date(iso + "T00:00:00Z").getUTCDay(); return w !== 0 && w !== 6 && !fer.has(iso); };
+    if (de === ate) return 0;
+    const [ini, fim, sinal] = de < ate ? [de, ate, 1] : [ate, de, -1];
+    let n = 0;
+    for (let d = somaDias(ini, 1); d <= fim; d = somaDias(d, 1)) if (util(d)) n++;
+    return sinal * n;
+  }
+
+  /* MARCOS: cards com a etiqueta de regras.labels_marco (criada pelo gestor; o Power-Up so le), ainda nao concluidos, com
+   * "Fim planejado" (ou o prazo do card). Do mais proximo ao mais distante; atrasados primeiro (dias < 0). */
+  function marcos(itens, regras, agora) {
+    const hoje = dataLocal(agora, regras), alvo = new Set(regras.labels_marco || []);
+    const out = [];
+    for (const it of itens) {
+      const nomes = (it.card.labels || []).map((l) => ((l && l.name) || "").trim().toLowerCase());
+      if (!nomes.some((n) => alvo.has(n))) continue;
+      if (it.card.closed || regras.listas_concluido.includes((it.listaNome || "").trim().toLowerCase())) continue;
+      const iso = it.valores["Fim planejado"] || it.card.due;
+      const data = iso ? dataLocal(new Date(iso), regras) : null;
+      out.push({ nome: it.card.name, url: it.card.url, lista: it.listaNome, data,
+        dias: data ? diasEntre(hoje, data) : null, diasUteis: data ? diasUteis(hoje, data, regras.feriados) : null });
+    }
+    out.sort((a, b) => (a.data === null) - (b.data === null) || (a.data < b.data ? -1 : a.data > b.data ? 1 : 0) || a.nome.localeCompare(b.nome));
+    return out;
+  }
+
+  const norm = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
+  const concluidoOuFechado = (it, regras) => it.card.closed || regras.listas_concluido.includes((it.listaNome || "").trim().toLowerCase());
+
+  /* DATAS DO VAREJO (regras.datas_varejo = {nome: AAAA-MM-DD}): para cada data futura a ate aviso_dias_uteis dias uteis, os projetos
+   * ATIVOS com a etiqueta de mesmo nome e o que os poe em risco: atrasado, sem prazo ou "Fim planejado" depois da data. So le. */
+  function datasVarejo(itens, regras, agora) {
+    const hoje = dataLocal(agora, regras), out = [];
+    for (const [nome, data] of Object.entries(regras.datas_varejo || {})) {
+      const dias = diasEntre(hoje, data);
+      if (dias < 0) continue;
+      const du = diasUteis(hoje, data, regras.feriados);
+      if (du > regras.datas_varejo_aviso_dias_uteis) continue;
+      const projetos = [];
+      for (const it of itens) {
+        if (concluidoOuFechado(it, regras)) continue;
+        if (!(it.card.labels || []).some((l) => norm(l && l.name) === norm(nome))) continue;
+        const iso = it.valores["Fim planejado"];
+        const fim = iso ? dataLocal(new Date(iso), regras) : null;
+        const motivos = [];
+        if ((it.alertas || []).some((a) => a.tipo === "atrasado")) motivos.push("atrasado");
+        if (!fim) motivos.push("sem prazo");
+        else if (fim > data) motivos.push("prazo depois da data (" + fim.slice(8, 10) + "/" + fim.slice(5, 7) + ")");
+        projetos.push({ nome: it.card.name, url: it.card.url, lista: it.listaNome, motivos });
+      }
+      projetos.sort((a, b) => b.motivos.length - a.motivos.length || a.nome.localeCompare(b.nome));
+      out.push({ nome, data, dias, diasUteis: du, projetos, emRisco: projetos.filter((p) => p.motivos.length).length });
+    }
+    return out.sort((a, b) => (a.data < b.data ? -1 : a.data > b.data ? 1 : 0));
+  }
+
+  /* MATRIZ IMPACTO x ESFORCO (campos "Impacto no negocio" e "Esforco estimado": Alto/Medio/Baixo). So projetos nao concluidos.
+   * celulas["alto|baixo"] = projetos de impacto ALTO e esforco BAIXO; semClassificar = falta um dos dois campos. */
+  function matrizImpactoEsforco(itens, regras) {
+    const nivel = (v) => { const n = norm(v); return ["alto", "medio", "baixo"].includes(n) ? n : null; };
+    const celulas = {}, semClassificar = [];
+    for (const it of itens) {
+      if (concluidoOuFechado(it, regras)) continue;
+      const imp = nivel(it.valores["Impacto no negócio"]), esf = nivel(it.valores["Esforço estimado"]);
+      const dado = { nome: it.card.name, url: it.card.url, lista: it.listaNome, impacto: imp, esforco: esf, prioridade: it.prio ? it.prio.prioridade : null };
+      if (!imp || !esf) { semClassificar.push({ ...dado, falta: [!imp ? "Impacto no negócio" : null, !esf ? "Esforço estimado" : null].filter(Boolean) }); continue; }
+      (celulas[imp + "|" + esf] = celulas[imp + "|" + esf] || []).push(dado);
+    }
+    return { celulas, semClassificar };
+  }
+
   /* Linha do tempo de entregas: a MESMA regra do painel da CEO (ceo.marcos) e do Plano.
    * itens = [{card, listaNome, alertas, valores, checklists}]. Retorna atrasadas, janelas de 7 dias, sem prazo, entregues no mes. */
   function linhaDoTempo(itens, regras, agora) {
@@ -637,7 +712,7 @@
     return { proxima: rotulo, faltam };
   }
 
-  return { antecipar, prontidao, ordenarPorPrioridade, desvioPlano, listaPrazos, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
+  return { antecipar, prontidao, ordenarPorPrioridade, desvioPlano, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
     checklistsDeBadges, pontuar, ondeAtuar, abaInicialMeus, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto, cargaDaEquipe, semEvidencia,
-    retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal };
+    retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal, diasEntre };
 });

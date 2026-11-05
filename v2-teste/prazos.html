@@ -6,8 +6,8 @@
 <title>Atrasadas e a vencer</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611051531"></script>
-<script src="./dados.js?v=202611051531"></script>
+<script src="./motor.js?v=202611051613"></script>
+<script src="./dados.js?v=202611051613"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  h3{margin:16px 0 6px} .nota{color:#5e6c84;font-size:12px}
@@ -44,6 +44,18 @@ t.render(async () => {
     h += "<h3>🟡 A vencer em " + plural(r.dias_prazo_proximo, "dia", "dias") + " ou menos (" + p.aVencer.length + ")</h3>" +
       (p.aVencer.length ? linhas(p.aVencer, false) : "<p class='nota'>Nenhuma.</p>");
   }
+  const mc = PmoMotor.marcos(q.itens, r, new Date());
+  if (mc.length) h += "<h3>🚩 Marcos (" + mc.length + ")</h3>" + mc.map((x) => "<div class='linha" + (x.dias !== null && x.dias < 0 ? "" : " venc") + "'>" +
+    "<a href='" + esc(x.url) + "' target='_blank'>" + esc(x.nome) + "</a><span class='lista'>" + esc(x.lista || "") + "</span><span class='dias'>" +
+    (x.data === null ? "sem data" : esc(x.data.slice(8, 10) + "/" + x.data.slice(5, 7)) + " · " + (x.dias < 0 ? "passou há " + plural(-x.diasUteis, "dia útil", "dias úteis")
+      : x.dias === 0 ? "hoje" : plural(x.diasUteis, "dia útil", "dias úteis"))) + "</span></div>").join("");
+  const dv = PmoMotor.datasVarejo(q.itens, r, new Date());
+  if (dv.length) h += "<h3>📅 Datas do varejo</h3>" + dv.map((d) => "<div class='linha" + (d.emRisco ? "" : " venc") + "' style='flex-wrap:wrap'><b style='flex:1'>" + esc(d.nome) + " · " +
+    esc(d.data.slice(8, 10) + "/" + d.data.slice(5, 7)) + "</b><span class='dias'>" + (d.dias === 0 ? "hoje" : plural(d.diasUteis, "dia útil", "dias úteis")) + "</span>" +
+    "<div class='lista' style='flex-basis:100%'>" + (d.projetos.length ? d.projetos.length + (d.projetos.length === 1 ? " projeto" : " projetos") + " com a etiqueta <b>" + esc(d.nome) + "</b>, " +
+      (d.emRisco ? "<b>" + d.emRisco + " em risco</b>: " + d.projetos.filter((p) => p.motivos.length).map((p) => "<a href='" + esc(p.url) + "' target='_blank'>" + esc(p.nome) + "</a> (" + esc(p.motivos.join(", ")) + ")").join("; ") : "nenhum em risco")
+      : "nenhum projeto marcado com a etiqueta <b>" + esc(d.nome) + "</b> neste quadro") + "</div></div>").join("");
+  h += "<p class='nota'>Marco = card com a etiqueta <b>" + esc((r.labels_marco || ["marco"])[0]) + "</b> (crie no quadro; o Power-Up só lê). Dias úteis descontam fim de semana e feriados do PMO.</p>";
   h += "<p class='nota'>Mesmas regras do PMO (atrasado e prazo próximo); só projetos ativos. O Power-Up mostra, não altera.</p>";
   document.getElementById("raiz").innerHTML = h;
   t.sizeTo("#raiz").catch(() => {});
