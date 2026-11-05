@@ -3,7 +3,7 @@
 window.PmoDados = (function () {
   let regrasP = null;
   function regras() {
-    if (!regrasP) regrasP = fetch("./regras.json?v=202611051613").then((r) => r.json());
+    if (!regrasP) regrasP = fetch("./regras.json?v=202611051616").then((r) => r.json());
     return regrasP;
   }
 

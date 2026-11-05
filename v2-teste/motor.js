@@ -424,7 +424,7 @@
     for (const it of itens) {
       const nomes = (it.card.labels || []).map((l) => ((l && l.name) || "").trim().toLowerCase());
       if (!nomes.some((n) => alvo.has(n))) continue;
-      if (it.card.closed || regras.listas_concluido.includes((it.listaNome || "").trim().toLowerCase())) continue;
+      if (concluidoOuFechado(it, regras)) continue;
       const iso = it.valores["Fim planejado"] || it.card.due;
       const data = iso ? dataLocal(new Date(iso), regras) : null;
       out.push({ nome: it.card.name, url: it.card.url, lista: it.listaNome, data,
@@ -435,7 +435,11 @@
   }
 
   const norm = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
-  const concluidoOuFechado = (it, regras) => it.card.closed || regras.listas_concluido.includes((it.listaNome || "").trim().toLowerCase());
+  // fora do portfolio: card fechado, lista concluida ou lista ignorada (Rastreador/placar, templates...), igual ao resto do Power-Up
+  const concluidoOuFechado = (it, regras) => {
+    const lista = (it.listaNome || "").trim().toLowerCase();
+    return it.card.closed || regras.listas_concluido.includes(lista) || regras.listas_ignorar.some((x) => lista.includes(x));
+  };
 
   /* DATAS DO VAREJO (regras.datas_varejo = {nome: AAAA-MM-DD}): para cada data futura a ate aviso_dias_uteis dias uteis, os projetos
    * ATIVOS com a etiqueta de mesmo nome e o que os poe em risco: atrasado, sem prazo ou "Fim planejado" depois da data. So le. */
