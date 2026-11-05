@@ -6,8 +6,8 @@
 <title>Painel de saúde do quadro</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611051206"></script>
-<script src="./dados.js?v=202611051206"></script>
+<script src="./motor.js?v=202611051239"></script>
+<script src="./dados.js?v=202611051239"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  .sem{display:flex;gap:8px;margin-bottom:14px}
@@ -23,11 +23,19 @@
 const t = TrelloPowerUp.iframe();
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const lista = (arr, f, vazio) => arr.length ? "<ul>" + arr.slice(0, 8).map(f).join("") + (arr.length > 8 ? "<li>… e mais " + (arr.length - 8) + "</li>" : "") + "</ul>" : "<p class='nota'>" + vazio + "</p>";
+const indicadores = (k) => !k.ativos ? "" :
+  "<h3>Indicadores do quadro (" + k.ativos + " projetos ativos)</h3><ul>" +
+  "<li>Atrasados: <b>" + k.atrasados.pct + "%</b> (" + k.atrasados.qtd + ")</li>" +
+  "<li>Sem prazo cadastrado: <b>" + k.semPrazo.pct + "%</b> (" + k.semPrazo.qtd + ")</li>" +
+  "<li>Sem responsável: <b>" + k.semResponsavel.pct + "%</b> (" + k.semResponsavel.qtd + ")</li>" +
+  "<li>Progresso médio dos checklists: <b>" + (k.progressoMedio === null ? "sem checklists" : k.progressoMedio + "%") + "</b>" + (k.comChecklist ? " (" + k.comChecklist + " projetos com checklist)" : "") + "</li></ul>" +
+  "<p class='nota'>Calculado pelas regras do PMO sobre os projetos ativos (fora de Backlog e Concluídos); pode diferir do portal.</p>";
 t.render(async () => {
   const q = await PmoDados.quadro(t), r = q.resumo, g = q.regras.grupos;
   const link = (x) => "<a href='" + esc(x.url) + "' target='_blank'>" + esc(x.nome) + "</a>";
   document.getElementById("raiz").innerHTML =
     "<div class='sem'><div class='v'><b>" + r.vermelho + "</b>Atenção</div><div class='a'><b>" + r.amarelo + "</b>De olho</div><div class='g'><b>" + r.verde + "</b>Em dia</div></div>" +
+    indicadores(PmoMotor.indicadoresQuadro(q.itens, q.regras)) +
     "<h3>Atrasos de " + q.regras.painel_atraso_dias + "+ dias</h3>" + lista(r.atrasos_longos, (x) => "<li>" + link(x) + " — " + x.dias + "d</li>", "Nenhum.") +
     "<h3>Prazo curto e pouco andado</h3>" + lista(r.prazo_curto_pouco_andado, (x) => "<li>" + link(x) + " — vence em " + x.dias + "d, " + (x.pct === null ? "sem checklist" : x.pct + "% feito") + "</li>", "Nenhum.") +
     "<h3>Quase prontos (vale reconhecer)</h3>" + lista(r.quase_prontos, (x) => "<li>" + link(x) + "</li>", "Nenhum.") +

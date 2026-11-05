@@ -337,6 +337,26 @@
     return por;
   }
 
+  /* Indicadores do quadro (substituem os KPIs de tela do portal): so projetos ATIVOS, tudo calculado pelas regras do PMO.
+   * Nao ha "throughput 30d": o Trello nao entrega a data de conclusao ao Power-Up. itens = [{card, listaNome, alertas, checklists}].
+   * Percentuais arredondados como o resto do motor (arredondaPar); sem projeto ativo = null (a tela mostra "sem dados"). */
+  function indicadoresQuadro(itens, regras) {
+    const ativos = itens.filter((it) => projetoAtivo(it, regras));
+    const n = ativos.length;
+    if (!n) return { ativos: 0, atrasados: null, semPrazo: null, semResponsavel: null, progressoMedio: null };
+    const tem = (it, tipo) => (it.alertas || []).some((a) => a.tipo === tipo);
+    const pct = (k) => arredondaPar(100 * k / n);
+    const progs = ativos.map((it) => progressoChecklists(it.checklists || [])).filter((p) => p !== null);
+    return {
+      ativos: n,
+      atrasados: { qtd: ativos.filter((it) => tem(it, "atrasado")).length, pct: pct(ativos.filter((it) => tem(it, "atrasado")).length) },
+      semPrazo: { qtd: ativos.filter((it) => tem(it, "sem_prazo")).length, pct: pct(ativos.filter((it) => tem(it, "sem_prazo")).length) },
+      semResponsavel: { qtd: ativos.filter((it) => !(it.card.idMembers || []).length).length, pct: pct(ativos.filter((it) => !(it.card.idMembers || []).length).length) },
+      progressoMedio: progs.length ? arredondaPar(progs.reduce((s, p) => s + p, 0) / progs.length) : null,
+      comChecklist: progs.length,
+    };
+  }
+
   /* Prioridade e risco de UM item do quadro ({card, listaNome, alertas, valores, checklists}). */
   function avaliarProjeto(it, regras, agora) {
     const pct = progressoChecklists(it.checklists || []);
@@ -517,7 +537,7 @@
     };
   }
 
-  return { explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
+  return { indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
     checklistsDeBadges, pontuar, ondeAtuar, abaInicialMeus, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto, cargaDaEquipe, semEvidencia,
     retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal };
 });
