@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portfólio do PMO</title>
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./app.js?v=202611051634"></script>
+<script src="./motor.js?v=202611051634"></script>
+<script src="./dados.js?v=202611051634"></script>
+<script src="./portfolio.js?v=202611051634"></script>
+<style>
+ body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
+ table{border-collapse:collapse;width:100%;margin:8px 0} th,td{border:1px solid #dfe1e6;padding:4px 8px;text-align:left}
+ th{background:#f4f5f7;font-size:12px} td:not(:first-child){text-align:center}
+ tr.vermelho td:first-child{border-left:5px solid #c0392b}tr.amarelo td:first-child{border-left:5px solid #b8860b}tr.verde td:first-child{border-left:5px solid #2e7d4f}
+ .nota{color:#5e6c84;font-size:12px} .bt{padding:6px 14px;border:1px solid #0c66e4;background:#0c66e4;color:#fff;border-radius:4px;cursor:pointer}
+ .tot td{background:#f4f5f7;font-weight:600} .erro{color:#c0392b} a{color:#172b4d}
+</style>
+</head>
+<body>
+<div id="raiz">Carregando…</div>
+<script>
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const BOLA = { vermelho: "🔴", amarelo: "🟡", verde: "🟢" }, ORDEM = { vermelho: 0, amarelo: 1, verde: 2 };
+const raiz = document.getElementById("raiz");
+const t = TrelloPowerUp.iframe({ appKey: PMO_APP.appKey, appName: PMO_APP.appName, appAuthor: PMO_APP.appAuthor });
+const ajusta = () => t.sizeTo("#raiz").catch(() => {});
+
+function tabela(res) {
+  const ok = res.filter((r) => !r.erro), falhas = res.filter((r) => r.erro);
+  const soma = (k) => ok.reduce((n, r) => n + r.resumo[k], 0);
+  const linhas = ok.sort((a, b) => ORDEM[a.resumo.semaforo] - ORDEM[b.resumo.semaforo] || b.resumo.criticos - a.resumo.criticos || a.nome.localeCompare(b.nome))
+    .map((r) => { const s = r.resumo; return "<tr class='" + s.semaforo + "'><td>" + BOLA[s.semaforo] + " " + esc(r.nome) + "</td><td>" + s.ativos + "</td><td>" + s.atrasados + "</td><td><b>" +
+      (s.criticos || "") + "</b></td><td>" + (s.semPrazo || "") + "</td><td>" + (s.semResponsavel || "") + "</td><td>" + (s.semInteracao || "") + "</td><td>" + (s.cadastro || "") + "</td></tr>"; }).join("");
+  const piores = ok.flatMap((r) => r.resumo.piores.map((p) => ({ ...p, area: r.nome }))).sort((a, b) => b.dias - a.dias).slice(0, 10);
+  return "<p><b>" + soma("ativos") + "</b> projetos ativos · <b>" + soma("atrasados") + "</b> atrasados · <b>" + soma("criticos") + "</b> críticos (" + ok.length + " áreas lidas" +
+    (falhas.length ? ", <span class='erro'>" + falhas.length + " com falha</span>" : "") + ")</p>" +
+    "<table><tr><th>Área</th><th>Ativos</th><th>Atrasados</th><th>Críticos</th><th>Sem prazo</th><th>Sem resp.</th><th>Sem interação</th><th>Cadastro</th></tr>" + linhas +
+    "<tr class='tot'><td>Total</td><td>" + soma("ativos") + "</td><td>" + soma("atrasados") + "</td><td>" + soma("criticos") + "</td><td>" + soma("semPrazo") + "</td><td>" + soma("semResponsavel") +
+    "</td><td>" + soma("semInteracao") + "</td><td>" + soma("cadastro") + "</td></tr></table>" +
+    falhas.map((r) => "<p class='erro'>⚪ " + esc(r.nome) + ": não consegui ler (" + esc(r.erro) + ")</p>").join("") +
+    "<h3>Os 10 mais atrasados</h3><table><tr><th>Área</th><th>Projeto</th><th>Atraso</th></tr>" +
+    piores.map((p) => "<tr><td>" + esc(p.area) + "</td><td><a href='" + esc(p.url) + "' target='_blank'>" + esc(p.nome) + "</a></td><td>" + p.dias + " dias</td></tr>").join("") + "</table>" +
+    "<p class='nota'>Lido agora, com a SUA autorização de leitura do Trello; nada é gravado nem enviado. Mesmos alertas do Power-Up. Só as áreas que você consegue ver no Trello aparecem.</p>";
+}
+
+async function carregar(api) {
+  const regras = await PmoDados.regras();
+  const token = await api.getToken(), chave = PMO_APP.appKey;
+  raiz.innerHTML = "Descobrindo as áreas…"; ajusta();
+  const lista = await PmoPortfolio.quadros(chave, token, regras);
+  if (!lista.length) { raiz.innerHTML = "Nenhum quadro de área encontrado para a sua conta (workspace “" + esc(regras.portfolio_workspace) + "”)."; ajusta(); return; }
+  const res = await PmoPortfolio.lerTodas(lista, chave, token, regras, (n, total) => { raiz.innerHTML = "Lendo as áreas… " + n + " de " + total; }, 3);
+  raiz.innerHTML = tabela(res); ajusta();
+}
+
+t.render(async () => {
+  try {
+    const api = t.getRestApi();
+    if (await api.isAuthorized()) return await carregar(api);
+    raiz.innerHTML = "<p>Para mostrar as áreas, o Power-Up precisa <b>ler</b> os quadros do PMO com a sua conta do Trello. É só leitura; nada é alterado.</p><button class='bt' id='aut'>Autorizar leitura</button><p class='nota' id='msg'></p>";
+    ajusta();
+    document.getElementById("aut").onclick = async () => {
+      try { await api.authorize({ scope: "read", expiration: "never" }); await carregar(api); }
+      catch (e) { document.getElementById("msg").textContent = "Não autorizado (" + String((e && e.message) || e).slice(0, 80) + ")."; }
+    };
+  } catch (e) { raiz.innerHTML = "<p class='erro'>Erro: " + esc(String((e && e.message) || e).slice(0, 120)) + "</p>"; ajusta(); }
+});
+</script>
+</body>
+</html>

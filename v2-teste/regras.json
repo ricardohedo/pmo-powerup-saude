@@ -85,6 +85,7 @@
     "evidencia": true,
     "linha_de_base": true,
     "ordenar_prioridade": true,
+    "portfolio": true,
     "tendencia": true
   },
   "fuso_horas": -3,
@@ -169,6 +170,11 @@
     "prazo_proximo": 40,
     "sem_comentario_pausado": 30
   },
+  "portfolio_excluir_prefixos": [
+    "modelo"
+  ],
+  "portfolio_nome_contem": "Projetos da Área",
+  "portfolio_workspace": "PMO - PROJETOS E INOVAÇÕES",
   "prioridade_gatilhos": {
     "atrasado": "P2",
     "atraso_oculto": "P2",

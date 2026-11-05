@@ -92,6 +92,7 @@ TrelloPowerUp.initialize({
       botao("Minhas ações", "Minhas ações: onde atuar primeiro", "./atuar.html", 600),
       botao("Atrasadas e a vencer", "Atrasadas, a vencer, marcos e datas do varejo", "./prazos.html", 560),
       botao("Impacto × esforço", "Matriz impacto × esforço", "./matriz.html", 600),
+      ...(f.portfolio ? [botao("Portfólio PMO", "Portfólio do PMO: as áreas", "./portfolio.html", 640)] : []),
       botao("Linha do tempo", "Linha do tempo de entregas", "./linha.html", 600),
       ...(f.carga_equipe ? [botao("Carga da equipe", "Carga da equipe", "./equipe.html", 520)] : []),
       ...(f.tendencia ? [botao("Tendência", "Tendência do quadro", "./tendencia.html", 560)] : []),
@@ -99,4 +100,4 @@ TrelloPowerUp.initialize({
       botao("Como sou medido", "Como o PMO mede os projetos", "./como.html", 600),
     ];
   },
-});
+}, window.PMO_APP);

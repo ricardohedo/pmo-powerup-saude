@@ -483,6 +483,34 @@
     return { celulas, semClassificar };
   }
 
+  /* RESUMO DE UMA AREA (Portfolio): contagens sobre os projetos ATIVOS, com os mesmos alertas do motor.
+   * criticos = atraso >= painel_atraso_dias. Semaforo: vermelho se ha critico; amarelo se ha atraso, sem interacao ou cadastro
+   * incompleto; senao verde. (A pagina local do pmo_v2 usa a conta do Plano de Acao: atrasados e criticos batem, o amarelo pode diferir.) */
+  function resumoArea(itens, regras) {
+    const ativos = itens.filter((it) => projetoAtivo(it, regras));
+    const tem = (it, tipo) => (it.alertas || []).some((a) => a.tipo === tipo);
+    const atras = ativos.filter((it) => tem(it, "atrasado"));
+    const criticos = atras.filter((it) => it.alertas.find((a) => a.tipo === "atrasado").valor >= regras.painel_atraso_dias);
+    const r = { ativos: ativos.length, atrasados: atras.length, criticos: criticos.length,
+      semPrazo: ativos.filter((it) => tem(it, "sem_prazo")).length,
+      semResponsavel: ativos.filter((it) => !(it.card.idMembers || []).length).length,
+      semInteracao: ativos.filter((it) => tem(it, "sem_interacao")).length,
+      cadastro: ativos.filter((it) => tem(it, "cadastro_incompleto")).length };
+    r.semaforo = r.criticos ? "vermelho" : (r.atrasados || r.semInteracao || r.cadastro) ? "amarelo" : "verde";
+    r.piores = atras.map((it) => ({ nome: it.card.name, url: it.card.url, dias: it.alertas.find((a) => a.tipo === "atrasado").valor }))
+      .sort((a, b) => b.dias - a.dias).slice(0, 5);
+    return r;
+  }
+
+  /* Quais quadros o Portfolio le: do workspace certo, nome contem o texto, sem os prefixos excluidos (ex.: MODELO). */
+  function quadrosDoPortfolio(boards, regras) {
+    const excl = (regras.portfolio_excluir_prefixos || []).map((s) => s.toLowerCase());
+    return boards.filter((b) => !b.closed && b.organization && b.organization.displayName === regras.portfolio_workspace &&
+      b.name.includes(regras.portfolio_nome_contem) && !excl.some((x) => b.name.toLowerCase().startsWith(x)))
+      .map((b) => ({ id: b.id, nome: b.name.replace(regras.portfolio_nome_contem, "").replace(/[\s—-]+$/, "").trim() }))
+      .sort((a, b) => a.nome.localeCompare(b.nome));
+  }
+
   /* Linha do tempo de entregas: a MESMA regra do painel da CEO (ceo.marcos) e do Plano.
    * itens = [{card, listaNome, alertas, valores, checklists}]. Retorna atrasadas, janelas de 7 dias, sem prazo, entregues no mes. */
   function linhaDoTempo(itens, regras, agora) {
@@ -716,7 +744,7 @@
     return { proxima: rotulo, faltam };
   }
 
-  return { antecipar, prontidao, ordenarPorPrioridade, desvioPlano, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
+  return { antecipar, prontidao, ordenarPorPrioridade, desvioPlano, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, resumoArea, quadrosDoPortfolio, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
     checklistsDeBadges, pontuar, ondeAtuar, abaInicialMeus, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto, cargaDaEquipe, semEvidencia,
     retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal, diasEntre };
 });

@@ -3,7 +3,7 @@
 window.PmoDados = (function () {
   let regrasP = null;
   function regras() {
-    if (!regrasP) regrasP = fetch("./regras.json?v=202611051616").then((r) => r.json());
+    if (!regrasP) regrasP = fetch("./regras.json?v=202611051634").then((r) => r.json());
     return regrasP;
   }
 
@@ -32,7 +32,7 @@ window.PmoDados = (function () {
   function card(c) {                    // card do cliente -> card do motor
     return {
       id: c.id, name: c.name, url: c.url || c.shortUrl, desc: c.desc || "", due: c.due || null, closed: !!c.closed,
-      idList: c.idList, labels: c.labels || [], idMembers: (c.members || []).map((m) => m.id),
+      idList: c.idList, labels: c.labels || [], idMembers: c.members ? c.members.map((m) => m.id) : (c.idMembers || []),
       dateLastActivity: c.dateLastActivity || null, customFieldItems: c.customFieldItems || [],
       badges: c.badges || null,           // o Trello entrega a contagem de anexos em badges.attachments (usada na evidencia)
     };
@@ -57,19 +57,25 @@ window.PmoDados = (function () {
       prontidao: PmoMotor.prontidao(card(c), lista.name, cd, ck, agora, r, alertas) };                // "para mover para a proxima fase falta"
   }
 
-  async function quadro(t) {
-    const [r, cards, listas, defs, eu, bm] = await Promise.all([regras(), t.cards("all"), t.lists("id", "name"), t.board("customFields"), t.member("id"), t.board("members")]);
-    const nomesMembros = {}; for (const m of (bm && bm.members) || []) nomesMembros[m.id] = m.fullName || m.username || "Sem nome";
-    const nomes = {}; for (const l of listas) nomes[l.id] = l.name;
-    const cd = camposDef(defs.customFields), agora = new Date();
-    const itens = cards.map((c) => {
+  /* cards do Trello (cliente OU REST com members/idMembers) -> itens do motor. Usado pelo quadro aberto e pelo Portfolio. */
+  function itensDoBoard(cards, nomesDasListas, customFields, r, agora) {
+    const cd = camposDef(customFields);
+    return cards.map((c) => {
       const ck = checklists(c.checklists, c.badges), cm = card(c);
-      const item = { card: cm, listaNome: nomes[c.idList], checklists: ck, valores: PmoMotor.valoresCustomfield(cm, cd),
-        alertas: PmoMotor.avaliarCard(cm, nomes[c.idList], cd, ck, agora, r) };
+      const item = { card: cm, listaNome: nomesDasListas[c.idList], checklists: ck, valores: PmoMotor.valoresCustomfield(cm, cd),
+        alertas: PmoMotor.avaliarCard(cm, nomesDasListas[c.idList], cd, ck, agora, r) };
       item.prio = PmoMotor.avaliarProjeto(item, r, agora);
       item.semEvidencia = r.funcoes.evidencia && PmoMotor.semEvidencia(item, r, agora);   // funcao opcional (pmo.toml)
       return item;
     }).filter((i) => !i.card.closed);
+  }
+
+  async function quadro(t) {
+    const [r, cards, listas, defs, eu, bm] = await Promise.all([regras(), t.cards("all"), t.lists("id", "name"), t.board("customFields"), t.member("id"), t.board("members")]);
+    const nomesMembros = {}; for (const m of (bm && bm.members) || []) nomesMembros[m.id] = m.fullName || m.username || "Sem nome";
+    const nomes = {}; for (const l of listas) nomes[l.id] = l.name;
+    const agora = new Date();
+    const itens = itensDoBoard(cards, nomes, defs.customFields, r, agora);
     return { regras: r, resumo: PmoMotor.resumoQuadro(itens, r, agora), itens, meuId: eu && eu.id, membros: nomesMembros };
   }
 
@@ -79,5 +85,5 @@ window.PmoDados = (function () {
     return PmoMotor.ordenarPorPrioridade((cardsDaLista || []).map((c) => c.id), q.itens, q.regras);
   }
 
-  return { regras, cardEmFoco, quadro, ordenarLista };   // regras() devolve o regras.json (usado tambem pela tendencia)
+  return { regras, cardEmFoco, quadro, ordenarLista, itensDoBoard };   // regras() devolve o regras.json (usado tambem pela tendencia)
 })();
