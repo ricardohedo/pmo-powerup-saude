@@ -707,6 +707,16 @@
     return { dias, base: base.f, atual, texto };
   }
 
+  /* HISTORICO DE REPLANEJAMENTOS: base = {e, i, f, h:[{e,i,f}...]} (h = planos congelados antes, do mais antigo ao mais novo).
+   * Cada passo = um plano e o dia em que foi congelado; o ultimo passo e o plano congelado vigente. Devolve null sem replanejamento
+   * (nada em h). escorregou = dias entre o Fim do 1o plano e o Fim de hoje (valores["Fim planejado"]; sem ele, o do ultimo plano). */
+  function historicoPlano(base, valores, regras) {
+    if (!base || !base.f || !(base.h || []).length) return null;
+    const passos = [...base.h, { e: base.e, i: base.i || null, f: base.f }].map((p) => ({ congelado: p.e, fim: p.f }));
+    const atual = (valores || {})["Fim planejado"] ? dataLocal(new Date(valores["Fim planejado"]), regras) : base.f;
+    return { replanejamentos: passos.length - 1, passos, escorregou: diasEntre(passos[0].fim, atual), atual };
+  }
+
   /* ATRASADAS / A VENCER: usa os alertas que o motor ja calculou. Atrasadas: mais dias de atraso primeiro; a vencer: mais
    * perto primeiro. "atrasado" valor 0 = vence hoje (conta como atrasada, como na regra). */
   function listaPrazos(itens) {
@@ -749,7 +759,7 @@
     return { proxima: rotulo, faltam };
   }
 
-  return { antecipar, prontidao, ordenarPorPrioridade, desvioPlano, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, resumoArea, quadrosDoPortfolio, portfolioPermitido, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
+  return { antecipar, prontidao, ordenarPorPrioridade, desvioPlano, historicoPlano, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, resumoArea, quadrosDoPortfolio, portfolioPermitido, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
     checklistsDeBadges, pontuar, ondeAtuar, abaInicialMeus, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto, cargaDaEquipe, semEvidencia,
     retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal, diasEntre };
 });

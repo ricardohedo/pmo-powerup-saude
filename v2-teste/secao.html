@@ -6,9 +6,9 @@
 <title>Saúde do projeto</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611061020"></script>
-<script src="./dados.js?v=202611061020"></script>
-<script src="./base.js?v=202611061020"></script>
+<script src="./motor.js?v=202611061035"></script>
+<script src="./dados.js?v=202611061035"></script>
+<script src="./base.js?v=202611061035"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;margin:0;padding:4px 2px;color:#172b4d}
  .topo{display:flex;align-items:center;gap:8px;margin-bottom:8px}
@@ -65,11 +65,15 @@ async function desenhar() {
   const fimAtual = d.valores["Fim planejado"] ? PmoMotor.dataLocal(new Date(d.valores["Fim planejado"]), r) : null;
   const iniAtual = d.valores["Início planejado"] ? PmoMotor.dataLocal(new Date(d.valores["Início planejado"]), r) : null;
   if (r.funcoes.linha_de_base) {
-    const base = await PmoBase.ler(t), des = PmoMotor.desvioPlano(base, d.valores, r);
+    const base = await PmoBase.ler(t), des = PmoMotor.desvioPlano(base, d.valores, r), hist = PmoMotor.historicoPlano(base, d.valores, r);
+    const br = (x) => x.slice(8, 10) + "/" + x.slice(5, 7);
+    const histTxt = hist ? "<small><b>Replanejado " + hist.replanejamentos + (hist.replanejamentos === 1 ? " vez" : " vezes") + "</b> (" +
+      (hist.escorregou > 0 ? "escorregou " + hist.escorregou + (hist.escorregou === 1 ? " dia" : " dias") + " desde o 1º plano" : hist.escorregou < 0 ? "adiantou " + (-hist.escorregou) + (hist.escorregou === -1 ? " dia" : " dias") + " desde o 1º plano" : "mesmo fim do 1º plano") + "): " +
+      hist.passos.map((p) => "fim " + esc(br(p.fim)) + " (congelado em " + esc(br(p.congelado)) + ")").join(" → ") + "</small>" : "";
     h += "<div class='risco base" + (des && des.dias > 0 ? " alto" : "") + "'><b>📐 Plano original (linha de base)</b>" +
       (des ? "<small>" + esc(des.texto) + " Congelado em " + esc(base.e.slice(8, 10) + "/" + base.e.slice(5, 7)) + ".</small>"
-        : "<small>Ainda não há plano congelado neste card.</small>") +
-      (fimAtual ? "<button id='congelar'>" + (base ? "Congelar de novo (substitui o plano original)" : "Congelar plano de hoje") + "</button>"
+        : "<small>Ainda não há plano congelado neste card.</small>") + histTxt +
+      (fimAtual ? "<button id='congelar'>" + (base ? "Congelar de novo (registra um replanejamento)" : "Congelar plano de hoje") + "</button>"
         : "<small>Preencha o 'Fim planejado' para poder congelar.</small>") +
       (base ? "<button id='remover'>Remover linha de base</button>" : "") + "<small id='msgbase'></small></div>";
   }
@@ -79,7 +83,8 @@ async function desenhar() {
   if (bt) bt.onclick = async () => {
     bt.disabled = true;
     const res = await PmoBase.congelar(t, PmoMotor.dataLocal(new Date(), r), iniAtual, fimAtual);
-    if (res.ok) desenhar(); else { bt.disabled = false; document.getElementById("msgbase").textContent = res.erro; }
+    if (res.ok && res.semMudanca) { bt.disabled = false; document.getElementById("msgbase").textContent = "O plano de hoje é igual ao congelado: nada a registrar."; }
+    else if (res.ok) desenhar(); else { bt.disabled = false; document.getElementById("msgbase").textContent = res.erro; }
   };
   const rm = document.getElementById("remover");
   if (rm) rm.onclick = async () => {                       // dois cliques: o 1o pede confirmacao (confirm() pode estar bloqueado no iframe)
