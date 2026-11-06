@@ -91,6 +91,7 @@ TrelloPowerUp.initialize({
     const regrasBt = f.portfolio ? await PmoDados.regras() : null;
     const botao = (text, title, url, height) => ({ icon: ICONE, text, callback: (tt) => tt.modal({ title, url, height }) });
     return [
+      ...(f.meu_dia ? [botao("Meu dia", "Meu dia: o que pede você hoje", "./meu_dia.html", 600)] : []),
       botao("Minhas ações", "Minhas ações: onde atuar primeiro", "./atuar.html", 600),
       botao("Atrasadas e a vencer", "Atrasadas, a vencer, marcos e datas do varejo", "./prazos.html", 560),
       botao("Impacto × esforço", "Matriz impacto × esforço", "./matriz.html", 600),

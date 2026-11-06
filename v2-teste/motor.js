@@ -707,6 +707,40 @@
     return { dias, base: base.f, atual, texto };
   }
 
+  /* MEU DIA: o que pede VOCE hoje, pelo tempo. itens = [{card, listaNome, alertas, valores, prio}]; meuId = membro logado (so os cards dele).
+   * hoje = Fim planejado e hoje; atrasadas = atrasado (mais dias primeiro); semana = prazo proximo (em dias uteis, descontados
+   * fim de semana e feriados); checklist = itens vencidos escondidos (atraso_oculto); parados = sem interacao. Um card pode estar em
+   * mais de uma secao; total conta cards distintos. Fora: concluido, backlog, fechado, listas ignoradas (projetoAtivo). So le. */
+  function meuDia(itens, regras, meuId, agora) {
+    const hoje = dataLocal(agora, regras), r = { hoje: [], atrasadas: [], semana: [], checklist: [], parados: [], total: 0, souMembro: false };
+    const ids = new Set();
+    for (const it of itens) {
+      if (!meuId || !(it.card.idMembers || []).includes(meuId)) continue;
+      r.souMembro = true;
+      if (!projetoAtivo(it, regras)) continue;
+      const al = (tipo) => (it.alertas || []).find((a) => a.tipo === tipo);
+      const base = { nome: it.card.name, url: it.card.url, lista: it.listaNome, prioridade: it.prio ? it.prio.prioridade : null };
+      const fimIso = (it.valores || {})["Fim planejado"], fim = fimIso ? dataLocal(new Date(fimIso), regras) : null;
+      const atr = al("atrasado"), pp = al("prazo_proximo"), ao = al("atraso_oculto"), si = al("sem_interacao");
+      let entrou = false;
+      if (fim === hoje) { r.hoje.push({ ...base, texto: "vence hoje" }); entrou = true; }
+      else if (atr && atr.valor > 0) { r.atrasadas.push({ ...base, dias: atr.valor, texto: atr.valor + (atr.valor === 1 ? " dia" : " dias") + " de atraso" }); entrou = true; }
+      else if (pp && fim && fim > hoje) {
+        const du = diasUteis(hoje, fim, regras.feriados);
+        r.semana.push({ ...base, dias: pp.valor, diasUteis: du, texto: "vence em " + du + (du === 1 ? " dia útil" : " dias úteis") + " (" + fim.slice(8, 10) + "/" + fim.slice(5, 7) + ")" }); entrou = true;
+      }
+      if (ao) { r.checklist.push({ ...base, texto: ao.valor === null ? "itens de checklist vencidos" : frase(ao) }); entrou = true; }
+      if (si) { r.parados.push({ ...base, dias: si.valor, texto: si.valor + " dias sem interação" }); entrou = true; }
+      if (entrou) ids.add(it.card.id);
+    }
+    const porNome = (a, b) => a.nome.localeCompare(b.nome);
+    r.atrasadas.sort((a, b) => b.dias - a.dias || porNome(a, b)); r.semana.sort((a, b) => a.diasUteis - b.diasUteis || porNome(a, b));
+    r.parados.sort((a, b) => b.dias - a.dias || porNome(a, b)); r.hoje.sort(porNome); r.checklist.sort(porNome);
+    r.total = ids.size;
+    r.foco = r.hoje[0] || r.atrasadas[0] || r.semana[0] || r.checklist[0] || r.parados[0] || null;
+    return r;
+  }
+
   /* HISTORICO DE REPLANEJAMENTOS: base = {e, i, f, h:[{e,i,f}...]} (h = planos congelados antes, do mais antigo ao mais novo).
    * Cada passo = um plano e o dia em que foi congelado; o ultimo passo e o plano congelado vigente. Devolve null sem replanejamento
    * (nada em h). escorregou = dias entre o Fim do 1o plano e o Fim de hoje (valores["Fim planejado"]; sem ele, o do ultimo plano). */
@@ -759,7 +793,7 @@
     return { proxima: rotulo, faltam };
   }
 
-  return { antecipar, prontidao, ordenarPorPrioridade, desvioPlano, historicoPlano, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, resumoArea, quadrosDoPortfolio, portfolioPermitido, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
+  return { antecipar, prontidao, ordenarPorPrioridade, desvioPlano, historicoPlano, meuDia, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, resumoArea, quadrosDoPortfolio, portfolioPermitido, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
     checklistsDeBadges, pontuar, ondeAtuar, abaInicialMeus, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto, cargaDaEquipe, semEvidencia,
     retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal, diasEntre };
 });

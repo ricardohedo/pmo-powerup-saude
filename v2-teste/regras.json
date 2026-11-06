@@ -84,6 +84,7 @@
     "carga_equipe": true,
     "evidencia": true,
     "linha_de_base": true,
+    "meu_dia": true,
     "ordenar_prioridade": true,
     "portfolio": true,
     "tendencia": true
