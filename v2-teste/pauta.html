@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pauta da reunião</title>
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./motor.js?v=202611061437"></script>
+<script src="./dados.js?v=202611061437"></script>
+<style>
+ body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
+ .topo{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+ button{padding:6px 12px;border:1px solid #0c66e4;border-radius:4px;background:#0c66e4;color:#fff;cursor:pointer;font:inherit}
+ h3{margin:14px 0 4px} ul{margin:0;padding-left:18px} li{margin:0 0 3px}
+ .nota{color:#5e6c84;font-size:12px} .resumo{font-weight:600}
+ .ok{background:#e3fcef;border-radius:4px;padding:10px}
+</style>
+</head>
+<body>
+<div class="topo"><button id="copiar">Copiar pauta</button><span id="msg" class="nota"></span></div>
+<div id="raiz">Lendo o quadro…</div>
+<script>
+const t = TrelloPowerUp.iframe();
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+let pauta = null;
+
+function copiar(texto) {
+  if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(texto);
+  return new Promise((ok, falha) => {                                   // plano B: o iframe do Trello pode bloquear a API moderna
+    const a = document.createElement("textarea"); a.value = texto; document.body.appendChild(a); a.select();
+    try { document.execCommand("copy") ? ok() : falha(new Error("bloqueado")); } catch (e) { falha(e); } finally { a.remove(); }
+  });
+}
+
+document.getElementById("copiar").onclick = async () => {
+  const m = document.getElementById("msg");
+  if (!pauta) return;
+  try { await copiar(pauta.texto); m.textContent = "Pauta copiada. Cole no e-mail, na ata ou no Chat."; }
+  catch (e) { m.textContent = "Não consegui copiar sozinho: selecione o texto abaixo e copie."; }
+};
+
+t.render(async () => {
+  try {
+    const [q, b] = await Promise.all([PmoDados.quadro(t), t.board("name")]);
+    pauta = PmoMotor.pautaReuniao(q.itens, q.regras, new Date(), (b || {}).name);
+    const link = (l) => l.url ? "<a href='" + esc(l.url) + "' target='_blank'>" + esc(l.texto) + "</a>" : esc(l.texto);
+    document.getElementById("raiz").innerHTML = "<p class='resumo'>" + esc(pauta.titulo) + "<br><span class='nota'>" + esc(pauta.resumo) + "</span></p>" +
+      (pauta.secoes.length ? pauta.secoes.map((s, n) => "<h3>" + (n + 1) + ") " + esc(s.titulo) + "</h3><ul>" + s.linhas.map((l) => "<li>" + link(l) + "</li>").join("") +
+        (s.resto ? "<li class='nota'>… e mais " + s.resto + "</li>" : "") + "</ul>").join("") :
+        "<div class='ok'><b>Nada pedindo decisão nem ajuda agora.</b><br>Boa reunião para olhar o que vem pela frente.</div>") +
+      "<p class='nota'>Rascunho gerado só do Trello, pelas regras do PMO (sem IA): a mesma situação dá sempre a mesma pauta. Revise antes de usar. Só leitura; nada é alterado.</p>";
+  } catch (e) {
+    document.getElementById("raiz").innerHTML = "<p style='color:#c0392b'>Não consegui ler o quadro (" + esc(String((e && e.message) || e).slice(0, 80)) + ").</p>";
+  }
+});
+</script>
+</body>
+</html>

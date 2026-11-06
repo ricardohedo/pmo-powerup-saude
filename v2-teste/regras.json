@@ -87,7 +87,9 @@
     "meu_dia": true,
     "ordenar_prioridade": true,
     "paineis": true,
+    "pauta": true,
     "portfolio": true,
+    "radar": true,
     "tendencia": true
   },
   "fuso_horas": -3,

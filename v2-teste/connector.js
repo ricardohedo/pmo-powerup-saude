@@ -93,6 +93,8 @@ TrelloPowerUp.initialize({
     return [
       ...(f.meu_dia ? [botao("Meu dia", "Meu dia: o que pede você hoje", "./meu_dia.html", 600)] : []),
       ...(f.paineis ? [botao("Painéis PMO", "Painéis PMO: seus blocos sobre os projetos do quadro", "./paineis.html", 680)] : []),
+      ...(f.pauta ? [botao("Pauta da reunião", "Pauta da reunião: do que o quadro pede", "./pauta.html", 640)] : []),
+      ...(f.radar ? [botao("Radar", "Radar: o que vai cair em alerta se ninguém mexer", "./radar.html", 600)] : []),
       botao("Minhas ações", "Minhas ações: onde atuar primeiro", "./atuar.html", 600),
       botao("Atrasadas e a vencer", "Atrasadas, a vencer, marcos e datas do varejo", "./prazos.html", 560),
       botao("Impacto × esforço", "Matriz impacto × esforço", "./matriz.html", 600),

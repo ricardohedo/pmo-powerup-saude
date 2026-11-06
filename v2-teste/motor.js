@@ -652,7 +652,7 @@
   /* ANTES QUE ACONTECA (sem IA): quanto falta para o card cair num alerta/prioridade, se ninguem mexer.
    * So mostra quando faltam ate aviso_antecipado_dias (pmo.toml) para cair no alerta (evita ruido tipo "avisa em 60 dias"). Mesma regra do avaliarCard (nao inventa limite).
    * Retorna [{tipo, dias, texto}] do mais urgente ao menos. */
-  function antecipar(card, listaNome, alertas, camposDef, agora, regras) {
+  function antecipar(card, listaNome, alertas, camposDef, agora, regras, fimJa) {     // fimJa (opcional): o Fim planejado ja lido (o radar nao tem camposDef)
     if (card.closed) return [];
     const lista = (listaNome || "").trim().toLowerCase();
     if (regras.listas_ignorar.some((t) => lista.includes(t)) || regras.listas_concluido.includes(lista) || lista === regras.motor.lista_backlog) return [];
@@ -663,7 +663,7 @@
       const falta = regras.dias_sem_interacao - diasDesde(card.dateLastActivity, agora);
       if (falta > 0 && falta <= janela) out.push({ tipo: "sem_interacao", dias: falta, texto: "Entra em alerta de 'sem interação' em " + dias(falta) + " se ninguém mexer no card (limite: " + dias(regras.dias_sem_interacao) + ")." });
     }
-    const fim = valoresCustomfield(card, camposDef)["Fim planejado"];
+    const fim = fimJa !== undefined ? fimJa : valoresCustomfield(card, camposDef)["Fim planejado"];
     if (fim && !tem("prazo_proximo") && !tem("atrasado")) {
       const d = Math.floor((iso(fim) - agora) / DIA_MS), falta = d - regras.dias_prazo_proximo;
       if (d > regras.dias_prazo_proximo && falta <= janela) out.push({ tipo: "prazo_proximo", dias: falta, texto: "Entra em alerta de 'prazo próximo' em " + dias(falta) + " (o prazo é daqui a " + dias(d) + "; o aviso começa a " + dias(regras.dias_prazo_proximo) + " do prazo)." });
@@ -741,6 +741,73 @@
     return r;
   }
 
+  /* PAUTA DA REUNIAO: o que levar a reuniao semanal do quadro, so do que o Trello ja diz (nada inventado).
+   * itens = [{card, listaNome, alertas, valores, prio}]. Secoes (cada projeto aparece em UMA so, exceto "Reconhecer"):
+   * 1 Decidir hoje (P1), 2 Destravar (sem responsavel, sem comentario obrigatorio, sem interacao), 3 Prazo (atrasado/proximo),
+   * 4 Reconhecer (quase pronto), 5 Cadastro (so a contagem), 6 Datas do varejo em risco. Listas cortadas em limite_lista_recolhida.
+   * Devolve {titulo, resumo, secoes:[{titulo, linhas:[{texto, url}], resto}], texto} (texto = a pauta pronta para copiar). */
+  function pautaReuniao(itens, regras, agora, nomeQuadro) {
+    const ativos = itens.filter((i) => projetoAtivo(i, regras));
+    const tem = (i, tipo) => (i.alertas || []).some((a) => a.tipo === tipo);
+    const frases = (i, tipos) => ordenar((i.alertas || []).filter((a) => !tipos || tipos.includes(a.tipo)), regras).map(frase).join("; ");
+    const pts = (i) => pontuar(i.alertas || [], i.valores, regras);
+    const porPontos = (a, b) => pts(b) - pts(a) || a.card.name.localeCompare(b.card.name);
+    const lim = regras.limite_lista_recolhida, usados = new Set(), secoes = [];
+    const secao = (titulo, candidatos, texto, ordem, exclusiva) => {
+      const lista = candidatos.filter((i) => !exclusiva || !usados.has(i.card.id)).sort(ordem || porPontos);
+      if (!lista.length) return;
+      if (exclusiva) lista.forEach((i) => usados.add(i.card.id));
+      secoes.push({ titulo, linhas: lista.slice(0, lim).map((i) => ({ texto: i.card.name + " — " + texto(i), url: i.card.url })), resto: Math.max(0, lista.length - lim) });
+    };
+    const DESTRAVAR = ["sem_responsavel", "sem_comentario_pausado", "em_revisao_sem_comentario", "sem_interacao"];
+    secao("Decidir hoje (P1 — Crítico)", ativos.filter((i) => i.prio && i.prio.prioridade === "P1"), (i) => frases(i) || "prazo curto e pouco andado", porPontos, true);
+    secao("Destravar (precisa de ajuda)", ativos.filter((i) => DESTRAVAR.some((t) => tem(i, t))), (i) => frases(i, DESTRAVAR), porPontos, true);
+    const diasAtraso = (i) => (i.alertas.find((a) => a.tipo === "atrasado") || {}).valor;
+    const diasProximo = (i) => (i.alertas.find((a) => a.tipo === "prazo_proximo") || {}).valor;
+    secao("Prazo", ativos.filter((i) => tem(i, "atrasado") || tem(i, "prazo_proximo")), (i) => frases(i, ["atrasado", "prazo_proximo"]),
+      (a, b) => (tem(b, "atrasado") - tem(a, "atrasado")) || ((diasAtraso(b) || 0) - (diasAtraso(a) || 0)) || ((diasProximo(a) || 0) - (diasProximo(b) || 0)) || a.card.name.localeCompare(b.card.name), true);
+    secao("Reconhecer (quase prontos)", ativos.filter((i) => tem(i, "quase_pronto")), (i) => frases(i, ["quase_pronto"]) + ": formalizar o encerramento");
+    const semCadastro = ativos.filter((i) => tem(i, "cadastro_incompleto")).length;
+    if (semCadastro) secoes.push({ titulo: "Cadastro", linhas: [{ texto: semCadastro + (semCadastro === 1 ? " projeto com cadastro incompleto" : " projetos com cadastro incompleto") + " (veja o Painel PMO)", url: null }], resto: 0 });
+    const br = (d) => d.slice(8, 10) + "/" + d.slice(5, 7);
+    const emRisco = datasVarejo(itens, regras, agora).filter((v) => v.emRisco > 0);
+    if (emRisco.length) secoes.push({ titulo: "Datas do varejo em risco", resto: 0, linhas: emRisco.map((v) => ({ url: null,
+      texto: v.nome + " (" + br(v.data) + ", " + v.diasUteis + (v.diasUteis === 1 ? " dia útil" : " dias úteis") + "): " + v.emRisco + " em risco — " +
+        v.projetos.filter((p) => p.motivos.length).slice(0, 3).map((p) => p.nome).join("; ") })) });
+    const nAtraso = ativos.filter((i) => tem(i, "atrasado")).length, nP1 = ativos.filter((i) => i.prio && i.prio.prioridade === "P1").length;
+    const hoje = dataLocal(agora, regras);
+    const titulo = "Pauta da reunião — " + (nomeQuadro || "quadro") + " — " + br(hoje);
+    const resumo = ativos.length + " projetos ativos · " + nAtraso + " atrasados · " + nP1 + " crítico(s) (P1)";
+    const linhasTxt = [titulo.toUpperCase(), resumo, ""];
+    if (!secoes.length) linhasTxt.push("Nada pedindo decisão nem ajuda agora. Boa reunião para olhar o que vem pela frente.", "");
+    secoes.forEach((s, n) => {
+      linhasTxt.push((n + 1) + ") " + s.titulo);
+      s.linhas.forEach((l) => linhasTxt.push("   - " + l.texto));
+      if (s.resto) linhasTxt.push("   - … e mais " + s.resto);
+      linhasTxt.push("");
+    });
+    linhasTxt.push("(Rascunho gerado só do Trello, pelas regras do PMO. Revise antes de usar.)");
+    return { titulo, resumo, secoes, texto: linhasTxt.join("\n") };
+  }
+
+  /* RADAR: o que vai cair em alerta nos proximos aviso_antecipado_dias dias SE NINGUEM MEXER, no quadro inteiro (usa o mesmo
+   * `antecipar` da tela do card: nao inventa limite). itens = [{card, listaNome, alertas, valores}]. Do mais proximo ao mais distante;
+   * empate: quem vira P1 (atrasado) primeiro. Devolve {linhas:[{id, nome, url, lista, tipo, dias, texto, prioridade}], porTipo, total, janela}. */
+  function radar(itens, regras, agora) {
+    const linhas = [];
+    for (const i of itens) {
+      if (!projetoAtivo(i, regras)) continue;
+      for (const a of antecipar(i.card, i.listaNome, i.alertas || [], null, agora, regras, (i.valores || {})["Fim planejado"] || null)) {
+        linhas.push({ id: i.card.id, nome: i.card.name, url: i.card.url, lista: i.listaNome, tipo: a.tipo, dias: a.dias, texto: a.texto,
+          prioridade: i.prio ? i.prio.prioridade : null });
+      }
+    }
+    linhas.sort((a, b) => a.dias - b.dias || (b.tipo === "atrasado") - (a.tipo === "atrasado") || a.nome.localeCompare(b.nome));
+    const porTipo = {};
+    for (const l of linhas) porTipo[l.tipo] = (porTipo[l.tipo] || 0) + 1;
+    return { linhas, porTipo, total: new Set(linhas.map((l) => l.id)).size, janela: regras.aviso_antecipado_dias };
+  }
+
   /* HISTORICO DE REPLANEJAMENTOS: base = {e, i, f, h:[{e,i,f}...]} (h = planos congelados antes, do mais antigo ao mais novo).
    * Cada passo = um plano e o dia em que foi congelado; o ultimo passo e o plano congelado vigente. Devolve null sem replanejamento
    * (nada em h). escorregou = dias entre o Fim do 1o plano e o Fim de hoje (valores["Fim planejado"]; sem ele, o do ultimo plano). */
@@ -793,7 +860,7 @@
     return { proxima: rotulo, faltam };
   }
 
-  return { antecipar, prontidao, ordenarPorPrioridade, desvioPlano, historicoPlano, meuDia, projetoAtivo, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, resumoArea, quadrosDoPortfolio, portfolioPermitido, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
+  return { antecipar, prontidao, ordenarPorPrioridade, desvioPlano, historicoPlano, meuDia, projetoAtivo, pautaReuniao, radar, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, resumoArea, quadrosDoPortfolio, portfolioPermitido, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
     checklistsDeBadges, pontuar, ondeAtuar, abaInicialMeus, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto, cargaDaEquipe, semEvidencia,
     retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal, diasEntre };
 });

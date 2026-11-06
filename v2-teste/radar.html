@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar</title>
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./motor.js?v=202611061437"></script>
+<script src="./dados.js?v=202611061437"></script>
+<style>
+ body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
+ h3{margin:14px 0 4px} ul{margin:0;padding-left:18px} li{margin:0 0 4px}
+ .nota{color:#5e6c84;font-size:12px}
+ .ok{background:#e3fcef;border-radius:4px;padding:10px}
+ .foco{background:#e9f2ff;border-radius:4px;padding:10px;margin-bottom:6px}
+ .tag{display:inline-block;padding:0 6px;border-radius:9px;color:#fff;font-size:11px;font-weight:600;margin-right:4px}
+ .tag.P1{background:#c0392b}.tag.P2{background:#d9730d}.tag.P3{background:#b8860b}.tag.P4{background:#2e7d4f}
+ .p1{color:#c0392b;font-weight:600}
+</style>
+</head>
+<body>
+<div id="raiz">Lendo o quadro…</div>
+<script>
+const t = TrelloPowerUp.iframe();
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const dias = (n) => n + (n === 1 ? " dia" : " dias");
+
+t.render(async () => {
+  try {
+    const q = await PmoDados.quadro(t), r = PmoMotor.radar(q.itens, q.regras, new Date());
+    let h;
+    if (!r.linhas.length) {
+      h = "<div class='ok'><b>Nada vai cair em alerta nos próximos " + dias(r.janela) + ".</b><br>Se ninguém mexer, os projetos ativos deste quadro seguem como estão.</div>";
+    } else {
+      const grupos = new Map();
+      for (const l of r.linhas) { if (!grupos.has(l.dias)) grupos.set(l.dias, []); grupos.get(l.dias).push(l); }
+      const nP1 = r.porTipo.atrasado || 0;
+      h = "<div class='foco'><b>" + r.total + (r.total === 1 ? " projeto vai" : " projetos vão") + " cair em alerta nos próximos " + dias(r.janela) + " se ninguém mexer.</b>" +
+        (nP1 ? "<br><span class='p1'>" + nP1 + (nP1 === 1 ? " vira" : " viram") + " P1 (Crítico) por atraso.</span>" : "") + "</div>" +
+        [...grupos].map(([d, ls]) => "<h3>Em " + dias(d) + " (" + ls.length + ")</h3><ul>" + ls.map((l) =>
+          "<li>" + (l.prioridade ? "<span class='tag " + esc(l.prioridade) + "'>" + esc(l.prioridade) + "</span>" : "") + "<a href='" + esc(l.url) + "' target='_blank'>" + esc(l.nome) +
+          "</a><br><span class='nota'>" + esc(l.texto) + " · " + esc(l.lista) + "</span></li>").join("") + "</ul>").join("");
+    }
+    document.getElementById("raiz").innerHTML = h + "<p class='nota'>O que o motor do PMO já prevê com os números de hoje (sem IA). Mexer no card (comentar, mover, ajustar o prazo) tira ele da lista. Só leitura; nada é alterado.</p>";
+  } catch (e) {
+    document.getElementById("raiz").innerHTML = "<p style='color:#c0392b'>Não consegui ler o quadro (" + esc(String((e && e.message) || e).slice(0, 80)) + ").</p>";
+  }
+});
+</script>
+</body>
+</html>
