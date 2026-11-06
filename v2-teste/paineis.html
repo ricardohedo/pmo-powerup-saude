@@ -6,9 +6,9 @@
 <title>Painéis PMO</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611061154"></script>
-<script src="./dados.js?v=202611061154"></script>
-<script src="./paineis.js?v=202611061154"></script>
+<script src="./motor.js?v=202611061216"></script>
+<script src="./dados.js?v=202611061216"></script>
+<script src="./paineis.js?v=202611061216"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  .topo{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
@@ -169,7 +169,7 @@ document.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.
 t.render(async () => {
   try {
     q = await PmoDados.quadro(t);
-    linhas = q.itens.map((i) => P.linhaDoItem(i, q.regras, q.membros));
+    const agora = new Date(); linhas = q.itens.map((i) => P.linhaDoItem(i, q.regras, q.membros, agora));
     opcoes($("f-tipo"), P.TIPOS); opcoes($("f-campo"), P.CAMPOS); opcoes($("f-fcampo"), P.CAMPOS, "(sem filtro)");
     const r = await P.ler(t); lista = r.lista; salvo = r.salvo;
     desenhar();

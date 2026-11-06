@@ -11,14 +11,14 @@
   const CHAVE_PAINEIS = "pmo_paineis_v1";
   const TIPOS = { contador: "Contador", pizza: "Gráfico de pizza", barras: "Gráfico de barras", tabela: "Tabela de projetos" };
   const CAMPOS = { lista: "Lista (fase)", responsavel: "Responsável", prioridade: "Prioridade (P1 a P4)", semaforo: "Semáforo",
-    alerta: "Sinal de alerta", etiqueta: "Etiqueta", risco: "Risco antecipado" };
+    alerta: "Sinal de alerta", etiqueta: "Etiqueta", risco: "Risco antecipado", prazo: "Faixa de prazo", atividade: "Atividade do card" };
   const ROT_SEMAFORO = { vermelho: "Atenção", amarelo: "De olho", verde: "Em dia" };
   const SEM_VALOR = "(sem valor)";
   const MAX_TITULO = 40, MAX_FILTRO = 40, MAX_GRUPOS = 8;        // limites de tela, nao regra de negocio
 
   /* ---- dados: um item do motor -> uma linha plana ---- */
-  function linhaDoItem(it, regras, membros) {
-    const alertas = it.alertas || [], valores = it.valores || {};
+  function linhaDoItem(it, regras, membros, agora) {
+    const alertas = it.alertas || [], valores = it.valores || {}, hoje = agora || new Date();
     const atr = alertas.find((a) => a.tipo === "atrasado");
     return {
       nome: it.card.name, url: it.card.url, lista: it.listaNome || "",
@@ -28,7 +28,25 @@
       semaforo: M.semaforo(alertas, regras), alertas: alertas.map((a) => a.tipo),
       etiquetas: (it.card.labels || []).map((l) => ((l && l.name) || "").trim()).filter(Boolean),
       atraso: atr && Number.isInteger(atr.valor) ? atr.valor : null, fim: valores["Fim planejado"] || null,
+      faixaPrazo: faixaDoPrazo(valores["Fim planejado"], regras, hoje), faixaAtividade: faixaDaAtividade(it.card.dateLastActivity, regras, hoje),
     };
+  }
+
+  /* Periodos prontos (limites do regras.json: dias_prazo_proximo, dias_marcos, dias_sem_interacao). Dias de calendario na data local do PMO. */
+  function faixaDoPrazo(fimIso, regras, agora) {
+    if (!fimIso) return "Sem prazo";
+    const dias = M.diasEntre(M.dataLocal(agora, regras), M.dataLocal(new Date(fimIso), regras));
+    if (dias < 0) return "Atrasado";
+    if (dias === 0) return "Vence hoje";
+    if (dias <= regras.dias_prazo_proximo) return "Próximos " + regras.dias_prazo_proximo + " dias";
+    if (dias <= regras.dias_marcos) return "Até " + regras.dias_marcos + " dias";
+    return "Depois";
+  }
+
+  function faixaDaAtividade(ultimaIso, regras, agora) {
+    if (!ultimaIso) return "Sem registro";
+    const dias = Math.floor((agora - new Date(ultimaIso)) / 86400000);
+    return dias >= regras.dias_sem_interacao ? "Parado há " + regras.dias_sem_interacao + "+ dias" : "Mexido nos últimos " + regras.dias_sem_interacao + " dias";
   }
 
   /* valores de um campo numa linha (sempre lista; vazio vira SEM_VALOR). Um projeto com 2 responsaveis conta nos dois. */
@@ -41,6 +59,8 @@
     else if (campo === "alerta") v = l.alertas.map((t) => ((regras.grupos && regras.grupos[t]) || t).replace(/^[^\p{L}\p{N}]+/u, "").trim());   // sem o emoji do rotulo
     else if (campo === "etiqueta") v = l.etiquetas;
     else if (campo === "risco") v = l.risco ? [regras.rotulo_risco[l.risco]] : [];
+    else if (campo === "prazo") v = [l.faixaPrazo];
+    else if (campo === "atividade") v = [l.faixaAtividade];
     else v = [];
     v = v.filter((x) => x !== "" && x != null);
     return v.length ? v : [SEM_VALOR];
