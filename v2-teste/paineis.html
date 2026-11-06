@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painéis PMO</title>
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./motor.js?v=202611061154"></script>
+<script src="./dados.js?v=202611061154"></script>
+<script src="./paineis.js?v=202611061154"></script>
+<style>
+ body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
+ .topo{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+ .topo b{font-size:16px;margin-right:6px}
+ button{padding:5px 10px;border:1px solid #c1c7d0;border-radius:4px;background:#fff;cursor:pointer;font:inherit}
+ button.pri{background:#0c66e4;color:#fff;border-color:#0c66e4}
+ button:disabled{opacity:.5;cursor:default}
+ .grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:10px}
+ .bloco{border:1px solid #dfe1e6;border-radius:6px;padding:10px 12px;min-width:0}
+ .bloco h4{margin:0 0 6px;display:flex;justify-content:space-between;gap:6px;font-size:13px}
+ .bloco h4 span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .bloco h4 .ac button{border:0;background:none;padding:0 4px;color:#5e6c84}
+ .num{font-size:38px;font-weight:700;cursor:pointer;line-height:1.1} .num.ok{color:#2e7d4f} .num.ruim{color:#c0392b}
+ .meta{font-size:12px;color:#5e6c84}
+ .pizza{display:flex;gap:10px;align-items:center}
+ .leg{display:block;border:0;background:none;padding:2px 0;text-align:left;font-size:12px;cursor:pointer}
+ .q{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
+ .lb{display:flex;gap:6px;align-items:center;margin:3px 0;font-size:12px;cursor:pointer}
+ .lbr{flex:0 0 40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .lb .barra{flex:1;background:#f4f5f7;border-radius:3px;height:12px;display:block;margin:0}
+ .lb .barra i{display:block;height:12px;border-radius:3px}
+ table{border-collapse:collapse;width:100%;font-size:12px} th,td{border-bottom:1px solid #ebecf0;padding:3px 5px;text-align:left}
+ .tag{display:inline-block;padding:0 6px;border-radius:9px;color:#fff;font-size:11px;font-weight:600}
+ .tag.P1{background:#c0392b}.tag.P2{background:#d9730d}.tag.P3{background:#b8860b}.tag.P4{background:#2e7d4f}
+ .nota{color:#5e6c84;font-size:12px} .erro{color:#c0392b;font-size:12px}
+ #form{border:1px solid #0c66e4;border-radius:6px;padding:10px 12px;margin-bottom:10px;background:#f7f9ff}
+ #form label{display:block;margin:6px 0 2px;font-size:12px;color:#5e6c84}
+ #form input[type=text],#form input[type=number],#form select{width:100%;box-sizing:border-box;padding:4px;font:inherit}
+ #form .lin{display:flex;gap:8px} #form .lin>div{flex:1}
+ #dados{margin-top:12px}
+</style>
+</head>
+<body>
+<div id="raiz">
+ <div class="topo"><b>Painéis PMO</b><button id="novo" class="pri">+ Adicionar bloco</button><button id="padrao">Restaurar painel padrão</button><span id="msg" class="nota"></span></div>
+ <div id="form" hidden>
+  <div class="lin"><div><label for="f-titulo">Título do bloco</label><input type="text" id="f-titulo" maxlength="40"></div>
+   <div><label for="f-tipo">Tipo</label><select id="f-tipo"></select></div></div>
+  <div id="l-campo"><label for="f-campo">Agrupar por</label><select id="f-campo"></select></div>
+  <div class="lin"><div><label for="f-fcampo">Filtrar por</label><select id="f-fcampo"></select></div>
+   <div><label for="f-fvalor">Valor do filtro</label><input type="text" id="f-fvalor" list="sugestoes" placeholder="ex.: Em Execução"><datalist id="sugestoes"></datalist></div></div>
+  <label><input type="checkbox" id="f-nega"> Exceto (mostrar os que NÃO têm esse valor)</label>
+  <div id="l-meta" class="lin"><div><label for="f-msent">Meta</label><select id="f-msent"><option value="">(sem meta)</option><option value="ate">no máximo</option><option value="pelo_menos">pelo menos</option></select></div>
+   <div><label for="f-mval">Valor da meta</label><input type="number" id="f-mval" min="0" step="1"></div></div>
+  <label><input type="checkbox" id="f-todos"> Incluir também concluídos e backlog (por padrão só contam projetos ativos)</label>
+  <p class="erro" id="f-erro"></p>
+  <button id="f-salvar" class="pri">Salvar bloco</button> <button id="f-cancelar">Cancelar</button>
+ </div>
+ <div id="grade" class="grade">Lendo o quadro…</div>
+ <div id="dados"></div>
+ <p class="nota" id="rodape"></p>
+</div>
+<script>
+const t = TrelloPowerUp.iframe(), P = PmoPaineis, esc = P.esc;
+let q = null, lista = [], salvo = false, linhas = [], editando = null, resultados = [];
+const $ = (id) => document.getElementById(id);
+
+function msg(txt, ruim) { const m = $("msg"); m.textContent = txt || ""; m.className = ruim ? "erro" : "nota"; }
+
+function tabelaProjetos(ls) {
+  return "<table><tr><th>Projeto</th><th>Fase</th><th>Prior.</th><th>Responsável</th><th>Situação</th></tr>" + ls.map((l) =>
+    "<tr><td><a href='" + esc(l.url) + "' target='_blank'>" + esc(l.nome) + "</a></td><td>" + esc(l.lista) + "</td><td>" +
+    (l.prioridade ? "<span class='tag " + esc(l.prioridade) + "'>" + esc(l.prioridade) + "</span>" : "") + "</td><td>" + esc(l.responsaveis.join(", ")) + "</td><td>" +
+    (l.atraso !== null ? l.atraso + "d de atraso" : l.semaforo === "verde" ? "em dia" : l.semaforo === "amarelo" ? "de olho" : "atenção") + "</td></tr>").join("") + "</table>";
+}
+
+function blocoHtml(r, ix) {
+  const w = lista[ix];
+  let corpo;
+  if (r.tipo === "contador") {
+    corpo = "<div class='num " + (r.ok === true ? "ok" : r.ok === false ? "ruim" : "") + "' data-ver='" + ix + ":' title='Clique para ver os projetos'>" + r.valor + "</div>" +
+      (r.meta ? "<div class='meta'>Meta: " + (r.meta.sentido === "ate" ? "no máximo " : "pelo menos ") + r.meta.valor + (r.ok ? " ✓" : " ✗") + "</div>" : "");
+  } else if (r.tipo === "tabela") {
+    corpo = r.linhas.length ? tabelaProjetos(r.linhas) + (r.mais ? "<p class='nota'>… e mais " + r.mais + "</p>" : "") : "<p class='nota'>Nenhum projeto.</p>";
+  } else if (!r.partes.length) {
+    corpo = "<p class='nota'>Nenhum projeto.</p>";
+  } else if (r.tipo === "pizza") {
+    corpo = "<div class='pizza'>" + P.svgPizza(r.partes, 110) + "<div>" + r.partes.map((p, i) =>
+      "<button class='leg' data-ver='" + ix + ":" + i + "'><span class='q' style='background:" + P.corDe(p.rotulo, i) + "'></span>" + esc(p.rotulo) + " <b>" + p.valor + "</b></button>").join("") + "</div></div>";
+  } else {
+    corpo = P.htmlBarras(r.partes, ix);
+  }
+  const filtro = w.filtro ? " · " + esc(P.CAMPOS[w.filtro.campo]) + (w.filtro.nega ? " ≠ " : " = ") + esc(w.filtro.valor) : "";
+  return "<div class='bloco'><h4><span title='" + esc(r.titulo) + "'>" + esc(r.titulo) + "</span><span class='ac'><button data-acao='editar' data-ix='" + ix +
+    "' title='Editar'>✎</button><button data-acao='remover' data-ix='" + ix + "' title='Remover'>✕</button></span></h4>" + corpo +
+    "<div class='meta'>" + r.total + " projeto(s)" + (w.campo ? " · por " + esc(P.CAMPOS[w.campo]) : "") + filtro + (w.ativos === false ? " · inclui concluídos" : "") + "</div></div>";
+}
+
+function desenhar() {
+  resultados = lista.map((w) => P.calcular(w, linhas, q.regras));
+  $("grade").innerHTML = lista.length ? resultados.map(blocoHtml).join("") : "<p class='nota'>Nenhum bloco. Use “+ Adicionar bloco”.</p>";
+  $("rodape").textContent = (salvo ? "Seus blocos estão guardados neste quadro (só você vê). " : "Painel padrão: ainda não foi guardado; ele passa a ser seu quando você mexer em algum bloco. ") +
+    lista.length + " de " + q.regras.paineis_max_blocos + " blocos. Só leitura: nada é alterado nos cards.";
+}
+
+function verDados(ix, i) {
+  const r = resultados[ix]; if (!r) return;
+  const parte = i === "" ? null : r.partes && r.partes[Number(i)];
+  const ls = parte ? parte.linhas : r.linhas || [];
+  $("dados").innerHTML = "<h4>" + esc(r.titulo) + (parte ? " — " + esc(parte.rotulo) : "") + " (" + ls.length + ")</h4>" + (ls.length ? tabelaProjetos(ls) : "<p class='nota'>Nenhum projeto.</p>") +
+    " <button id='fechar-dados'>Fechar</button>";
+  $("dados").scrollIntoView({ block: "nearest" });
+}
+
+async function aplicar(nova) {
+  const r = await P.salvar(t, nova, q.regras);
+  if (!r.ok) { msg(r.erro, true); return false; }
+  lista = nova; salvo = true; msg("Salvo."); desenhar(); return true;
+}
+
+/* ---- formulario ---- */
+function opcoes(sel, mapa, vazio) { sel.innerHTML = (vazio ? "<option value=''>" + vazio + "</option>" : "") + Object.entries(mapa).map(([k, v]) => "<option value='" + k + "'>" + esc(v) + "</option>").join(""); }
+function ajustarForm() {
+  const tipo = $("f-tipo").value;
+  $("l-campo").hidden = !(tipo === "pizza" || tipo === "barras");
+  $("l-meta").hidden = tipo !== "contador";
+  const campo = $("f-fcampo").value, vistos = new Set();
+  if (campo) for (const l of linhas) for (const v of P.valoresDoCampo(l, campo, q.regras)) vistos.add(v);
+  $("sugestoes").innerHTML = [...vistos].sort().map((v) => "<option value='" + esc(v) + "'>").join("");
+}
+function abrirForm(ix) {
+  editando = ix === undefined ? null : ix;
+  const w = editando === null ? { tipo: "contador", titulo: "" } : lista[editando];
+  $("f-titulo").value = w.titulo || ""; $("f-tipo").value = w.tipo; $("f-campo").value = w.campo || "lista";
+  $("f-fcampo").value = w.filtro ? w.filtro.campo : ""; $("f-fvalor").value = w.filtro ? w.filtro.valor : ""; $("f-nega").checked = !!(w.filtro && w.filtro.nega);
+  $("f-msent").value = w.meta ? w.meta.sentido : ""; $("f-mval").value = w.meta ? w.meta.valor : ""; $("f-todos").checked = w.ativos === false;
+  $("f-erro").textContent = ""; $("form").hidden = false; ajustarForm(); $("f-titulo").focus();
+}
+async function salvarForm() {
+  const n = P.normalizar({ id: editando === null ? undefined : lista[editando].id, tipo: $("f-tipo").value, titulo: $("f-titulo").value, campo: $("f-campo").value,
+    ativos: $("f-todos").checked ? false : undefined,
+    filtro: $("f-fcampo").value ? { campo: $("f-fcampo").value, valor: $("f-fvalor").value, nega: $("f-nega").checked } : undefined,
+    meta: $("f-msent").value ? { sentido: $("f-msent").value, valor: $("f-mval").value } : undefined });
+  if (!n.ok) { $("f-erro").textContent = n.erro; return; }
+  if ($("f-fcampo").value && !$("f-fvalor").value.trim()) { $("f-erro").textContent = "Escolha o valor do filtro ou tire o filtro."; return; }
+  const nova = [...lista]; if (editando === null) nova.push(n.widget); else nova[editando] = n.widget;
+  $("f-salvar").disabled = true;
+  const ok = await aplicar(nova);
+  $("f-salvar").disabled = false;
+  if (ok) $("form").hidden = true; else $("f-erro").textContent = $("msg").textContent;
+}
+
+document.addEventListener("click", async (e) => {
+  const el = e.target.closest("[data-acao],[data-ver],button");
+  if (!el) return;
+  if (el.dataset.acao === "editar") abrirForm(Number(el.dataset.ix));
+  else if (el.dataset.acao === "remover") { if (el.dataset.ok) await aplicar(lista.filter((_, i) => i !== Number(el.dataset.ix))); else { el.dataset.ok = "1"; el.textContent = "Remover?"; } }
+  else if (el.dataset.ver !== undefined) { const [ix, i] = el.dataset.ver.split(":"); verDados(Number(ix), i); }
+  else if (el.id === "novo") abrirForm();
+  else if (el.id === "padrao") { if (el.dataset.ok) { el.dataset.ok = ""; el.textContent = "Restaurar painel padrão"; await aplicar(P.padrao()); } else { el.dataset.ok = "1"; el.textContent = "Confirmar: trocar os meus blocos pelo padrão?"; } }
+  else if (el.id === "f-salvar") salvarForm();
+  else if (el.id === "f-cancelar") $("form").hidden = true;
+  else if (el.id === "fechar-dados") $("dados").innerHTML = "";
+});
+$("f-tipo").addEventListener("change", ajustarForm); $("f-fcampo").addEventListener("change", ajustarForm);
+document.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.tagName === "INPUT" && e.target.type === "text" && !$("form").hidden) salvarForm(); });
+
+t.render(async () => {
+  try {
+    q = await PmoDados.quadro(t);
+    linhas = q.itens.map((i) => P.linhaDoItem(i, q.regras, q.membros));
+    opcoes($("f-tipo"), P.TIPOS); opcoes($("f-campo"), P.CAMPOS); opcoes($("f-fcampo"), P.CAMPOS, "(sem filtro)");
+    const r = await P.ler(t); lista = r.lista; salvo = r.salvo;
+    desenhar();
+  } catch (e) {
+    $("grade").innerHTML = "<p class='erro'>Não consegui ler o quadro (" + esc(String((e && e.message) || e).slice(0, 80)) + ").</p>";
+  }
+});
+</script>
+</body>
+</html>

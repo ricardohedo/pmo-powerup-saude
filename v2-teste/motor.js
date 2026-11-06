@@ -793,7 +793,7 @@
     return { proxima: rotulo, faltam };
   }
 
-  return { antecipar, prontidao, ordenarPorPrioridade, desvioPlano, historicoPlano, meuDia, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, resumoArea, quadrosDoPortfolio, portfolioPermitido, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
+  return { antecipar, prontidao, ordenarPorPrioridade, desvioPlano, historicoPlano, meuDia, projetoAtivo, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, resumoArea, quadrosDoPortfolio, portfolioPermitido, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
     checklistsDeBadges, pontuar, ondeAtuar, abaInicialMeus, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto, cargaDaEquipe, semEvidencia,
     retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal, diasEntre };
 });
