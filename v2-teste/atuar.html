@@ -6,8 +6,8 @@
 <title>Minhas ações</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611051705"></script>
-<script src="./dados.js?v=202611051705"></script>
+<script src="./motor.js?v=202611061016"></script>
+<script src="./dados.js?v=202611061016"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  .abas{display:flex;gap:6px;margin-bottom:12px}
@@ -50,7 +50,7 @@ function desenha() {
   if (!r.total) h = "<p class='nota'>" + (soMeus ? "Você não é membro de nenhum card aberto neste quadro." : "Nenhum card aberto.") + "</p>";
   else if (!r.comece.length) h += "<div class='ok'>🎉 Nada pedindo ação agora em " + r.total + " projetos.</div>";
   else {
-    h += "<h3>Comece por estes " + r.comece.length + "</h3>" + r.comece.map((x, i) => cartao(x, i, true)).join("");
+    h += "<h3>" + (r.comece.length === 1 ? "Comece por este" : "Comece por estes " + r.comece.length) + "</h3>" + r.comece.map((x, i) => cartao(x, i, true)).join("");
     if (r.depois.length) h += "<h3>Depois</h3>" + r.depois.map((x, i) => cartao(x, i + r.comece.length, false)).join("");
     if (r.resto) h += "<p class='nota'>… e mais " + r.resto + " projetos pedindo atenção.</p>";
   }
@@ -59,7 +59,7 @@ function desenha() {
     (x.dias === 1 ? " dia" : " dias") + ", " + (x.pct === null ? "sem checklist" : x.pct + "% do checklist") + "</li>").join("") + "</ul>" +
     (r.emRisco.length > 8 ? "<p class='nota'>… e mais " + (r.emRisco.length - 8) + " em risco.</p>" : "");
   if (r.vitorias.length) h += "<h3>Vitórias rápidas (quase prontos)</h3><ul>" + r.vitorias.slice(0, 6).map((x) => "<li><a href='" + esc(x.url) + "' target='_blank'>" + esc(x.nome) + "</a> — falta só formalizar o encerramento</li>").join("") + "</ul>";
-  h += "<p class='nota'>" + r.total + " projetos considerados, " + r.semAtencao + " sem nada pedindo ação. A ordem usa a mesma pontuação do PMO " +
+  h += "<p class='nota'>" + r.total + (r.total === 1 ? " projeto considerado, " : " projetos considerados, ") + r.semAtencao + " sem nada pedindo ação. A ordem usa a mesma pontuação do PMO " +
     "(atraso, prazo próximo, atraso oculto, prioridade e urgência). Pausado e em revisão sem comentário usam a contagem de comentários do Trello. Só leitura; nada é alterado.</p>";
   document.getElementById("raiz").innerHTML = h;
   document.getElementById("todos").className = soMeus ? "" : "on";
