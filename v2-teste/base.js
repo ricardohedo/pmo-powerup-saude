@@ -14,6 +14,13 @@ window.PmoBase = (function () {
   async function congelar(t, hoje, ini, fim) {
     if (!fim) return { ok: false, erro: "Preencha o 'Fim planejado' no card antes de congelar o plano." };
     const base = { e: hoje, i: ini || null, f: fim };
+    return gravar(t, base);
+  }
+
+  /* Remove a linha de base do card: grava "null" (ler() trata como sem plano). Uma so chamada de escrita no arquivo (gravar). */
+  async function remover(t) { return gravar(t, null); }
+
+  async function gravar(t, base) {
     try {
       await t.set("card", "shared", CHAVE, JSON.stringify(base));
       return { ok: true, base };
@@ -22,5 +29,5 @@ window.PmoBase = (function () {
     }
   }
 
-  return { ler, congelar };
+  return { ler, congelar, remover };
 })();

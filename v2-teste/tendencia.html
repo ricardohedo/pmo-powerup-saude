@@ -6,9 +6,9 @@
 <title>Tendência do quadro</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611061016"></script>
-<script src="./dados.js?v=202611061016"></script>
-<script src="./tendencia.js?v=202611061016"></script>
+<script src="./motor.js?v=202611061020"></script>
+<script src="./dados.js?v=202611061020"></script>
+<script src="./tendencia.js?v=202611061020"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  .topo{border-radius:6px;padding:12px 14px;margin-bottom:12px;color:#fff}
@@ -50,7 +50,7 @@ t.render(async () => {
     const rotulo = regras.rotulo_tendencia[dir.direcao];
     const seta = dir.direcao === "melhorando" ? "▼" : dir.direcao === "piorando" ? "▲" : "▬";
     h = "<div class='topo " + dir.direcao + "'><b>" + seta + " " + rotulo + "</b>Projetos em Atenção: " + dir.de.toFixed(0) + "% → " + dir.para.toFixed(0) +
-      "% em " + dir.dias + (dir.dias === 1 ? " dia" : " dias") + " (" + sinal(dir.delta_pp) + (Math.abs(dir.delta_pp).toFixed(0) === "1" ? " ponto" : " pontos") + "). " +
+      "% em " + dir.dias + (dir.dias === 1 ? " dia" : " dias") + " (" + sinal(Number(dir.para.toFixed(0)) - Number(dir.de.toFixed(0))) + (Math.abs(Number(dir.para.toFixed(0)) - Number(dir.de.toFixed(0))) === 1 ? " ponto" : " pontos") + "). " +
       (dir.direcao === "estavel" ? "Variação menor que " + regras.tendencia_limite_pp + " pontos." : "") + "</div>";
   }
   h += grafico(r.serie);

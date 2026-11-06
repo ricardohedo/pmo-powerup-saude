@@ -6,9 +6,9 @@
 <title>Saúde do projeto</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611061016"></script>
-<script src="./dados.js?v=202611061016"></script>
-<script src="./base.js?v=202611061016"></script>
+<script src="./motor.js?v=202611061020"></script>
+<script src="./dados.js?v=202611061020"></script>
+<script src="./base.js?v=202611061020"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;margin:0;padding:4px 2px;color:#172b4d}
  .topo{display:flex;align-items:center;gap:8px;margin-bottom:8px}
@@ -70,7 +70,8 @@ async function desenhar() {
       (des ? "<small>" + esc(des.texto) + " Congelado em " + esc(base.e.slice(8, 10) + "/" + base.e.slice(5, 7)) + ".</small>"
         : "<small>Ainda não há plano congelado neste card.</small>") +
       (fimAtual ? "<button id='congelar'>" + (base ? "Congelar de novo (substitui o plano original)" : "Congelar plano de hoje") + "</button>"
-        : "<small>Preencha o 'Fim planejado' para poder congelar.</small>") + "<small id='msgbase'></small></div>";
+        : "<small>Preencha o 'Fim planejado' para poder congelar.</small>") +
+      (base ? "<button id='remover'>Remover linha de base</button>" : "") + "<small id='msgbase'></small></div>";
   }
   h += "<p class='nota'>Fase: " + esc(d.lista) + ". O Power-Up não altera o card" + (r.funcoes.linha_de_base ? " (a linha de base fica guardada só no armazenamento do Power-Up)" : "") + ".</p>";
   document.getElementById("raiz").innerHTML = h;
@@ -79,6 +80,13 @@ async function desenhar() {
     bt.disabled = true;
     const res = await PmoBase.congelar(t, PmoMotor.dataLocal(new Date(), r), iniAtual, fimAtual);
     if (res.ok) desenhar(); else { bt.disabled = false; document.getElementById("msgbase").textContent = res.erro; }
+  };
+  const rm = document.getElementById("remover");
+  if (rm) rm.onclick = async () => {                       // dois cliques: o 1o pede confirmacao (confirm() pode estar bloqueado no iframe)
+    if (!rm.dataset.ok) { rm.dataset.ok = "1"; rm.textContent = "Confirmar: remover o plano original deste card?"; return; }
+    rm.disabled = true;
+    const res = await PmoBase.remover(t);
+    if (res.ok) desenhar(); else { rm.disabled = false; document.getElementById("msgbase").textContent = res.erro; }
   };
   t.sizeTo("#raiz").catch(() => {});
   setTimeout(() => t.sizeTo("#raiz").catch(() => {}), 400);   // de novo depois do layout (evita barra de rolagem)

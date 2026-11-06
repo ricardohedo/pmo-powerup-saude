@@ -56,7 +56,7 @@
       const cd = camposDef[it.idCustomField];
       if (!cd) continue;
       const val = it.value || {};
-      if (cd.type === "date") v[cd.name] = val.date || null;
+      if (cd.type === "date") v[cd.name] = val.date && !isNaN(Date.parse(val.date)) ? val.date : null;   // data corrompida = sem data (nao derruba a tela)
       else if (cd.type === "list") v[cd.name] = (cd.options || {})[it.idValue] || null;
       else v[cd.name] = val.text || null;
     }

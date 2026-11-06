@@ -6,8 +6,8 @@
 <title>Painel de saúde do quadro</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611061016"></script>
-<script src="./dados.js?v=202611061016"></script>
+<script src="./motor.js?v=202611061020"></script>
+<script src="./dados.js?v=202611061020"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  .sem{display:flex;gap:8px;margin-bottom:14px}
@@ -33,8 +33,11 @@ const indicadores = (k) => !k.ativos ? "" :
 t.render(async () => {
   const q = await PmoDados.quadro(t), r = q.resumo, g = q.regras.grupos;
   const link = (x) => "<a href='" + esc(x.url) + "' target='_blank'>" + esc(x.nome) + "</a>";
+  // Semaforo so dos projetos ATIVOS (mesma conta da Tendencia): fora Backlog, Concluidos e listas ignoradas.
+  const ret = PmoMotor.retrato(q.itens, q.regras, new Date());
   document.getElementById("raiz").innerHTML =
-    "<div class='sem'><div class='v'><b>" + r.vermelho + "</b>Atenção</div><div class='a'><b>" + r.amarelo + "</b>De olho</div><div class='g'><b>" + r.verde + "</b>Em dia</div></div>" +
+    "<div class='sem'><div class='v'><b>" + ret.v + "</b>Atenção</div><div class='a'><b>" + ret.a + "</b>De olho</div><div class='g'><b>" + (ret.n - ret.v - ret.a) + "</b>Em dia</div></div>" +
+    "<p class='nota'>Semáforo dos " + ret.n + " projetos ativos.</p>" +
     indicadores(PmoMotor.indicadoresQuadro(q.itens, q.regras)) +
     "<h3>Atrasos de " + q.regras.painel_atraso_dias + "+ dias</h3>" + lista(r.atrasos_longos, (x) => "<li>" + link(x) + " — " + x.dias + "d</li>", "Nenhum.") +
     "<h3>Prazo curto e pouco andado</h3>" + lista(r.prazo_curto_pouco_andado, (x) => "<li>" + link(x) + " — vence em " + x.dias + "d, " + (x.pct === null ? "sem checklist" : x.pct + "% feito") + "</li>", "Nenhum.") +
