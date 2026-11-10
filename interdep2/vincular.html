@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
-<style>body{font:14px system-ui;margin:0;padding:8px}small{color:#626f86}select,button{width:100%;margin:6px 0}.erro{color:#c9372c}</style>
+<style>body{font:14px system-ui;margin:0;padding:8px}small{color:#626f86}button{width:100%;margin:6px 0}.erro{color:#c9372c}label.ar{display:block;margin:6px 0;cursor:pointer}label.ar input{margin-right:6px}</style>
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
 <script src="./config.js"></script>
 <script src="./api.js"></script>
@@ -23,27 +23,30 @@ async function montar() {
   // area do quadro atual (para nao oferecer a propria area): vem do endereco do quadro (/b/<shortLink>/...)
   const { url } = await t.board("url");
   const atual = (/\/b\/([A-Za-z0-9]+)/.exec(url || "") || [])[1];
-  const opcoes = (cfg.AREAS || []).filter((a) => a.key !== atual)
-    .map((a) => '<option value="' + R.esc(a.key) + '">' + R.esc(a.nome) + "</option>").join("");
-  if (!opcoes) { c.innerHTML = "<small>Não há outra área liberada para este quadro.</small>"; return ajustar(); }
-  c.innerHTML = "<small>Escolha a área que vai executar atividades para este projeto. Ela verá só o escopo e o andamento; " +
-    "o seu quadro continua privado.</small><select id='area'>" + opcoes + "</select>" +
-    "<button class='mod-primary' id='ok'>Criar vínculo</button><div id='msg'></div>";
+  const outras = (cfg.AREAS || []).filter((a) => a.key !== atual);
+  if (!outras.length) { c.innerHTML = "<small>Não há outra área liberada para este quadro.</small>"; return ajustar(); }
+  c.innerHTML = R.htmlEscolhaAreas(outras);
   ajustar();
   document.getElementById("ok").onclick = async () => {
     const msg = document.getElementById("msg"), btn = document.getElementById("ok");
-    btn.disabled = true; msg.textContent = "Criando…";
+    const marcadas = [...c.querySelectorAll("input[type=checkbox]:checked")].map((i) => i.value);
+    if (!marcadas.length) { msg.innerHTML = '<div class="erro">Marque pelo menos uma área.</div>'; return ajustar(); }
+    btn.disabled = true; msg.textContent = "Criando…"; ajustar();
+    const resultados = [];
     try {
       if (!(await t.getRestApi().isAuthorized())) { await Interdep2.autorizar(t); }
       const { id } = await t.card("id");
-      const r = await Interdep2.vincular(t, id, document.getElementById("area").value);
-      msg.innerHTML = r.jaExistia ? "<small>Esse vínculo já existia.</small>" : "<small>Vínculo criado. A área vai ver o card no Backlog dela.</small>";
-      setTimeout(() => t.closePopup(), 1800);
-    } catch (e) {
-      msg.innerHTML = '<div class="erro">' + R.esc(e.message || "Não foi possível criar o vínculo.") + "</div>";
-      btn.disabled = false;
-    }
-    ajustar();
+      for (const chave of marcadas) {              // uma por vez: o backend cria 1 gancho por area e nao duplica
+        const nome = (outras.find((a) => a.key === chave) || {}).nome || chave;
+        try {
+          const r = await Interdep2.vincular(t, id, chave);
+          resultados.push({ nome, ok: true, jaExistia: !!r.jaExistia });
+        } catch (e) { resultados.push({ nome, ok: false, erro: (e && e.message) || "" }); }
+      }
+    } catch (e) { resultados.push({ nome: "Autorização", ok: false, erro: (e && e.message) || "" }); }
+    msg.innerHTML = R.resumoVinculos(resultados);
+    btn.disabled = false; ajustar();
+    if (resultados.every((r) => r.ok)) { setTimeout(() => t.closePopup(), 2500); }
   };
 }
 t.render(montar);

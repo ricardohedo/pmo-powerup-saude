@@ -39,6 +39,22 @@
     return h;
   }
 
+  // Tela de "Depende de outra area": uma caixinha por area (varias de uma vez). Tudo escapado.
+  function htmlEscolhaAreas(areas) {
+    const itens = (areas || []).map((a) => '<label class="ar"><input type="checkbox" value="' + esc(a.key) + '"> ' + esc(a.nome) + "</label>").join("");
+    return "<small>Marque as áreas que vão executar atividades para este projeto. Cada uma verá só o escopo e o andamento; " +
+      "o seu quadro continua privado.</small>" + itens +
+      "<button class='mod-primary' id='ok'>Criar vínculos</button><div id='msg'></div>";
+  }
+
+  // Resultado por area: [{ nome, ok, jaExistia, erro }] -> linhas de texto (uma por area).
+  function resumoVinculos(res) {
+    return (res || []).map((r) => {
+      if (!r.ok) { return '<div class="erro">✗ ' + esc(r.nome) + ": " + esc(r.erro || "não foi possível criar o vínculo.") + "</div>"; }
+      return "<small>" + (r.jaExistia ? "• " + esc(r.nome) + ": o vínculo já existia." : "✓ " + esc(r.nome) + ": criado no Backlog dela.") + "</small>";
+    }).join("<br>");
+  }
+
   function etiqueta(codigo) { const s = sit(codigo); return '<span class="t ' + s.cor + '">' + esc(s.txt) + "</span>"; }
 
   function itens(o) {
@@ -86,7 +102,7 @@
     return htmlNenhum();
   }
 
-  const api = { esc, escopoHtml, dataBr, barra, htmlDestino, htmlOrigem, htmlNenhum, htmlErro, htmlPorPapel };
+  const api = { esc, htmlEscolhaAreas, resumoVinculos, escopoHtml, dataBr, barra, htmlDestino, htmlOrigem, htmlNenhum, htmlErro, htmlPorPapel };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; }
   root.InterdepRender = api;
 })(typeof window !== "undefined" ? window : globalThis);
