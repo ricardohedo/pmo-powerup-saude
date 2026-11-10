@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<style>body{font:14px system-ui;margin:0;padding:8px}small{color:#626f86}select,button{width:100%;margin:6px 0}.erro{color:#c9372c}</style>
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./config.js"></script>
+<script src="./api.js"></script>
+<script src="./render.js"></script>
+</head>
+<body>
+<div id="c">Carregando…</div>
+<script>
+const t = TrelloPowerUp.iframe();
+const R = window.InterdepRender;
+const cfg = window.INTERDEP2 || {};
+const c = document.getElementById("c");
+function ajustar() { t.sizeTo(c.offsetHeight + 16); }
+
+async function montar() {
+  if (!Interdep2.configurado()) { c.innerHTML = "<small>Power-Up ainda não configurado.</small>"; return ajustar(); }
+  // area do quadro atual (para nao oferecer a propria area): vem do endereco do quadro (/b/<shortLink>/...)
+  const { url } = await t.board("url");
+  const atual = (/\/b\/([A-Za-z0-9]+)/.exec(url || "") || [])[1];
+  const opcoes = (cfg.AREAS || []).filter((a) => a.key !== atual)
+    .map((a) => '<option value="' + R.esc(a.key) + '">' + R.esc(a.nome) + "</option>").join("");
+  if (!opcoes) { c.innerHTML = "<small>Não há outra área liberada para este quadro.</small>"; return ajustar(); }
+  c.innerHTML = "<small>Escolha a área que vai executar atividades para este projeto. Ela verá só o escopo e o andamento; " +
+    "o seu quadro continua privado.</small><select id='area'>" + opcoes + "</select>" +
+    "<button class='mod-primary' id='ok'>Criar vínculo</button><div id='msg'></div>";
+  ajustar();
+  document.getElementById("ok").onclick = async () => {
+    const msg = document.getElementById("msg"), btn = document.getElementById("ok");
+    btn.disabled = true; msg.textContent = "Criando…";
+    try {
+      if (!(await t.getRestApi().isAuthorized())) { await Interdep2.autorizar(t); }
+      const { id } = await t.card("id");
+      const r = await Interdep2.vincular(t, id, document.getElementById("area").value);
+      msg.innerHTML = r.jaExistia ? "<small>Esse vínculo já existia.</small>" : "<small>Vínculo criado. A área vai ver o card no Backlog dela.</small>";
+      setTimeout(() => t.closePopup(), 1800);
+    } catch (e) {
+      msg.innerHTML = '<div class="erro">' + R.esc(e.message || "Não foi possível criar o vínculo.") + "</div>";
+      btn.disabled = false;
+    }
+    ajustar();
+  };
+}
+t.render(montar);
+</script>
+</body>
+</html>

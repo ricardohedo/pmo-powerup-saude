@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<style>body{font:14px system-ui;margin:0;padding:8px}small{color:#626f86}button{width:100%;margin-top:8px}</style>
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./config.js"></script>
+<script src="./api.js"></script>
+</head>
+<body>
+<small>O Power-Up só precisa confirmar quem você é no Trello (permissão de leitura). Ele não altera nada com a sua conta.</small>
+<button class="mod-primary" id="a">Autorizar</button>
+<script>
+const t = TrelloPowerUp.iframe();
+document.getElementById("a").onclick = async () => {
+  try { await Interdep2.autorizar(t); t.closePopup(); } catch (e) { alert(e.message || "Não foi possível autorizar."); }
+};
+t.render(() => t.sizeTo(110));
+</script>
+</body>
+</html>

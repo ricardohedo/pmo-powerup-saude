@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<style>
+html,body{overflow:hidden}body{font:14px system-ui;margin:0;padding:4px}
+h4{margin:10px 0 4px;font-size:13px;color:#44546f}
+.l{border:1px solid #dfe1e6;border-radius:6px;padding:8px;margin:0 0 8px}.erro{border-color:#c9372c}
+.t{display:inline-block;border-radius:3px;padding:1px 6px;color:#fff;font-size:12px}
+.red{background:#c9372c}.yellow{background:#b38600}.green{background:#1f845a}.gray{background:#8590a2}
+.barra{background:#dfe1e6;border-radius:4px;height:8px;margin:6px 0 2px}.barra div{background:#1f845a;height:8px;border-radius:4px}
+small{color:#626f86}button{margin-top:6px}
+</style>
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./config.js"></script>
+<script src="./api.js"></script>
+<script src="./render.js"></script>
+</head>
+<body>
+<div id="c">Carregando…</div>
+<script>
+const t = TrelloPowerUp.iframe();
+const R = window.InterdepRender;
+const c = document.getElementById("c");
+function ajustar() { t.sizeTo(c.offsetHeight + 24); }
+
+async function ver() {
+  if (!Interdep2.configurado()) {
+    c.innerHTML = "<small>Power-Up ainda não configurado (faltam o endereço do servidor e a chave de API).</small>";
+    return ajustar();
+  }
+  try {
+    const { id } = await t.card("id");
+    c.innerHTML = R.htmlPorPapel(await Interdep2.status(t, id));
+  } catch (e) {
+    if (e.codigo === "sem_autorizacao") {
+      c.innerHTML = '<small>Para ver o resumo de outra área, autorize o Power-Up (ele só confirma quem você é).</small><br>' +
+        '<button class="mod-primary" data-acao="autorizar">Autorizar</button>';
+    } else {
+      c.innerHTML = R.htmlErro(e.message || "Não consegui ler o status.");
+    }
+  }
+  ajustar();
+}
+
+c.addEventListener("click", async (ev) => {
+  const b = ev.target.closest("button[data-acao]");
+  if (!b) return;
+  try {
+    if (b.dataset.acao === "autorizar") { await Interdep2.autorizar(t); }
+    if (b.dataset.acao === "desfazer") {
+      if (!confirm("Desfazer o vínculo? O card na área de destino será arquivado (dá para recuperar).")) return;
+      b.disabled = true;
+      const { id } = await t.card("id");
+      await Interdep2.desfazer(t, b.dataset.id || id);
+    }
+  } catch (e) { alert(e.message || "Não foi possível concluir."); }
+  ver();
+});
+
+t.render(ver);
+</script>
+</body>
+</html>
