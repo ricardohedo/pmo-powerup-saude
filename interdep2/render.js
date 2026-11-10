@@ -23,6 +23,22 @@
     return '<div class="barra"><div style="width:' + n + '%"></div></div><small>' + n + '% concluído</small>';
   }
 
+  // Escopo estruturado do backend ("• item", "# subtitulo", texto): vira lista e subtitulos. Tudo passa por esc().
+  function escopoHtml(texto) {
+    const linhas = String(texto == null ? "" : texto).split("\n").filter((l) => l.trim());
+    let h = "", aberta = false;
+    const fecha = () => { if (aberta) { h += "</ul>"; aberta = false; } };
+    linhas.forEach((l) => {
+      if (l.indexOf("• ") === 0) { if (!aberta) { h += "<ul>"; aberta = true; } h += "<li>" + esc(l.substring(2)) + "</li>"; return; }
+      fecha();
+      if (l.indexOf("# ") === 0) { h += "<h5>" + esc(l.substring(2)) + "</h5>"; }
+      else if (l === "…") { h += "<small>… (escopo cortado: o resto está no projeto de origem)</small>"; }
+      else { h += "<p>" + esc(l) + "</p>"; }
+    });
+    fecha();
+    return h;
+  }
+
   function etiqueta(codigo) { const s = sit(codigo); return '<span class="t ' + s.cor + '">' + esc(s.txt) + "</span>"; }
 
   function itens(o) {
@@ -38,7 +54,7 @@
     const o = s.origem || {};
     return '<div class="l"><b>' + esc(o.titulo) + "</b> " + etiqueta(o.situacao) +
       "<br><small>Projeto da área: " + esc(s.areaOrigem) + "</small>" +
-      "<h4>Escopo</h4>" + (o.escopo ? esc(o.escopo) : "<small>A origem não descreveu o escopo.</small>") +
+      "<h4>Escopo</h4>" + (o.escopo ? escopoHtml(o.escopo) : "<small>A origem não descreveu o escopo.</small>") +
       "<h4>Andamento da origem</h4>" + barra(o.pct) + "<br><small>" + itens(o) + " · Prazo: " + esc(dataBr(o.prazo)) + "</small></div>" +
       "<small>Você vê só este resumo. O quadro da área de origem continua privado. As atividades de execução da sua área ficam neste card.</small>" +
       '<br><button data-acao="desfazer">Desfazer este vínculo</button>';
@@ -70,7 +86,7 @@
     return htmlNenhum();
   }
 
-  const api = { esc, dataBr, barra, htmlDestino, htmlOrigem, htmlNenhum, htmlErro, htmlPorPapel };
+  const api = { esc, escopoHtml, dataBr, barra, htmlDestino, htmlOrigem, htmlNenhum, htmlErro, htmlPorPapel };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; }
   root.InterdepRender = api;
 })(typeof window !== "undefined" ? window : globalThis);
