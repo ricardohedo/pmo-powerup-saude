@@ -20,7 +20,7 @@ small{color:#626f86}button{margin-top:6px}
 <body>
 <div id="c">Carregando…</div>
 <script>
-const t = TrelloPowerUp.iframe();
+const t = TrelloPowerUp.iframe({ appKey: (window.INTERDEP2 || {}).APP_KEY, appName: (window.INTERDEP2 || {}).APP_NAME });
 const R = window.InterdepRender;
 const c = document.getElementById("c");
 function ajustar() { t.sizeTo(c.offsetHeight + 24); }

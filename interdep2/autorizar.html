@@ -12,7 +12,7 @@
 <small>O Power-Up só precisa confirmar quem você é no Trello (permissão de leitura). Ele não altera nada com a sua conta.</small>
 <button class="mod-primary" id="a">Autorizar</button>
 <script>
-const t = TrelloPowerUp.iframe();
+const t = TrelloPowerUp.iframe({ appKey: (window.INTERDEP2 || {}).APP_KEY, appName: (window.INTERDEP2 || {}).APP_NAME });
 document.getElementById("a").onclick = async () => {
   try { await Interdep2.autorizar(t); t.closePopup(); } catch (e) { alert(e.message || "Não foi possível autorizar."); }
 };

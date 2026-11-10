@@ -12,7 +12,7 @@
 <body>
 <div id="c">Carregando…</div>
 <script>
-const t = TrelloPowerUp.iframe();
+const t = TrelloPowerUp.iframe({ appKey: (window.INTERDEP2 || {}).APP_KEY, appName: (window.INTERDEP2 || {}).APP_NAME });
 const R = window.InterdepRender;
 const cfg = window.INTERDEP2 || {};
 const c = document.getElementById("c");
