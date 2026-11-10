@@ -22,11 +22,14 @@ window.Interdep2 = (function () {
     if (!configurado()) { throw erro("Power-Up ainda não configurado.", "sem_config"); }
     const tk = await token(t);
     let r;
+    const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timer = ctrl ? setTimeout(() => ctrl.abort(), 30000) : null;
     try {
-      r = await fetch(cfg.API_URL, { method: "POST", body: JSON.stringify(Object.assign({}, corpo, { token: tk })) });
-    } catch (e) { throw erro("Não consegui falar com o servidor do PMO.", "rede"); }
+      r = await fetch(cfg.API_URL, Object.assign({ method: "POST", body: JSON.stringify(Object.assign({}, corpo, { token: tk })) }, ctrl ? { signal: ctrl.signal } : {}));
+    } catch (e) { throw erro("Não consegui falar com o servidor. Tente de novo em instantes.", "rede"); }
+    finally { if (timer) { clearTimeout(timer); } }
     const j = await r.json().catch(() => ({}));
-    if (!j || !j.ok) { throw erro((j && j.erro) || "Falha " + r.status, (j && j.codigo) || r.status); }
+    if (!j || !j.ok) { throw erro((j && j.erro) || "O servidor não respondeu direito. Tente de novo em instantes.", (j && j.codigo) || r.status); }
     return j;
   }
 

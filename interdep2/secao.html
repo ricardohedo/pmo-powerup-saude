@@ -8,7 +8,7 @@ html,body{overflow:hidden}body{font:14px system-ui;margin:0;padding:4px}
 h4{margin:10px 0 4px;font-size:13px;color:#44546f}h5{margin:8px 0 2px;font-size:12px;color:#44546f}ul{margin:2px 0 4px;padding-left:18px}li{margin:1px 0}p{margin:2px 0}
 .l{border:1px solid #dfe1e6;border-radius:6px;padding:8px;margin:0 0 8px}.erro{border-color:#c9372c}
 .t{display:inline-block;border-radius:3px;padding:1px 6px;color:#fff;font-size:12px}
-.red{background:#c9372c}.yellow{background:#b38600}.green{background:#1f845a}.gray{background:#8590a2}
+.red{background:#c9372c}.yellow{background:#7f5f01}.green{background:#1f845a}.gray{background:#626f86}
 .barra{background:#dfe1e6;border-radius:4px;height:8px;margin:6px 0 2px}.barra div{background:#1f845a;height:8px;border-radius:4px}
 small{color:#626f86}button{margin-top:6px}
 </style>
@@ -32,9 +32,9 @@ async function ver() {
   }
   try {
     const { id } = await t.card("id");
-    c.innerHTML = R.htmlPorPapel(await Interdep2.status(t, id));
+    c.innerHTML = R.htmlPorPapel(await Interdep2.status(t, id)) + '<div><button data-acao="atualizar">Atualizar</button></div>';
   } catch (e) {
-    if (e.codigo === "sem_autorizacao") {
+    if (e.codigo === "sem_autorizacao" || e.codigo === 401) {
       c.innerHTML = '<small>Para ver o resumo de outra área, autorize o Power-Up (ele só confirma quem você é).</small><br>' +
         '<button class="mod-primary" data-acao="autorizar">Autorizar</button>';
     } else {
@@ -50,7 +50,7 @@ c.addEventListener("click", async (ev) => {
   try {
     if (b.dataset.acao === "autorizar") { await Interdep2.autorizar(t); }
     if (b.dataset.acao === "desfazer") {
-      if (!confirm("Desfazer o vínculo? O card na área de destino será arquivado (dá para recuperar).")) return;
+      if (!confirm("Desfazer o vínculo? O card da área de destino será arquivado e deixará de estar ligado a este projeto (reabri-lo depois NÃO restaura o vínculo).")) return;
       b.disabled = true;
       const { id } = await t.card("id");
       await Interdep2.desfazer(t, b.dataset.id || id);

@@ -23,6 +23,7 @@ async function montar() {
   // area do quadro atual (para nao oferecer a propria area): vem do endereco do quadro (/b/<shortLink>/...)
   const { url } = await t.board("url");
   const atual = (/\/b\/([A-Za-z0-9]+)/.exec(url || "") || [])[1];
+  if (!(cfg.AREAS || []).some((a) => a.key === atual)) { c.innerHTML = "<small>Este quadro ainda não está liberado para vínculos entre áreas.</small>"; return ajustar(); }
   const outras = (cfg.AREAS || []).filter((a) => a.key !== atual);
   if (!outras.length) { c.innerHTML = "<small>Não há outra área liberada para este quadro.</small>"; return ajustar(); }
   c.innerHTML = R.htmlEscolhaAreas(outras);
@@ -40,11 +41,11 @@ async function montar() {
         const nome = (outras.find((a) => a.key === chave) || {}).nome || chave;
         try {
           const r = await Interdep2.vincular(t, id, chave);
-          resultados.push({ nome, ok: true, jaExistia: !!r.jaExistia });
+          resultados.push({ nome, ok: true, jaExistia: !!r.jaExistia, doModelo: r.doModelo });
         } catch (e) { resultados.push({ nome, ok: false, erro: (e && e.message) || "" }); }
       }
     } catch (e) { resultados.push({ nome: "Autorização", ok: false, erro: (e && e.message) || "" }); }
-    msg.innerHTML = R.resumoVinculos(resultados);
+    msg.innerHTML = R.resumoVinculos(resultados) + '<br><small>Use "Atualizar" na seção do card para ver o andamento.</small>';
     btn.disabled = false; ajustar();
     if (resultados.every((r) => r.ok)) { setTimeout(() => t.closePopup(), 2500); }
   };
