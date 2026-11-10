@@ -89,6 +89,7 @@
     const o = s.origem || {};
     return '<div class="l"><b>' + esc(o.titulo) + "</b> " + etiqueta(o.situacao) +
       "<br><small>Projeto da área: " + esc(s.areaOrigem) + "</small>" +
+      (s.donoRaiz && s.donoRaiz !== s.areaOrigem ? "<br><small>Dono do projeto: <b>" + esc(s.donoRaiz) + "</b> (você está no nível " + esc(Number(s.nivel) + 1) + " da cadeia)</small>" : "") +
       "<h4>Escopo</h4>" + (o.escopo ? escopoHtml(o.escopo) : "<small>A origem não descreveu o escopo.</small>") +
       "<h4>Andamento da origem</h4>" + barra(o.pct) + "<br><small>" + itens(o) + " · Prazo: " + esc(dataBr(o.prazo)) + "</small></div>" +
       "<small>Você vê só este resumo. O quadro da área de origem continua privado. As atividades de execução da sua área ficam neste card.</small>" +
