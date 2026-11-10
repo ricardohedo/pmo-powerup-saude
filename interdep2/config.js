@@ -11,5 +11,6 @@ window.INTERDEP2 = {
   AREAS: [
     { key: "7uckGfR4", nome: "Comercial (teste)" },
     { key: "b4kXgCbn", nome: "Processos (teste)" },
+    { key: "wlj9Xouh", nome: "Auditoria (teste)" },
   ],
 };

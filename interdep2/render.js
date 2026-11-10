@@ -62,9 +62,28 @@
     return esc(o.feitos) + " de " + esc(o.itens) + " itens concluídos";
   }
 
+  // Linhas "uma por area" com o andamento dos ganchos (so contagens). Usado na origem e no card encadeado.
+  function linhasDestinos(destinos) {
+    return (destinos || []).map((d) => {
+      if (d.removido) {
+        return '<div class="l"><small>O card na outra área foi removido.</small><br><button data-acao="desfazer" data-id="' + esc(d.cardId) + '">Desfazer</button></div>';
+      }
+      return '<div class="l"><b>' + esc(d.area) + "</b> " + etiqueta(d.situacao) +
+        barra(d.pct) + "<br><small>" + itens(d) + " · Prazo: " + esc(dataBr(d.prazo)) + "</small>" +
+        '<br><button data-acao="desfazer" data-id="' + esc(d.cardId) + '">Desfazer</button></div>';
+    }).join("");
+  }
+
+  // Card encadeado: este card e gancho de um projeto E tambem foi vinculado a outras areas.
+  function blocoFilhos(s) {
+    if (!s.destinos || !s.destinos.length) { return ""; }
+    return "<h4>Áreas que executam atividades para este card</h4>" + linhasDestinos(s.destinos) +
+      "<small>Você vê só o andamento. Quem cria e executa as atividades é a área de destino.</small>";
+  }
+
   function htmlDestino(s) {
     if (s.origemRemovida) {
-      return '<div class="l">O projeto de origem foi removido ou arquivado fora do vínculo.</div>' +
+      return '<div class="l">O projeto de origem foi removido ou arquivado fora do vínculo.</div>' + blocoFilhos(s) +
         '<button data-acao="desfazer">Desfazer este vínculo</button>';
     }
     const o = s.origem || {};
@@ -73,19 +92,12 @@
       "<h4>Escopo</h4>" + (o.escopo ? escopoHtml(o.escopo) : "<small>A origem não descreveu o escopo.</small>") +
       "<h4>Andamento da origem</h4>" + barra(o.pct) + "<br><small>" + itens(o) + " · Prazo: " + esc(dataBr(o.prazo)) + "</small></div>" +
       "<small>Você vê só este resumo. O quadro da área de origem continua privado. As atividades de execução da sua área ficam neste card.</small>" +
+      blocoFilhos(s) +
       '<br><button data-acao="desfazer">Desfazer este vínculo</button>';
   }
 
   function htmlOrigem(s) {
-    const linhas = (s.destinos || []).map((d) => {
-      if (d.removido) {
-        return '<div class="l"><small>O card na outra área foi removido.</small><br><button data-acao="desfazer" data-id="' + esc(d.cardId) + '">Desfazer</button></div>';
-      }
-      return '<div class="l"><b>' + esc(d.area) + "</b> " + etiqueta(d.situacao) +
-        barra(d.pct) + "<br><small>" + itens(d) + " · Prazo: " + esc(dataBr(d.prazo)) + "</small>" +
-        '<br><button data-acao="desfazer" data-id="' + esc(d.cardId) + '">Desfazer</button></div>';
-    }).join("");
-    return "<h4>Áreas que executam atividades para este projeto</h4>" + linhas +
+    return "<h4>Áreas que executam atividades para este projeto</h4>" + linhasDestinos(s.destinos) +
       "<small>Você vê só o andamento. Quem cria e executa as atividades é a área de destino.</small>";
   }
 
