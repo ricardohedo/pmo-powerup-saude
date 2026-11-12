@@ -76,7 +76,8 @@ TrelloPowerUp.initialize({
 
   // Menu da lista: "Ordenar por prioridade (P1-P4)". Funcao opcional (pmo.toml); reordena os cards na lista de quem clica.
   "list-sorters": async (t) => {
-    const f = (await PmoDados.regras()).funcoes;
+    let f;
+    try { f = (await PmoDados.regras()).funcoes; } catch (e) { return []; }   // regras.json fora do ar: sem botao, mas sem derrubar o Power-Up
     if (!f.ordenar_prioridade) return [];
     return [{
       text: "Prioridade PMO (P1 a P4)",
@@ -86,7 +87,8 @@ TrelloPowerUp.initialize({
 
   "board-buttons": async (t) => {
     PmoTendencia.automatico(t);          // guarda o retrato do dia (so se a Tendencia estiver ligada), sem travar nada
-    const f = (await PmoDados.regras()).funcoes;   // funcoes opcionais: ligadas/desligadas no pmo.toml (regras.json)
+    let f;
+    try { f = (await PmoDados.regras()).funcoes; } catch (e) { return []; }   // regras.json fora do ar: sem botoes, mas sem derrubar o Power-Up; funcoes opcionais ligadas/desligadas no pmo.toml
     const nomeQuadro = f.portfolio ? ((await t.board("name")) || {}).name : "";
     const regrasBt = f.portfolio ? await PmoDados.regras() : null;
     const botao = (text, title, url, height) => ({ icon: ICONE, text, callback: (tt) => tt.modal({ title, url, height }) });

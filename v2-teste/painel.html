@@ -6,8 +6,8 @@
 <title>Painel de saúde do quadro</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611061437"></script>
-<script src="./dados.js?v=202611061437"></script>
+<script src="./motor.js?v=202611121510"></script>
+<script src="./dados.js?v=202611121510"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  .sem{display:flex;gap:8px;margin-bottom:14px}
@@ -30,7 +30,7 @@ const indicadores = (k) => !k.ativos ? "" :
   "<li>Sem responsável: <b>" + k.semResponsavel.pct + "%</b> (" + k.semResponsavel.qtd + ")</li>" +
   "<li>Progresso médio dos checklists: <b>" + (k.progressoMedio === null ? "sem checklists" : k.progressoMedio + "%") + "</b>" + (k.comChecklist ? " (" + k.comChecklist + " projetos com checklist)" : "") + "</li></ul>" +
   "<p class='nota'>Calculado pelas regras do PMO sobre os projetos ativos (fora de Backlog e Concluídos); pode diferir do portal.</p>";
-t.render(async () => {
+PmoDados.render(t, async () => {
   const q = await PmoDados.quadro(t), r = q.resumo, g = q.regras.grupos;
   const link = (x) => "<a href='" + esc(x.url) + "' target='_blank'>" + esc(x.nome) + "</a>";
   // Semaforo so dos projetos ATIVOS (mesma conta da Tendencia): fora Backlog, Concluidos e listas ignoradas.

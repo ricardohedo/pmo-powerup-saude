@@ -31,9 +31,15 @@
     return [{ name: null, aprox: true, checkItems: itens }];
   }
 
-  function progressoChecklists(checklists) {
+  /* Igual ao Python (plano.py): o checklist de inicio ("Inicio do Projeto", regras.checklist_inicio) nao entra no
+   * progresso. Sem `regras` (ou sem nome de checklist, como nos contadores dos badges) nada e excluido. */
+  function progressoChecklists(checklists, regras) {
+    const ini = regras && regras.checklist_inicio ? String(regras.checklist_inicio).toLowerCase() : null;
     let total = 0, feitos = 0;
-    for (const c of checklists) for (const i of checkItens(c)) { total++; if (i.state === "complete") feitos++; }
+    for (const c of checklists) {
+      if (ini && c && c.name && String(c.name).trim().toLowerCase() === ini) continue;
+      for (const i of checkItens(c)) { total++; if (i.state === "complete") feitos++; }
+    }
     return total === 0 ? null : arredondaPar(feitos / total * 100);
   }
 
@@ -131,7 +137,7 @@
     if (lista === regras.motor.lista_execucao && !(ini && fim)) add("sem_prazo");
 
     // G-03 quase_pronto
-    const pct = concluido ? null : progressoChecklists(checklists);
+    const pct = concluido ? null : progressoChecklists(checklists, regras);
     if (pct !== null && pct >= regras.progresso_min_quase_pronto) add("quase_pronto", pct);
 
     // G-04 atraso_oculto
@@ -346,7 +352,7 @@
     if (!n) return { ativos: 0, atrasados: null, semPrazo: null, semResponsavel: null, progressoMedio: null };
     const tem = (it, tipo) => (it.alertas || []).some((a) => a.tipo === tipo);
     const pct = (k) => arredondaPar(100 * k / n);
-    const progs = ativos.map((it) => progressoChecklists(it.checklists || [])).filter((p) => p !== null);
+    const progs = ativos.map((it) => progressoChecklists(it.checklists || [], regras)).filter((p) => p !== null);
     return {
       ativos: n,
       atrasados: { qtd: ativos.filter((it) => tem(it, "atrasado")).length, pct: pct(ativos.filter((it) => tem(it, "atrasado")).length) },
@@ -359,7 +365,7 @@
 
   /* Prioridade e risco de UM item do quadro ({card, listaNome, alertas, valores, checklists}). */
   function avaliarProjeto(it, regras, agora) {
-    const pct = progressoChecklists(it.checklists || []);
+    const pct = progressoChecklists(it.checklists || [], regras);
     const prioridadeNivel = prioridade(it.alertas || [], pct, regras);
     let risco = null, dias = null;
     const ativo = projetoAtivo(it, regras);
@@ -529,7 +535,7 @@
       const concluido = regras.listas_concluido.includes(lista), backlog = lista === regras.motor.lista_backlog;
       const fimIso = (it.valores || {})["Fim planejado"];
       const fim = fimIso ? dataLocal(new Date(fimIso), regras) : null;
-      const pct = progressoChecklists(it.checklists || []);
+      const pct = progressoChecklists(it.checklists || [], regras);
       const base = { id: it.card.id, nome: it.card.name, url: it.card.url, lista: it.listaNome, fim, pct,
         nivel: semaforo(it.alertas || [], regras) };
       if (concluido) { if (fim && fim.startsWith(mes)) r.entregues.push(base); continue; }
@@ -564,7 +570,7 @@
       const atr = it.alertas.find((a) => a.tipo === "atrasado");
       if (atr && atr.valor >= regras.painel_atraso_dias) r.atrasos_longos.push({ nome: it.card.name, dias: atr.valor, url: it.card.url });
       const pp = it.alertas.find((a) => a.tipo === "prazo_proximo");
-      const pct = progressoChecklists(it.checklists || []);
+      const pct = progressoChecklists(it.checklists || [], regras);
       if (pp && pp.valor <= 1 && (pct === null || pct < regras.painel_prazo_pct_max)) r.prazo_curto_pouco_andado.push({ nome: it.card.name, dias: pp.valor, pct, url: it.card.url });
       if (it.alertas.some((a) => a.tipo === "quase_pronto")) r.quase_prontos.push({ nome: it.card.name, url: it.card.url });
       const cad = it.alertas.find((a) => a.tipo === "cadastro_incompleto");
@@ -583,7 +589,7 @@
       if (i.state === "complete") nFeitos++;
       if (i.name) (i.state === "complete" ? feitos : proximos).push(i.name);
     }
-    const pct = progressoChecklists(checklists);
+    const pct = progressoChecklists(checklists, regras);
     const riscos = ordenar(alertas, regras).filter((a) => regras.nivel[a.tipo] !== "verde").map(frase);
     const L = [];
     L.push("Status — " + card.name + " (" + hoje + ")");

@@ -6,8 +6,8 @@
 <title>Matriz impacto × esforço</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611061437"></script>
-<script src="./dados.js?v=202611061437"></script>
+<script src="./motor.js?v=202611121510"></script>
+<script src="./dados.js?v=202611121510"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  table.m{border-collapse:separate;border-spacing:6px;width:100%;table-layout:fixed}
@@ -33,7 +33,7 @@ const NIVEIS = ["alto", "medio", "baixo"], ROT = { alto: "Alto", medio: "Médio"
 const ESFORCO = ["baixo", "medio", "alto"];                         // colunas: do mais barato ao mais caro
 const NOME = { "alto|baixo": ["faz", "Fazer primeiro"], "alto|alto": ["plan", "Planejar com cuidado"], "baixo|baixo": ["vit", "Vitórias rápidas"], "baixo|alto": ["rev", "Reavaliar"] };
 
-t.render(async () => {
+PmoDados.render(t, async () => {
   const q = await PmoDados.quadro(t), m = PmoMotor.matrizImpactoEsforco(q.itens, q.regras);
   let h = "<table class='m'><tr><th class='l'></th>" + ESFORCO.map((e) => "<th>Esforço " + ROT[e].toLowerCase() + "</th>").join("") + "</tr>";
   for (const imp of NIVEIS) {

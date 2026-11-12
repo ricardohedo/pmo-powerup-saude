@@ -6,8 +6,8 @@
 <title>Meu dia</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611061437"></script>
-<script src="./dados.js?v=202611061437"></script>
+<script src="./motor.js?v=202611121510"></script>
+<script src="./dados.js?v=202611121510"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  h3{margin:16px 0 6px} .nota{color:#5e6c84;font-size:12px}
@@ -28,7 +28,7 @@ const item = (x) => "<li>" + (x.prioridade ? "<span class='tag " + esc(x.priorid
   "<a href='" + esc(x.url) + "' target='_blank'>" + esc(x.nome) + "</a> <span class='mot'>— " + esc(x.texto) + " · " + esc(x.lista) + "</span></li>";
 const secao = (titulo, lista) => lista.length ? "<h3>" + titulo + " (" + lista.length + ")</h3><ul>" + lista.map(item).join("") + "</ul>" : "";
 
-t.render(async () => {
+PmoDados.render(t, async () => {
   const q = await PmoDados.quadro(t), d = PmoMotor.meuDia(q.itens, q.regras, q.meuId, new Date());
   let h;
   if (!d.souMembro) {

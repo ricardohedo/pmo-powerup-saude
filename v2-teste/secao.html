@@ -6,9 +6,9 @@
 <title>Saúde do projeto</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611061437"></script>
-<script src="./dados.js?v=202611061437"></script>
-<script src="./base.js?v=202611061437"></script>
+<script src="./motor.js?v=202611121510"></script>
+<script src="./dados.js?v=202611121510"></script>
+<script src="./base.js?v=202611121510"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;margin:0;padding:4px 2px;color:#172b4d}
  .topo{display:flex;align-items:center;gap:8px;margin-bottom:8px}
@@ -35,7 +35,7 @@ const ROTULO = { vermelho: "Atenção", amarelo: "De olho", verde: "Em dia" };
 const ehMarco = (d) => (d.card.labels || []).some((l) => (d.regras.labels_marco || []).includes(((l && l.name) || "").trim().toLowerCase()));
 async function desenhar() {
   const d = await PmoDados.cardEmFoco(t), r = d.regras;
-  const pct = PmoMotor.progressoChecklists(d.checklists);
+  const pct = PmoMotor.progressoChecklists(d.checklists, r);
   const itens = d.checklists.reduce((n, c) => n + (c.checkItems || []).length, 0);
   const feitos = d.checklists.reduce((n, c) => n + (c.checkItems || []).filter((i) => i.state === "complete").length, 0);
   let h = "<div class='topo'>" + (d.prioridade
@@ -96,7 +96,7 @@ async function desenhar() {
   t.sizeTo("#raiz").catch(() => {});
   setTimeout(() => t.sizeTo("#raiz").catch(() => {}), 400);   // de novo depois do layout (evita barra de rolagem)
 }
-t.render(desenhar);
+PmoDados.render(t, desenhar);
 </script>
 </body>
 </html>

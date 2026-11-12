@@ -3,8 +3,39 @@
 window.PmoDados = (function () {
   let regrasP = null;
   function regras() {
-    if (!regrasP) regrasP = fetch("./regras.json?v=202611061437").then((r) => r.json());
+    if (!regrasP) {
+      // Erro de rede/404/HTML no lugar do JSON NAO fica guardado: a proxima chamada tenta de novo (antes a promise
+      // rejeitada ficava para sempre e o Power-Up inteiro sumia ate recarregar a pagina).
+      regrasP = fetch("./regras.json?v=202611121510").then((r) => {
+        if (!r.ok) throw new Error("regras.json respondeu " + r.status);
+        return r.json();
+      }).catch((e) => { regrasP = null; throw e; });
+    }
     return regrasP;
+  }
+
+  /* Substitui t.render(fn) nas telas: se algo falhar (Pages fora, Trello com erro, regras.json invalido) o gestor ve
+   * uma mensagem em linguagem de loja em vez de "Lendo o quadro..." para sempre. Nada de URL, token ou erro tecnico
+   * na tela; o detalhe vai so para o console. */
+  function render(t, fn) {
+    return t.render(async () => {
+      try {
+        return await fn();
+      } catch (e) {
+        try { console.error("PMO tela:", e && e.message ? e.message : e); } catch (_) { /* console indisponivel */ }
+        document.body.textContent = "";
+        const caixa = document.createElement("div");
+        caixa.style.cssText = "padding:14px;font:14px/1.45 system-ui,sans-serif;color:#172b4d";
+        const tit = document.createElement("b");
+        tit.textContent = "Não consegui carregar agora.";
+        const txt = document.createElement("p");
+        txt.textContent = "Feche esta janela e abra de novo. Se continuar, avise o PMO.";
+        caixa.appendChild(tit);
+        caixa.appendChild(txt);
+        document.body.appendChild(caixa);
+        try { t.sizeTo("body"); } catch (_) { /* sem sizeTo */ }
+      }
+    });
   }
 
   function camposDef(defs) {            // board.customFields -> {id: {name, type, options:{idOpcao: texto}}}
@@ -85,5 +116,5 @@ window.PmoDados = (function () {
     return PmoMotor.ordenarPorPrioridade((cardsDaLista || []).map((c) => c.id), q.itens, q.regras);
   }
 
-  return { regras, cardEmFoco, quadro, ordenarLista, itensDoBoard };   // regras() devolve o regras.json (usado tambem pela tendencia)
+  return { regras, render, cardEmFoco, quadro, ordenarLista, itensDoBoard };   // regras() devolve o regras.json (usado tambem pela tendencia)
 })();

@@ -6,8 +6,8 @@
 <title>Linha do tempo de entregas</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611061437"></script>
-<script src="./dados.js?v=202611061437"></script>
+<script src="./motor.js?v=202611121510"></script>
+<script src="./dados.js?v=202611121510"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  .resumo{display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap}
@@ -42,7 +42,7 @@ function linha(x, atrasada) {
     (x.pouco ? "<span class='alerta'>⚠️ " + (x.pct || 0) + "% pronto</span>" : "") + pct + "</div>";
 }
 
-t.render(async () => {
+PmoDados.render(t, async () => {
   const q = await PmoDados.quadro(t), r = PmoMotor.linhaDoTempo(q.itens, q.regras, new Date());
   const pouco = r.janelas.reduce((n, j) => n + j.itens.filter((i) => i.pouco).length, 0);
   let h = "<div class='resumo'><div class='r'><b>" + r.atrasadas.length + "</b>atrasados</div><div><b>" + r.proximas.length + "</b>vencem em " + q.regras.dias_marcos +

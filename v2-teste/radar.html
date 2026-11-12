@@ -6,8 +6,8 @@
 <title>Radar</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611061437"></script>
-<script src="./dados.js?v=202611061437"></script>
+<script src="./motor.js?v=202611121510"></script>
+<script src="./dados.js?v=202611121510"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  h3{margin:14px 0 4px} ul{margin:0;padding-left:18px} li{margin:0 0 4px}
@@ -26,7 +26,7 @@ const t = TrelloPowerUp.iframe();
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const dias = (n) => n + (n === 1 ? " dia" : " dias");
 
-t.render(async () => {
+PmoDados.render(t, async () => {
   try {
     const q = await PmoDados.quadro(t), r = PmoMotor.radar(q.itens, q.regras, new Date());
     let h;

@@ -6,8 +6,8 @@
 <title>Minhas ações</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611061437"></script>
-<script src="./dados.js?v=202611061437"></script>
+<script src="./motor.js?v=202611121510"></script>
+<script src="./dados.js?v=202611121510"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  .abas{display:flex;gap:6px;margin-bottom:12px}
@@ -67,7 +67,7 @@ function desenha() {
   t.sizeTo("body");
 }
 
-t.render(async () => {
+PmoDados.render(t, async () => {
   dados = await PmoDados.quadro(t);
   if (primeiraVez) { soMeus = PmoMotor.abaInicialMeus(dados.itens, dados.meuId); primeiraVez = false; }   // depois disso vale a escolha da pessoa
   desenha();

@@ -6,8 +6,8 @@
 <title>Preciso de ajuda</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611061437"></script>
-<script src="./dados.js?v=202611061437"></script>
+<script src="./motor.js?v=202611121510"></script>
+<script src="./dados.js?v=202611121510"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;margin:0;padding:8px 10px;color:#172b4d}
  h3{margin:4px 0 6px;font-size:15px}
@@ -26,9 +26,9 @@
 <script>
 const t = TrelloPowerUp.iframe();
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-t.render(async () => {
+PmoDados.render(t, async () => {
   const d = await PmoDados.cardEmFoco(t), r = d.regras;
-  const pct = PmoMotor.progressoChecklists(d.checklists);
+  const pct = PmoMotor.progressoChecklists(d.checklists, r);
   const e = PmoMotor.explicar(d.alertas, pct, d.diasPrazo, r);
   let h = "<h3>Por que meu card está assim?</h3>";
   h += "<div class='caixa' style='border-left-color:#2e7d4f'><span class='tag " + (e.prioridade || "nada") + "'>" +

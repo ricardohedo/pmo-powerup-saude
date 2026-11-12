@@ -6,8 +6,8 @@
 <title>Atrasadas e a vencer</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611061437"></script>
-<script src="./dados.js?v=202611061437"></script>
+<script src="./motor.js?v=202611121510"></script>
+<script src="./dados.js?v=202611121510"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  h3{margin:16px 0 6px} .nota{color:#5e6c84;font-size:12px}
@@ -35,7 +35,7 @@ function linhas(lista, atrasada) {
       : (x.dias === 0 ? "vence hoje" : x.dias === 1 ? "vence amanhã" : "em " + plural(x.dias, "dia", "dias"))) + "</span></div>").join("");
 }
 
-t.render(async () => {
+PmoDados.render(t, async () => {
   const q = await PmoDados.quadro(t), p = PmoMotor.listaPrazos(q.itens), r = q.regras;
   let h = "";
   if (!p.atrasadas.length && !p.aVencer.length) h = "<div class='ok'>✅ Nenhum projeto atrasado nem com prazo próximo neste quadro.</div>";

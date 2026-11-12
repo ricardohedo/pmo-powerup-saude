@@ -6,8 +6,8 @@
 <title>Pauta da reunião</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611061437"></script>
-<script src="./dados.js?v=202611061437"></script>
+<script src="./motor.js?v=202611121510"></script>
+<script src="./dados.js?v=202611121510"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  .topo{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
@@ -40,7 +40,7 @@ document.getElementById("copiar").onclick = async () => {
   catch (e) { m.textContent = "Não consegui copiar sozinho: selecione o texto abaixo e copie."; }
 };
 
-t.render(async () => {
+PmoDados.render(t, async () => {
   try {
     const [q, b] = await Promise.all([PmoDados.quadro(t), t.board("name")]);
     pauta = PmoMotor.pautaReuniao(q.itens, q.regras, new Date(), (b || {}).name);

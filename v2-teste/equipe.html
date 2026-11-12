@@ -6,8 +6,8 @@
 <title>Carga da equipe</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611061437"></script>
-<script src="./dados.js?v=202611061437"></script>
+<script src="./motor.js?v=202611121510"></script>
+<script src="./dados.js?v=202611121510"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  table{border-collapse:collapse;width:100%} th,td{padding:7px 8px;border-bottom:1px solid #dfe1e6;text-align:right}
@@ -24,7 +24,7 @@
 const t = TrelloPowerUp.iframe();
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const num = (n, destaque) => n ? (destaque ? "<span class='rojo'>" + n + "</span>" : n) : "<span class='mudo'>0</span>";
-t.render(async () => {
+PmoDados.render(t, async () => {
   const q = await PmoDados.quadro(t);
   const carga = PmoMotor.cargaDaEquipe(q.itens, q.regras);
   const linhas = Object.keys(carga).map((id) => ({ id, nome: id === "__sem__" ? "Sem responsável" : (q.membros[id] || "Membro fora do quadro"), ...carga[id] }));

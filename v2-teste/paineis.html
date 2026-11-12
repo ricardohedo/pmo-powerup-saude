@@ -6,9 +6,9 @@
 <title>Painéis PMO</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611061437"></script>
-<script src="./dados.js?v=202611061437"></script>
-<script src="./paineis.js?v=202611061437"></script>
+<script src="./motor.js?v=202611121510"></script>
+<script src="./dados.js?v=202611121510"></script>
+<script src="./paineis.js?v=202611121510"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  .topo{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
@@ -166,7 +166,7 @@ document.addEventListener("click", async (e) => {
 $("f-tipo").addEventListener("change", ajustarForm); $("f-fcampo").addEventListener("change", ajustarForm);
 document.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.tagName === "INPUT" && e.target.type === "text" && !$("form").hidden) salvarForm(); });
 
-t.render(async () => {
+PmoDados.render(t, async () => {
   try {
     q = await PmoDados.quadro(t);
     const agora = new Date(); linhas = q.itens.map((i) => P.linhaDoItem(i, q.regras, q.membros, agora));
