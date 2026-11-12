@@ -94,6 +94,7 @@ TrelloPowerUp.initialize({
     const botao = (text, title, url, height) => ({ icon: ICONE, text, callback: (tt) => tt.modal({ title, url, height }) });
     return [
       ...(f.meu_dia ? [botao("Meu dia", "Meu dia: o que pede você hoje", "./meu_dia.html", 600)] : []),
+      ...(f.roadmap ? [botao("Roadmap", "Roadmap do quadro: início e fim de cada projeto ativo", "./roadmap.html", 680)] : []),
       ...(f.riscos ? [botao("Riscos", "Riscos e premissas: matriz, o que falta e projetos sem registro", "./riscos.html", 640)] : []),
       ...(f.engajamento ? [botao("Conquistas", "Conquistas da área: entregas, reta final e destaque", "./conquistas.html", 560)] : []),
       ...(f.paineis ? [botao("Painéis PMO", "Painéis PMO: seus blocos sobre os projetos do quadro", "./paineis.html", 680)] : []),

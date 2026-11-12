@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roadmap do quadro</title>
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./motor.js?v=202611121637"></script>
+<script src="./dados.js?v=202611121637"></script>
+<style>
+ body{font:13px/1.4 system-ui,sans-serif;padding:12px;color:#172b4d}
+ .ok{background:#e3fcef;border-radius:4px;padding:10px}
+ .nota{color:#5e6c84;font-size:12px} h3{margin:14px 0 6px}
+ .grade{display:grid;grid-template-columns:170px 1fr;align-items:center}
+ .cab .m{position:absolute;top:0;bottom:0;border-left:1px solid #c1c7d0;padding-left:3px;font-size:11px;color:#44546f;white-space:nowrap;overflow:hidden}
+ .tl{position:relative;height:26px;border-bottom:1px solid #eef0f3}.tl.cab{height:22px;border-bottom:1px solid #c1c7d0}
+ .lab{padding:2px 6px 2px 0;border-bottom:1px solid #eef0f3;height:25px;overflow:hidden}
+ .lab a{color:#172b4d;text-decoration:none;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .lab a:hover{text-decoration:underline} .lab small{display:block;color:#5e6c84;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .grp{grid-column:1/3;background:#f4f5f7;font-weight:600;padding:3px 6px;margin-top:6px;border-radius:3px}
+ .hoje{position:absolute;top:0;bottom:0;width:2px;background:#0c66e4;z-index:2}
+ .vj{position:absolute;top:0;bottom:0;border-left:1px dashed #8590a2;z-index:1}
+ .bar{position:absolute;top:6px;height:14px;border-radius:7px;overflow:hidden;z-index:1;box-sizing:border-box}
+ .bar span{display:block;height:100%;background:rgba(255,255,255,.45)}
+ .n-verde{background:#2e7d4f}.n-amarelo{background:#b8860b}.n-vermelho{background:#c0392b}
+ .bar.atras{outline:2px solid #172b4d;outline-offset:-2px}
+ .bar.mrc{top:5px;height:16px;border-radius:2px;min-width:10px}
+ .bar.esq{border-top-left-radius:0;border-bottom-left-radius:0}.bar.dir{border-top-right-radius:0;border-bottom-right-radius:0}
+ .leg{display:flex;flex-wrap:wrap;gap:4px 14px;margin:8px 0;font-size:12px;color:#44546f}
+ .leg i{display:inline-block;width:12px;height:10px;border-radius:5px;vertical-align:middle;margin-right:4px}
+ .aviso{color:#946f00}
+</style>
+</head>
+<body>
+<div id="raiz">Lendo o quadro…</div>
+<script>
+const t = TrelloPowerUp.iframe();
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const dm = (iso) => iso ? iso.slice(8, 10) + "/" + iso.slice(5, 7) : "—";
+const plural = (n, a, b) => n + " " + (n === 1 ? a : b);
+
+function linhaDoProjeto(x, hojePos, varejo) {
+  const sub = (x.marcador ? "só " + (x.inicio ? "início " + dm(x.inicio) : "prazo " + dm(x.fim)) : dm(x.inicio) + " → " + dm(x.fim)) +
+    (x.pct === null ? "" : " · " + x.pct + "%") + (x.atrasado ? " · ⏰ atrasado" : "");
+  const titulo = x.nome + " (" + sub + ")" + (x.avisos.length ? ". " + x.avisos.join(", ") : "");
+  const fundo = "<i class='hoje' style='left:" + Number(hojePos) + "%'></i>" + varejo.map((v) => "<i class='vj' title='" + esc(v.nome + " " + dm(v.data)) + "' style='left:" + Number(v.pos) + "%'></i>").join("");
+  const barra = "<a class='bar n-" + esc(x.nivel) + (x.atrasado ? " atras" : "") + (x.marcador ? " mrc" : "") + (x.cortaEsq ? " esq" : "") + (x.cortaDir ? " dir" : "") +
+    "' href='" + esc(x.url) + "' target='_blank' rel='noopener noreferrer' title='" + esc(titulo) + "' style='left:" + Number(x.left) + "%;width:" + Number(x.width) + "%'>" +
+    (x.pct && !x.marcador ? "<span style='width:" + Number(x.pct) + "%'></span>" : "") + "</a>";
+  return "<div class='lab'><a href='" + esc(x.url) + "' target='_blank' rel='noopener noreferrer'>" + esc(x.nome) + "</a><small>" + esc(sub) +
+    (x.avisos.length ? " <span class='aviso'>⚠️ " + esc(x.avisos.join(", ")) + "</span>" : "") + "</small></div><div class='tl'>" + fundo + barra + "</div>";
+}
+
+PmoDados.render(t, async () => {
+  const q = await PmoDados.quadro(t), r = q.regras;
+  if (!(r.funcoes && r.funcoes.roadmap)) {
+    document.getElementById("raiz").innerHTML = "<div class='ok'>Esta tela está desligada neste quadro.</div>";
+    t.sizeTo("#raiz");
+    return;
+  }
+  const g = PmoMotor.roadmap(q.itens, r, new Date());
+  let h = "<p class='nota'>" + plural(g.total, "projeto ativo no roadmap", "projetos ativos no roadmap") + " · " + dm(g.janela.de) + "/" + g.janela.de.slice(2, 4) + " a " +
+    dm(g.janela.ate) + "/" + g.janela.ate.slice(2, 4) + "</p>";
+  if (g.total) {
+    h += "<div class='grade'><div></div><div class='tl cab'>" + g.meses.map((m) => "<span class='m' style='left:" + Number(m.left) + "%;width:" + Number(m.width) + "%'>" + esc(m.rotulo) + "</span>").join("") +
+      "<i class='hoje' style='left:" + Number(g.hojePos) + "%'></i></div>";
+    for (const gr of g.grupos) h += "<div class='grp'>" + esc(gr.nome) + " <span class='nota'>(" + gr.total + ")</span></div>" + gr.itens.map((x) => linhaDoProjeto(x, g.hojePos, g.varejo)).join("");
+    h += "</div>";
+    if (g.mais) h += "<p class='nota'>… e mais " + plural(g.mais, "projeto", "projetos") + " (o roadmap mostra até " + Number(r.roadmap_max_linhas) + ").</p>";
+  } else h += "<div class='ok'>Nenhum projeto ativo com datas dentro da janela. Preencha o Início planejado e o Fim planejado dos cards.</div>";
+  h += "<div class='leg'><span><i style='background:#0c66e4;width:3px;border-radius:0'></i>hoje</span><span><i style='background:#2e7d4f'></i>em dia</span><span><i style='background:#b8860b'></i>de olho</span><span><i style='background:#c0392b'></i>atenção</span>" +
+    "<span><i style='background:#fff;border:2px solid #172b4d'></i>atrasado</span><span>parte clara = progresso do checklist</span></div>";
+  if (g.varejo.length) h += "<p class='nota'>Linhas tracejadas = datas do varejo: " + g.varejo.map((v) => esc(v.nome) + " " + dm(v.data)).join(" · ") + ".</p>";
+  if (g.semDatas.length) h += "<h3>Sem datas, fora do roadmap (" + g.semDatas.length + ")</h3><p class='nota'>" +
+    g.semDatas.slice(0, 8).map((x) => "<a href='" + esc(x.url) + "' target='_blank' rel='noopener noreferrer'>" + esc(x.nome) + "</a>").join(" · ") + (g.semDatas.length > 8 ? " · … e mais " + (g.semDatas.length - 8) : "") + "</p>";
+  if (g.fora) h += "<p class='nota'>" + plural(g.fora, "projeto está", "projetos estão") + " com datas fora desta janela de meses.</p>";
+  h += "<p class='nota'>Só os projetos ativos. Barra = Início planejado a Fim planejado; ponta reta = a barra continua fora da janela. Só leitura; nada é alterado.</p>";
+  document.getElementById("raiz").innerHTML = h;
+  t.sizeTo("#raiz");
+});
+</script>
+</body>
+</html>

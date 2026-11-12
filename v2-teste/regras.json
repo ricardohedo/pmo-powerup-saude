@@ -114,6 +114,7 @@
     "portfolio": true,
     "radar": true,
     "riscos": true,
+    "roadmap": true,
     "tendencia": true
   },
   "fuso_horas": -3,
@@ -271,6 +272,9 @@
     "premissa": "premissa",
     "risco": "risco"
   },
+  "roadmap_max_linhas": 40,
+  "roadmap_meses_adiante": 6,
+  "roadmap_meses_atras": 1,
   "rotulo_evidencia": "Sem evidência",
   "rotulo_prioridade": {
     "P1": "Crítico",

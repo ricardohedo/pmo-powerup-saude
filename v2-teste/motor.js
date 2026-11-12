@@ -891,6 +891,51 @@
       atencao: atencao.slice(0, max), atencaoTotal: atencao.length, mais: Math.max(0, atencao.length - max), maisSemRegistro: Math.max(0, semRegistro.length - max) };
   }
 
+  /* ROADMAP (funcao opcional, so leitura): barras do "Inicio planejado" ao "Fim planejado" dos projetos ATIVOS numa janela de
+   * roadmap_meses_atras meses para tras e roadmap_meses_adiante para a frente (mes atual incluso). Posicoes em % da janela
+   * (left, width); marca o hoje e as datas do varejo. Projeto com so uma das datas aparece como marcador, com aviso; sem datas
+   * vai para "semDatas"; fora da janela so e contado. Agrupa por fase (lista). Nada e escrito no Trello. */
+  function roadmap(itens, regras, agora) {
+    const hoje = dataLocal(agora, regras), r2 = (x) => Math.round(x * 100) / 100;
+    const primeiro = (iso, n) => { const x = new Date(iso.slice(0, 7) + "-01T00:00:00Z"); x.setUTCMonth(x.getUTCMonth() + n); return x.toISOString().slice(0, 10); };
+    const w0 = primeiro(hoje, -regras.roadmap_meses_atras), w1 = primeiro(hoje, regras.roadmap_meses_adiante + 1), dias = diasEntre(w0, w1);
+    const pos = (iso) => Math.max(0, Math.min(100, 100 * diasEntre(w0, iso) / dias));
+    const NOME_MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+    const meses = [];
+    for (let m = w0; m < w1; m = primeiro(m, 1)) meses.push({ rotulo: NOME_MES[+m.slice(5, 7) - 1] + "/" + m.slice(2, 4), left: r2(pos(m)), width: r2(pos(primeiro(m, 1)) - pos(m)) });
+    const varejo = Object.entries(regras.datas_varejo || {}).filter(([, d]) => d >= w0 && d < w1).sort((a, b) => (a[1] < b[1] ? -1 : 1))
+      .map(([nome, d]) => ({ nome, data: d, pos: r2(pos(d)) }));
+    const grupos = {}, semDatas = []; let fora = 0;
+    const lerData = (v) => (v ? dataLocal(new Date(v), regras) : null);
+    for (const it of itens) {
+      if (!projetoAtivo(it, regras)) continue;
+      const v = it.valores || {}, ini = lerData(v["Início planejado"]), fim = lerData(v["Fim planejado"]);
+      const base = { nome: it.card.name, url: it.card.url };
+      if (!ini && !fim) { semDatas.push(base); continue; }
+      const avisos = [];
+      if (!ini) avisos.push("falta o Início planejado"); else if (!fim) avisos.push("falta o Fim planejado");
+      const invertida = ini && fim && ini > fim;
+      if (invertida) avisos.push("início depois do fim");
+      const [x0, x1] = invertida ? [fim, ini] : [ini || fim, fim || ini];
+      if (x1 < w0 || x0 >= w1) { fora++; continue; }
+      const left = pos(x0), direita = pos(somaDias(x1, 1));
+      (grupos[it.listaNome || "—"] = grupos[it.listaNome || "—"] || []).push({ ...base, inicio: ini, fim, left: r2(left), width: r2(Math.max(0.9, direita - left)),
+        cortaEsq: x0 < w0, cortaDir: somaDias(x1, 1) > w1, marcador: !ini || !fim, atrasado: !!fim && fim < hoje && !invertida,
+        pct: progressoChecklists(it.checklists || [], regras), nivel: semaforo(it.alertas || [], regras), avisos, _x0: x0, _x1: x1 });
+    }
+    const ordem = [regras.motor.lista_execucao, regras.motor.lista_revisao];
+    const rank = (n) => { const i = ordem.indexOf(String(n).trim().toLowerCase()); return i < 0 ? 99 : i; };
+    let restante = regras.roadmap_max_linhas, mais = 0, total = 0;
+    const lista = Object.keys(grupos).sort((a, b) => rank(a) - rank(b) || a.localeCompare(b)).map((nome) => {
+      const todos = grupos[nome].sort((a, b) => (a._x0 < b._x0 ? -1 : a._x0 > b._x0 ? 1 : a._x1 < b._x1 ? -1 : a._x1 > b._x1 ? 1 : a.nome.localeCompare(b.nome)));
+      total += todos.length;
+      const cabe = todos.slice(0, Math.max(0, restante)); restante -= cabe.length; mais += todos.length - cabe.length;
+      return { nome, total: todos.length, itens: cabe.map(({ _x0, _x1, ...resto }) => resto) };
+    }).filter((g) => g.itens.length);
+    return { janela: { de: w0, ate: somaDias(w1, -1) }, hoje, hojePos: r2(pos(hoje)), meses, varejo, grupos: lista, total, mais, fora,
+      semDatas: semDatas.sort((a, b) => a.nome.localeCompare(b.nome)) };
+  }
+
   /* "Melhor semana": compara a area com o PROPRIO passado (retratos da Tendencia, % de projetos em Atencao). So devolve
    * boa noticia: piorar ou ficar igual devolve null (nao se mostra nada, para nao virar cobranca). tipo "melhor" = o melhor
    * momento da janela guardada; "melhor_desde" = o melhor desde uma data; "melhora" = caiu o % de Atencao na janela. */
@@ -1031,7 +1076,7 @@
     return { proxima: rotulo, faltam };
   }
 
-  return { parseRiscos, registroDeRiscos, riscosDoCard, missoesDaArea, entregasDaSemana, retaFinal, destaqueDaSemana, melhorSemana, antecipar, prontidao, ordenarPorPrioridade, desvioPlano, historicoPlano, meuDia, projetoAtivo, pautaReuniao, radar, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, resumoArea, quadrosDoPortfolio, portfolioPermitido, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
+  return { roadmap, parseRiscos, registroDeRiscos, riscosDoCard, missoesDaArea, entregasDaSemana, retaFinal, destaqueDaSemana, melhorSemana, antecipar, prontidao, ordenarPorPrioridade, desvioPlano, historicoPlano, meuDia, projetoAtivo, pautaReuniao, radar, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, resumoArea, quadrosDoPortfolio, portfolioPermitido, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
     checklistsDeBadges, pontuar, ondeAtuar, abaInicialMeus, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto, cargaDaEquipe, semEvidencia,
     retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal, diasEntre };
 });
