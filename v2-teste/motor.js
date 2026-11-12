@@ -865,6 +865,12 @@
     return { ...r, score, nivel, flags };
   }
 
+  /* Riscos de UM card (verso do card): os itens ja avaliados, os mais graves primeiro. */
+  function riscosDoCard(desc, regras, agora) {
+    const hoje = dataLocal(agora, regras);
+    return parseRiscos(desc, regras).map((r) => avaliarRisco(r, regras, hoje)).sort((a, b) => (b.score || 0) - (a.score || 0) || b.flags.length - a.flags.length);
+  }
+
   /* Registro do quadro: so projetos ATIVOS. matriz[prob-1][imp-1] = quantos riscos; "atencao" = altos ou com pendencia, os piores primeiro. */
   function registroDeRiscos(itens, regras, agora) {
     const hoje = dataLocal(agora, regras), max = regras.riscos_max_itens || 8, ativos = itens.filter((it) => projetoAtivo(it, regras));
@@ -1025,7 +1031,7 @@
     return { proxima: rotulo, faltam };
   }
 
-  return { parseRiscos, registroDeRiscos, missoesDaArea, entregasDaSemana, retaFinal, destaqueDaSemana, melhorSemana, antecipar, prontidao, ordenarPorPrioridade, desvioPlano, historicoPlano, meuDia, projetoAtivo, pautaReuniao, radar, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, resumoArea, quadrosDoPortfolio, portfolioPermitido, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
+  return { parseRiscos, registroDeRiscos, riscosDoCard, missoesDaArea, entregasDaSemana, retaFinal, destaqueDaSemana, melhorSemana, antecipar, prontidao, ordenarPorPrioridade, desvioPlano, historicoPlano, meuDia, projetoAtivo, pautaReuniao, radar, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, resumoArea, quadrosDoPortfolio, portfolioPermitido, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
     checklistsDeBadges, pontuar, ondeAtuar, abaInicialMeus, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto, cargaDaEquipe, semEvidencia,
     retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal, diasEntre };
 });

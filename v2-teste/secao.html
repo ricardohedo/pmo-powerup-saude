@@ -6,9 +6,9 @@
 <title>Saúde do projeto</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611121614"></script>
-<script src="./dados.js?v=202611121614"></script>
-<script src="./base.js?v=202611121614"></script>
+<script src="./motor.js?v=202611121625"></script>
+<script src="./dados.js?v=202611121625"></script>
+<script src="./base.js?v=202611121625"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;margin:0;padding:4px 2px;color:#172b4d}
  .topo{display:flex;align-items:center;gap:8px;margin-bottom:8px}
@@ -76,6 +76,13 @@ async function desenhar() {
       (fimAtual ? "<button id='congelar'>" + (base ? "Congelar de novo (registra um replanejamento)" : "Congelar plano de hoje") + "</button>"
         : "<small>Preencha o 'Fim planejado' para poder congelar.</small>") +
       (base ? "<button id='remover'>Remover linha de base</button>" : "") + "<small id='msgbase'></small></div>";
+  }
+  if (r.funcoes.riscos) {            // funcao opcional: riscos e premissas escritos na DESCRICAO do card (so leitura)
+    const rs = PmoMotor.riscosDoCard(d.card.desc, r, new Date()), NOME = { alto: "ALTO", medio: "MÉDIO", baixo: "BAIXO", indefinido: "?" };
+    if (rs.length) h += "<div class='risco" + (rs.some((x) => x.nivel === "alto") ? " alto" : "") + "'><b>⚠️ Riscos e premissas deste projeto (" + rs.length + ")</b>" +
+      rs.map((x) => "<small><b>" + (x.tipo === "premissa" ? "PREMISSA" : NOME[x.nivel]) + "</b> " + esc(x.texto) + (x.flags.length ? " — <i>" + esc(x.flags.join(", ")) + "</i>" : "") + "</small>").join("") + "</div>";
+    else if (PmoMotor.projetoAtivo({ card: d.card, listaNome: d.lista }, r))
+      h += "<p class='nota'>⚠️ Nenhum risco ou premissa registrado. Escreva na descrição do card, na seção " + esc(r.riscos_secao.toUpperCase()) + " (o botão Riscos do quadro mostra como).</p>";
   }
   h += "<p class='nota'>Fase: " + esc(d.lista) + ". O Power-Up não altera o card" + (r.funcoes.linha_de_base ? " (a linha de base fica guardada só no armazenamento do Power-Up)" : "") + ".</p>";
   document.getElementById("raiz").innerHTML = h;
