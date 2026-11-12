@@ -48,6 +48,8 @@
   "dias_prazo_proximo": 7,
   "dias_sem_interacao": 7,
   "divisor_sem_interacao": 10,
+  "engajamento_missao_data": "Páscoa",
+  "engajamento_missao_nome": "Cadastro 100% antes da Páscoa",
   "evidencia_dias": 30,
   "evidencia_min_anexos": 1,
   "fases_execucao": [
@@ -94,6 +96,7 @@
   ],
   "funcoes": {
     "carga_equipe": true,
+    "engajamento": true,
     "evidencia": true,
     "linha_de_base": true,
     "meu_dia": true,

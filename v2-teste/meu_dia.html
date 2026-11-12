@@ -6,8 +6,9 @@
 <title>Meu dia</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611121510"></script>
-<script src="./dados.js?v=202611121510"></script>
+<script src="./motor.js?v=202611121547"></script>
+<script src="./dados.js?v=202611121547"></script>
+<script src="./tendencia.js?v=202611121547"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  h3{margin:16px 0 6px} .nota{color:#5e6c84;font-size:12px}
@@ -16,6 +17,10 @@
  ul{margin:0;padding-left:18px} li{margin:0 0 4px}
  a{color:#172b4d} .mot{color:#5e6c84;font-size:12px}
  .tag{display:inline-block;padding:0 7px;border-radius:9px;color:#fff;font-size:11px;font-weight:600;margin-right:6px}
+ .missao{background:#f4f5f7;border-radius:4px;padding:10px;margin-bottom:8px}
+ .barra{height:10px;background:#dfe1e6;border-radius:5px;margin:6px 0;overflow:hidden}
+ .barra span{display:block;height:100%;background:#2e7d4f}
+ .boa{color:#1f6f43;margin:0 0 8px}
  .tag.P1{background:#c0392b}.tag.P2{background:#d9730d}.tag.P3{background:#b8860b}.tag.P4{background:#2e7d4f}
 </style>
 </head>
@@ -26,23 +31,47 @@ const t = TrelloPowerUp.iframe();
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const item = (x) => "<li>" + (x.prioridade ? "<span class='tag " + esc(x.prioridade) + "'>" + esc(x.prioridade) + "</span>" : "") +
   "<a href='" + esc(x.url) + "' target='_blank'>" + esc(x.nome) + "</a> <span class='mot'>— " + esc(x.texto) + " · " + esc(x.lista) + "</span></li>";
+const dm = (iso) => iso.slice(8, 10) + "/" + iso.slice(5, 7);
+const missaoHtml = (m) => "<div class='missao'><b>🎯 Missão da área: " + esc(m.nome) + "</b>" +
+  "<div class='barra'><span style='width:" + Number(m.pct) + "%'></span></div><span class='nota'>" +
+  (m.completa ? "Missão cumprida: os " + m.ativos + " projetos ativos estão com o cadastro completo. 👏"
+    : m.ok + " de " + m.ativos + " projetos ativos com cadastro completo (" + m.pct + "%) · faltam " + m.faltam +
+      (m.vencida ? "" : " · " + m.diasUteis + (m.diasUteis === 1 ? " dia útil" : " dias úteis") + " até " + dm(m.ate))) +
+  "</span><br><span class='nota'>Meta da área, não de pessoas.</span></div>";
+const zerou = (d, eng) => !eng
+  ? "<div class='ok'><b>Nada pedindo você hoje. 🎉</b><br>Nenhum dos seus projetos vence hoje, está atrasado, parado ou com item de checklist vencido.</div>"
+  : "<div class='ok'><b>Dia zerado. 🎉</b><br>Nenhum dos seus " + d.meusAtivos + (d.meusAtivos === 1 ? " projeto ativo pede" : " projetos ativos pedem") + " você hoje." +
+    (d.proximo ? "<br>Próximo prazo seu: <a href='" + esc(d.proximo.url) + "' target='_blank'>" + esc(d.proximo.nome) + "</a> em " + d.proximo.diasUteis +
+      (d.proximo.diasUteis === 1 ? " dia útil" : " dias úteis") + " (" + dm(d.proximo.fim) + ")." : "") + "</div>";
 const secao = (titulo, lista) => lista.length ? "<h3>" + titulo + " (" + lista.length + ")</h3><ul>" + lista.map(item).join("") + "</ul>" : "";
 
 PmoDados.render(t, async () => {
   const q = await PmoDados.quadro(t), d = PmoMotor.meuDia(q.itens, q.regras, q.meuId, new Date());
+  const eng = !!(q.regras.funcoes && q.regras.funcoes.engajamento);
+  let topo = "";
+  if (eng) {
+    const m = PmoMotor.missaoDaArea(q.itens, q.regras, new Date());
+    if (m) topo += missaoHtml(m);
+    if (q.regras.funcoes.tendencia) {
+      try {
+        const ms = PmoMotor.melhorSemana(await PmoTendencia.ler(t), q.regras);
+        if (ms) topo += "<p class='boa'>📈 " + esc(ms.texto) + "</p>";
+      } catch (e) { /* sem retratos: simplesmente nao mostra */ }
+    }
+  }
   let h;
   if (!d.souMembro) {
     h = "<div class='ok'><b>Você não está em nenhum card deste quadro.</b><br>O “Meu dia” mostra só os cards em que você é membro. " +
       "Para ver o quadro todo, use “Minhas ações” → “Todos os projetos”.</div>";
   } else if (!d.total) {
-    h = "<div class='ok'><b>Nada pedindo você hoje. 🎉</b><br>Nenhum dos seus projetos vence hoje, está atrasado, parado ou com item de checklist vencido.</div>";
+    h = zerou(d, eng);
   } else {
     h = "<div class='foco'><b>Comece por:</b> <a href='" + esc(d.foco.url) + "' target='_blank'>" + esc(d.foco.nome) + "</a> — " + esc(d.foco.texto) + ".</div>" +
       "<p class='nota'>" + d.total + (d.total === 1 ? " projeto seu pede" : " projetos seus pedem") + " atenção hoje.</p>" +
       secao("🔴 Vence hoje", d.hoje) + secao("⏰ Atrasados", d.atrasadas) + secao("📅 Vencem nos próximos dias úteis", d.semana) +
       secao("☑️ Itens de checklist vencidos", d.checklist) + secao("😶 Parados, sem interação", d.parados);
   }
-  document.getElementById("raiz").innerHTML = h +
+  document.getElementById("raiz").innerHTML = topo + h +
     "<p class='nota'>Só os cards em que você é membro. Dias úteis descontam fim de semana e os feriados do PMO. Só leitura; nada é alterado.</p>";
   t.sizeTo("#raiz");
 });

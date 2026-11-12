@@ -718,7 +718,7 @@
    * fim de semana e feriados); checklist = itens vencidos escondidos (atraso_oculto); parados = sem interacao. Um card pode estar em
    * mais de uma secao; total conta cards distintos. Fora: concluido, backlog, fechado, listas ignoradas (projetoAtivo). So le. */
   function meuDia(itens, regras, meuId, agora) {
-    const hoje = dataLocal(agora, regras), r = { hoje: [], atrasadas: [], semana: [], checklist: [], parados: [], total: 0, souMembro: false };
+    const hoje = dataLocal(agora, regras), r = { hoje: [], atrasadas: [], semana: [], checklist: [], parados: [], total: 0, souMembro: false, meusAtivos: 0, proximo: null };
     const ids = new Set();
     for (const it of itens) {
       if (!meuId || !(it.card.idMembers || []).includes(meuId)) continue;
@@ -727,6 +727,8 @@
       const al = (tipo) => (it.alertas || []).find((a) => a.tipo === tipo);
       const base = { nome: it.card.name, url: it.card.url, lista: it.listaNome, prioridade: it.prio ? it.prio.prioridade : null };
       const fimIso = (it.valores || {})["Fim planejado"], fim = fimIso ? dataLocal(new Date(fimIso), regras) : null;
+      r.meusAtivos++;
+      if (fim && fim >= hoje && (!r.proximo || fim < r.proximo.fim)) r.proximo = { nome: it.card.name, url: it.card.url, fim, diasUteis: diasUteis(hoje, fim, regras.feriados) };
       const atr = al("atrasado"), pp = al("prazo_proximo"), ao = al("atraso_oculto"), si = al("sem_interacao");
       let entrou = false;
       if (fim === hoje) { r.hoje.push({ ...base, texto: "vence hoje" }); entrou = true; }
@@ -745,6 +747,41 @@
     r.total = ids.size;
     r.foco = r.hoje[0] || r.atrasadas[0] || r.semana[0] || r.checklist[0] || r.parados[0] || null;
     return r;
+  }
+
+  /* ENGAJAMENTO (funcao opcional, so leitura): reconhecimento sem pressao. Nada aqui pontua pessoas, nem compara
+   * pessoas, nem conta sequencia de dias. "Missao da area": meta COLETIVA da area (a de pmo.toml: nome + data de
+   * [datas_varejo]); a meta e "projetos ativos sem cadastro incompleto". Devolve null sem missao configurada ou sem projeto ativo. */
+  function missaoDaArea(itens, regras, agora) {
+    const ate = (regras.datas_varejo || {})[regras.engajamento_missao_data];
+    if (!regras.engajamento_missao_nome || !ate) return null;
+    const ativos = itens.filter((it) => projetoAtivo(it, regras));
+    if (!ativos.length) return null;
+    const faltam = ativos.filter((it) => (it.alertas || []).some((a) => a.tipo === "cadastro_incompleto")).length;
+    const ok = ativos.length - faltam, hoje = dataLocal(agora, regras);
+    return { nome: regras.engajamento_missao_nome, ate, diasUteis: diasUteis(hoje, ate, regras.feriados), vencida: ate < hoje,
+      ativos: ativos.length, ok, faltam, pct: arredondaPar(100 * ok / ativos.length), completa: faltam === 0 };
+  }
+
+  /* "Melhor semana": compara a area com o PROPRIO passado (retratos da Tendencia, % de projetos em Atencao). So devolve
+   * boa noticia: piorar ou ficar igual devolve null (nao se mostra nada, para nao virar cobranca). tipo "melhor" = o melhor
+   * momento da janela guardada; "melhor_desde" = o melhor desde uma data; "melhora" = caiu o % de Atencao na janela. */
+  function melhorSemana(serie, regras) {
+    const ord = (serie || []).filter((x) => x.n > 0).sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0));
+    if (ord.length < 3) return null;
+    const pct = (x) => 100 * x.v / x.n, ult = ord[ord.length - 1], p = pct(ult), ant = ord.slice(0, -1);
+    const dm = (d) => d.slice(8, 10) + "/" + d.slice(5, 7), atencao = arredondaPar(p);
+    if (!(p < pct(ant[ant.length - 1]))) {
+      const t = direcaoTendencia(serie, regras);
+      return t && t.direcao === "melhorando" ? melhoraTexto(t) : null;
+    }
+    if (ant.every((x) => pct(x) > p)) return { tipo: "melhor", texto: "Melhor momento dos últimos " + diasEntre(ord[0].d, ult.d) + " dias: " + atencao + "% dos projetos em Atenção." };
+    const igual = ant.slice().reverse().find((x) => pct(x) <= p);
+    return { tipo: "melhor_desde", texto: "Melhor momento desde " + dm(igual.d) + ": " + atencao + "% dos projetos em Atenção." };
+  }
+  function melhoraTexto(t) {
+    const pp = arredondaPar(-t.delta_pp);
+    return { tipo: "melhora", texto: pp + (pp === 1 ? " ponto a menos" : " pontos a menos") + " de projetos em Atenção em " + t.dias + (t.dias === 1 ? " dia" : " dias") + " (de " + arredondaPar(t.de) + "% para " + arredondaPar(t.para) + "%)." };
   }
 
   /* PAUTA DA REUNIAO: o que levar a reuniao semanal do quadro, so do que o Trello ja diz (nada inventado).
@@ -866,7 +903,7 @@
     return { proxima: rotulo, faltam };
   }
 
-  return { antecipar, prontidao, ordenarPorPrioridade, desvioPlano, historicoPlano, meuDia, projetoAtivo, pautaReuniao, radar, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, resumoArea, quadrosDoPortfolio, portfolioPermitido, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
+  return { missaoDaArea, melhorSemana, antecipar, prontidao, ordenarPorPrioridade, desvioPlano, historicoPlano, meuDia, projetoAtivo, pautaReuniao, radar, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, resumoArea, quadrosDoPortfolio, portfolioPermitido, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
     checklistsDeBadges, pontuar, ondeAtuar, abaInicialMeus, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto, cargaDaEquipe, semEvidencia,
     retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal, diasEntre };
 });
