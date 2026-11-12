@@ -6,8 +6,8 @@
 <title>Pauta da reunião</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611121717"></script>
-<script src="./dados.js?v=202611121717"></script>
+<script src="./motor.js?v=202611121737"></script>
+<script src="./dados.js?v=202611121737"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  .topo{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
@@ -22,7 +22,7 @@
 <div id="raiz">Lendo o quadro…</div>
 <script>
 const t = TrelloPowerUp.iframe();
-const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 let pauta = null;
 
 function copiar(texto) {
@@ -44,7 +44,7 @@ PmoDados.render(t, async () => {
   try {
     const [q, b] = await Promise.all([PmoDados.quadro(t), t.board("name")]);
     pauta = PmoMotor.pautaReuniao(q.itens, q.regras, new Date(), (b || {}).name);
-    const link = (l) => l.url ? "<a href='" + esc(l.url) + "' target='_blank'>" + esc(l.texto) + "</a>" : esc(l.texto);
+    const link = (l) => l.url ? "<a href='" + esc(l.url) + "' target='_blank' rel='noopener noreferrer'>" + esc(l.texto) + "</a>" : esc(l.texto);
     document.getElementById("raiz").innerHTML = "<p class='resumo'>" + esc(pauta.titulo) + "<br><span class='nota'>" + esc(pauta.resumo) + "</span></p>" +
       (pauta.secoes.length ? pauta.secoes.map((s, n) => "<h3>" + (n + 1) + ") " + esc(s.titulo) + "</h3><ul>" + s.linhas.map((l) => "<li>" + link(l) + "</li>").join("") +
         (s.resto ? "<li class='nota'>… e mais " + s.resto + "</li>" : "") + "</ul>").join("") :

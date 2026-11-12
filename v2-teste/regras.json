@@ -55,7 +55,7 @@
   "engajamento_max_itens": 8,
   "engajamento_missoes": {
     "Cadastro 100% antes da Páscoa": "cadastro_completo | Páscoa",
-    "Desafio da semana: zerar os atrasados": "sem_atraso | semana",
+    "Meta da semana: zerar os atrasados": "sem_atraso | semana",
     "Todo projeto com responsável até o Natal": "com_responsavel | Natal"
   },
   "evidencia_dias": 30,
@@ -257,6 +257,7 @@
   "riscos_limite_alto": 6,
   "riscos_limite_medio": 3,
   "riscos_max_itens": 8,
+  "riscos_max_texto": 200,
   "riscos_niveis": {
     "1": 1,
     "2": 2,

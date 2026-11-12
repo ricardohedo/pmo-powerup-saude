@@ -6,8 +6,8 @@
 <title>Preciso de ajuda</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611121717"></script>
-<script src="./dados.js?v=202611121717"></script>
+<script src="./motor.js?v=202611121737"></script>
+<script src="./dados.js?v=202611121737"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;margin:0;padding:8px 10px;color:#172b4d}
  h3{margin:4px 0 6px;font-size:15px}
@@ -25,7 +25,7 @@
 <div id="raiz">Lendo o card…</div>
 <script>
 const t = TrelloPowerUp.iframe();
-const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 PmoDados.render(t, async () => {
   const d = await PmoDados.cardEmFoco(t), r = d.regras;
   const pct = PmoMotor.progressoChecklists(d.checklists, r);
@@ -43,10 +43,10 @@ PmoDados.render(t, async () => {
   if (d.prontidao) h += d.prontidao.faltam.length
     ? "<div class='caixa risco'><b>🚦 Para mover para " + esc(d.prontidao.proxima) + " falta:</b>" + d.prontidao.faltam.map((x) => "<small>• " + (x.jaPendente ? esc(((d.regras.grupos && d.regras.grupos[x.tipo]) || x.frase).replace(/^\S+\s/, "")) + " (já listado acima)" : esc(x.frase) + " — " + esc(x.fazer)) + "</small>").join("") + "</div>"
     : "<div class='caixa' style='border-left-color:#2e7d4f'>✅ Pronto para mover para " + esc(d.prontidao.proxima) + " (nenhuma pendência pelas regras do PMO).</div>";
-  h += "<p><a href='./como.html' target='_blank'>Como o PMO mede os projetos (todas as regras)</a></p>";
+  h += "<p><a href='./como.html' target='_blank' rel='noopener noreferrer'>Como o PMO mede os projetos (todas as regras)</a></p>";
   const assunto ="Dúvida sobre o card: " + d.card.name;
   const corpo = "Fase: " + d.lista + "\nPrioridade: " + (e.prioridade || "nenhuma") + "\nSinais: " + (e.sinais.map((s) => s.frase).join("; ") || "nenhum") + "\n\nMinha dúvida: ";
-  h += "<a class='pedir' target='_blank' href='mailto:?subject=" + encodeURIComponent(assunto) + "&body=" + encodeURIComponent(corpo) + "'>Ainda com dúvida? Pedir ajuda ao PMO</a>";
+  h += "<a class='pedir' target='_blank' rel='noopener noreferrer' href='mailto:?subject=" + encodeURIComponent(assunto) + "&body=" + encodeURIComponent(corpo) + "'>Ainda com dúvida? Pedir ajuda ao PMO</a>";
   h += "<p class='nota'>Explicação gerada só pelas regras do PMO, sem IA: a mesma situação dá sempre a mesma resposta. Só leitura: nada no card é alterado.</p>";
   document.getElementById("raiz").innerHTML = h;
   t.sizeTo("#raiz").catch(() => {});

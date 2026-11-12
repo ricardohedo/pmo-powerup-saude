@@ -175,6 +175,23 @@
   /* "Assinatura" de um bloco: o que ele mostra (tipo, agrupamento e filtro), sem titulo, id nem meta. */
   const assinatura = (w) => [w.tipo, w.campo || "", w.filtro ? w.filtro.campo + "=" + w.filtro.valor + (w.filtro.nega ? "!" : "") : "", w.ativos === false ? "todos" : ""].join("|");
 
+  /* Os 6 blocos do padrao ANTIGO (ids p1 a p6), que muita gente ja guardou. */
+  const ANTIGO = [
+    { id: "p1", tipo: "contador", titulo: "Projetos ativos" },
+    { id: "p2", tipo: "contador", titulo: "Atrasados", filtro: { campo: "alerta", valor: "Atrasado" } },
+    { id: "p3", tipo: "pizza", titulo: "Semáforo dos projetos", campo: "semaforo" },
+    { id: "p4", tipo: "barras", titulo: "Projetos por fase", campo: "lista" },
+    { id: "p5", tipo: "barras", titulo: "Projetos por responsável", campo: "responsavel" },
+    { id: "p6", tipo: "tabela", titulo: "Prioridade P1", filtro: { campo: "prioridade", valor: "P1 Crítico" } },
+  ];
+
+  /* Explicacao do bloco: SO se ele ainda e o bloco original daquele id (mesmo conteudo). Se a pessoa editou o bloco mantendo o id,
+   * a explicacao descreveria outra coisa, entao some. Blocos criados por ela nunca tem explicacao. */
+  function dica(w, regras) {
+    const original = padrao(regras).concat(ANTIGO.map((x) => normalizar(x).widget)).find((x) => x.id === w.id);
+    return original && assinatura(original) === assinatura(w) ? (DICAS[w.id] || "") : "";
+  }
+
   /* Acrescenta ao painel da pessoa os blocos do padrao que ela ainda nao tem (mesmo conteudo = ja tem), sem apagar nem alterar nenhum
    * dos dela. Respeita o limite de blocos: o que nao couber e contado em `faltaram`. */
   function completar(lista, regras) {
@@ -250,5 +267,5 @@
   }
 
   return { CHAVE_PAINEIS, TIPOS, CAMPOS, SEM_VALOR, linhaDoItem, valoresDoCampo, calcular, normalizar, padrao, tamanho, validarLista, ler, salvar,
-    esc, corDe, corBarra, svgPizza, htmlBarras, DICAS, MULTI, rotuloAlerta, completar, assinatura };
+    esc, corDe, corBarra, svgPizza, htmlBarras, DICAS, MULTI, rotuloAlerta, completar, assinatura, dica };
 });

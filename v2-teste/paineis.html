@@ -6,9 +6,9 @@
 <title>Painéis PMO</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611121717"></script>
-<script src="./dados.js?v=202611121717"></script>
-<script src="./paineis.js?v=202611121717"></script>
+<script src="./motor.js?v=202611121737"></script>
+<script src="./dados.js?v=202611121737"></script>
+<script src="./paineis.js?v=202611121737"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  .topo{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
@@ -73,7 +73,7 @@ function msg(txt, ruim) { const m = $("msg"); m.textContent = txt || ""; m.class
 
 function tabelaProjetos(ls) {
   return "<table><tr><th>Projeto</th><th>Fase</th><th>Prior.</th><th>Responsável</th><th>Situação</th></tr>" + ls.map((l) =>
-    "<tr><td><a href='" + esc(l.url) + "' target='_blank'>" + esc(l.nome) + "</a></td><td>" + esc(l.lista) + "</td><td>" +
+    "<tr><td><a href='" + esc(l.url) + "' target='_blank' rel='noopener noreferrer'>" + esc(l.nome) + "</a></td><td>" + esc(l.lista) + "</td><td>" +
     (l.prioridade ? "<span class='tag " + esc(l.prioridade) + "'>" + esc(l.prioridade) + "</span>" : "") + "</td><td>" + esc(l.responsaveis.join(", ")) + "</td><td>" +
     (l.atraso !== null ? l.atraso + "d de atraso" : l.semaforo === "verde" ? "em dia" : l.semaforo === "amarelo" ? "de olho" : "atenção") + "</td></tr>").join("") + "</table>";
 }
@@ -96,7 +96,7 @@ function blocoHtml(r, ix) {
   }
   const filtro = w.filtro ? " · " + esc(P.CAMPOS[w.filtro.campo]) + (w.filtro.nega ? " ≠ " : " = ") + esc(w.filtro.valor) : "";
   return "<div class='bloco'><h4><span title='" + esc(r.titulo) + "'>" + esc(r.titulo) + "</span><span class='ac'><button data-acao='editar' data-ix='" + ix +
-    "' title='Editar'>✎</button><button data-acao='remover' data-ix='" + ix + "' title='Remover'>✕</button></span></h4>" + (P.DICAS[w.id] ? "<p class='dica'>" + esc(P.DICAS[w.id]) + "</p>" : "") + corpo +
+    "' title='Editar'>✎</button><button data-acao='remover' data-ix='" + ix + "' title='Remover'>✕</button></span></h4>" + (P.dica(w, q.regras) ? "<p class='dica'>" + esc(P.dica(w, q.regras)) + "</p>" : "") + corpo +
     "<div class='meta'>" + r.total + " projeto(s)" + (w.campo ? " · por " + esc(P.CAMPOS[w.campo]) : "") + filtro + (w.ativos === false ? " · inclui concluídos" : "") +
     (w.campo && P.MULTI.includes(w.campo) ? " · um projeto pode contar em mais de uma barra" : "") + "</div></div>";
 }

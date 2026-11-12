@@ -6,10 +6,10 @@
 <title>Portfólio do PMO</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./app.js?v=202611121717"></script>
-<script src="./motor.js?v=202611121717"></script>
-<script src="./dados.js?v=202611121717"></script>
-<script src="./portfolio.js?v=202611121717"></script>
+<script src="./app.js?v=202611121737"></script>
+<script src="./motor.js?v=202611121737"></script>
+<script src="./dados.js?v=202611121737"></script>
+<script src="./portfolio.js?v=202611121737"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  table{border-collapse:collapse;width:100%;margin:8px 0} th,td{border:1px solid #dfe1e6;padding:4px 8px;text-align:left}
@@ -22,7 +22,7 @@
 <body>
 <div id="raiz">Carregando…</div>
 <script>
-const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const BOLA = { vermelho: "🔴", amarelo: "🟡", verde: "🟢" }, ORDEM = { vermelho: 0, amarelo: 1, verde: 2 };
 const raiz = document.getElementById("raiz");
 const t = TrelloPowerUp.iframe({ appKey: PMO_APP.appKey, appName: PMO_APP.appName, appAuthor: PMO_APP.appAuthor });
@@ -42,7 +42,7 @@ function tabela(res) {
     "</td><td>" + soma("semInteracao") + "</td><td>" + soma("cadastro") + "</td></tr></table>" +
     falhas.map((r) => "<p class='erro'>⚪ " + esc(r.nome) + ": não consegui ler (" + esc(r.erro) + ")</p>").join("") +
     "<h3>Os 10 mais atrasados</h3><table><tr><th>Área</th><th>Projeto</th><th>Atraso</th></tr>" +
-    piores.map((p) => "<tr><td>" + esc(p.area) + "</td><td><a href='" + esc(p.url) + "' target='_blank'>" + esc(p.nome) + "</a></td><td>" + p.dias + " dias</td></tr>").join("") + "</table>" +
+    piores.map((p) => "<tr><td>" + esc(p.area) + "</td><td><a href='" + esc(p.url) + "' target='_blank' rel='noopener noreferrer'>" + esc(p.nome) + "</a></td><td>" + p.dias + " dias</td></tr>").join("") + "</table>" +
     "<p class='nota'>Lido agora, com a SUA autorização de leitura do Trello; nada é gravado nem enviado. Mesmos alertas do Power-Up. Só as áreas que você consegue ver no Trello aparecem.</p>";
 }
 

@@ -825,30 +825,52 @@
     const m = String(txt || "").trim().match(/^(\d{4})-(\d{2})-(\d{2})$/) || String(txt || "").trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
     if (!m) return null;
     const iso = m[1].length === 4 ? m[1] + "-" + m[2] + "-" + m[3] : m[3] + "-" + m[2] + "-" + m[1];
-    return isNaN(Date.parse(iso)) ? null : iso;
+    const d = new Date(iso + "T00:00:00Z");                    // ida e volta: o V8 aceita 30/02 e 31/04 como se fossem datas
+    return isNaN(d) || d.toISOString().slice(0, 10) !== iso ? null : iso;
   }
+
+  /* So chave PROPRIA do objeto: "constructor: x" ou "toString: x" escritos na descricao nao podem virar funcao do JavaScript. */
+  const temChave = (obj, k) => Object.prototype.hasOwnProperty.call(obj, k);
+  const CORTE_AVISO = 24;                                      // so o tamanho do trecho citado nos avisos de linha mal escrita
+  const citar = (x) => (String(x).length > CORTE_AVISO ? String(x).slice(0, CORTE_AVISO) + "…" : String(x));
 
   function parseRiscos(desc, regras) {
     const titulo = semAcento(regras.riscos_secao), niveis = regras.riscos_niveis || {}, campos = regras.riscos_campos || {}, tipos = regras.riscos_tipos || {};
+    const maxTexto = regras.riscos_max_texto, corta = (x) => (maxTexto ? String(x).slice(0, maxTexto) : String(x));
     const palavrasTitulo = titulo.split(/\s+/).filter((w) => w.length >= 5), out = []; let dentro = false;
     for (const bruta of String(desc || "").split("\n")) {
       const linha = bruta.trim();
       if (!linha) continue;
       const semDeco = linha.replace(/^[#>*_\s]+/, "").replace(/[*_:\s]+$/, "");
-      const ehTitulo = /^#/.test(linha) || (ehCaixaAlta(semDeco) && !tipos[semAcento(semDeco.split(":")[0])]);
+      const ehItem = /^([-*•]|\d+[.)])\s/.test(linha);                                   // linha de lista nunca e titulo (mesmo em CAIXA ALTA)
+      const ehNegrito = /^(\*\*|__)[^*_:]+:?(\*\*|__):?$/.test(linha);                    // "**Cronograma**" sozinho na linha = titulo
+      const ehTitulo = /^#/.test(linha) || ehNegrito || (!ehItem && ehCaixaAlta(semDeco) && !temChave(tipos, semAcento(semDeco.split(":")[0])));
       if (ehTitulo) { const h = semAcento(semDeco); dentro = h.startsWith(titulo) || palavrasTitulo.includes(h.split(/\s+/)[0]); continue; }   // 'RISCOS' ou 'PREMISSAS' sozinhos tambem valem
       if (!dentro) continue;
       const partes = linha.replace(/^([-*•]|\d+[.)])\s*/, "").split("|").map((x) => x.trim());
       const principal = partes[0].match(/^([A-Za-zÀ-ÿ]+)\s*:\s*(.*)$/);
-      const tipo = principal && tipos[semAcento(principal[1])] ? tipos[semAcento(principal[1])] : "risco";
-      const texto = (principal && tipos[semAcento(principal[1])] ? principal[2] : partes[0]).trim();
+      const achado = principal && temChave(tipos, semAcento(principal[1])) ? tipos[semAcento(principal[1])] : null;
+      const tipo = achado || "risco";
+      const texto = corta((achado ? principal[2] : partes[0]).trim());
       if (!texto) continue;
-      const r = { tipo, texto, prob: null, imp: null, dono: null, resposta: null, revisar: null };
+      const r = { tipo, texto, prob: null, imp: null, dono: null, resposta: null, revisar: null, avisos: [] };
       for (const parte of partes.slice(1)) {
+        if (!parte) continue;
         const kv = parte.match(/^([^:]+):\s*(.*)$/);
-        const campo = kv ? campos[semAcento(kv[1])] : null;
-        if (!campo || !kv[2].trim()) continue;
-        r[campo] = campo === "prob" || campo === "imp" ? (niveis[semAcento(kv[2])] || null) : campo === "revisar" ? dataDeRisco(kv[2]) : kv[2].trim();
+        if (!kv) { r.avisos.push("trecho sem \"campo: valor\": " + citar(parte)); continue; }
+        const chave = semAcento(kv[1]), valor = kv[2].trim();
+        const campo = temChave(campos, chave) ? campos[chave] : null;
+        if (!campo) { r.avisos.push("campo \"" + citar(kv[1].trim()) + "\" não reconhecido"); continue; }
+        if (!valor) continue;
+        if (campo === "prob" || campo === "imp") {
+          const n = temChave(niveis, semAcento(valor)) ? niveis[semAcento(valor)] : null;
+          if (n === null) r.avisos.push("nível \"" + citar(valor) + "\" não reconhecido (use alta, média ou baixa)");
+          r[campo] = n;
+        } else if (campo === "revisar") {
+          const d = dataDeRisco(valor);
+          if (!d) r.avisos.push("data \"" + citar(valor) + "\" inválida (use AAAA-MM-DD ou DD/MM/AAAA)");
+          r.revisar = d;
+        } else r[campo] = corta(valor);
       }
       out.push(r);
     }
@@ -885,7 +907,9 @@
     const cont = (f) => todos.filter((r) => r.flags.includes(f)).length;
     const atencao = todos.filter((r) => r.nivel === "alto" || r.flags.length)
       .sort((a, b) => (b.score || 0) - (a.score || 0) || b.flags.length - a.flags.length || a.projeto.localeCompare(b.projeto) || a.texto.localeCompare(b.texto));
+    const comAviso = todos.filter((r) => r.avisos.length).sort((a, b) => a.projeto.localeCompare(b.projeto) || a.texto.localeCompare(b.texto));
     return { ativos: ativos.length, comRegistro, semRegistro: semRegistro.sort((a, b) => a.nome.localeCompare(b.nome)).slice(0, max), semRegistroTotal: semRegistro.length,
+      linhasComAviso: comAviso.length, comAviso: comAviso.slice(0, max).map((r) => ({ projeto: r.projeto, url: r.url, texto: r.texto, avisos: r.avisos })), maisComAviso: Math.max(0, comAviso.length - max),
       riscos: riscos.length, premissas: todos.length - riscos.length, porNivel, matriz,
       semDono: cont("sem dono"), semResposta: cont("sem resposta"), revisaoVencida: cont("revisão vencida"), incompletos: cont("falta probabilidade ou impacto"),
       atencao: atencao.slice(0, max), atencaoTotal: atencao.length, mais: Math.max(0, atencao.length - max), maisSemRegistro: Math.max(0, semRegistro.length - max) };
@@ -917,6 +941,12 @@
       const invertida = ini && fim && ini > fim;
       if (invertida) avisos.push("início depois do fim");
       const [x0, x1] = invertida ? [fim, ini] : [ini || fim, fim || ini];
+      if (x1 < w0 && fim && fim < hoje && !invertida) {      // MUITO atrasado (o prazo passou antes desta janela): nunca some, fica preso a borda esquerda
+        avisos.push("prazo passou em " + dmCurto(fim) + "/" + fim.slice(2, 4) + ", antes desta janela");
+        (grupos[it.listaNome || "—"] = grupos[it.listaNome || "—"] || []).push({ ...base, inicio: ini, fim, left: 0, width: 0.9, cortaEsq: true, cortaDir: false,
+          marcador: true, atrasado: true, pct: progressoChecklists(it.checklists || [], regras), nivel: semaforo(it.alertas || [], regras), avisos, _x0: x0, _x1: x1 });
+        continue;
+      }
       if (x1 < w0 || x0 >= w1) { fora++; continue; }
       const left = pos(x0), direita = pos(somaDias(x1, 1));
       (grupos[it.listaNome || "—"] = grupos[it.listaNome || "—"] || []).push({ ...base, inicio: ini, fim, left: r2(left), width: r2(Math.max(0.9, direita - left)),

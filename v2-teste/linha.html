@@ -6,8 +6,8 @@
 <title>Linha do tempo de entregas</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611121717"></script>
-<script src="./dados.js?v=202611121717"></script>
+<script src="./motor.js?v=202611121737"></script>
+<script src="./dados.js?v=202611121737"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  .resumo{display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap}
@@ -30,7 +30,7 @@
 <div id="raiz">Lendo o quadro…</div>
 <script>
 const t = TrelloPowerUp.iframe();
-const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const dm = (iso) => iso ? iso.slice(8, 10) + "/" + iso.slice(5, 7) : "—";
 const plural = (n, a, b) => n + " " + (n === 1 ? a : b);
 
@@ -38,7 +38,7 @@ function linha(x, atrasada) {
   const pct = x.pct === null ? "" : "<div class='bar' title='" + x.pct + "% do checklist'><i style='width:" + x.pct + "%'></i></div>";
   const sub = atrasada ? plural(x.dias, "dia", "dias") + " de atraso" : (x.dias === 0 ? "vence hoje" : x.dias === 1 ? "vence amanhã" : "em " + x.dias + " dias");
   return "<div class='lin " + (atrasada ? "atras" : "") + "'><span class='data'>" + dm(x.fim) + "</span><span class='pt " + x.nivel + "'></span>" +
-    "<span class='nome'><a href='" + esc(x.url) + "' target='_blank'>" + esc(x.nome) + "</a><small>" + esc(x.lista || "") + " · " + sub + "</small></span>" +
+    "<span class='nome'><a href='" + esc(x.url) + "' target='_blank' rel='noopener noreferrer'>" + esc(x.nome) + "</a><small>" + esc(x.lista || "") + " · " + sub + "</small></span>" +
     (x.pouco ? "<span class='alerta'>⚠️ " + (x.pct || 0) + "% pronto</span>" : "") + pct + "</div>";
 }
 
@@ -52,8 +52,8 @@ PmoDados.render(t, async () => {
   for (const j of r.janelas) h += "<h3>" + dm(j.de) + " a " + dm(j.ate) + " <small>— " + plural(j.itens.length, "entrega", "entregas") + "</small></h3>" + j.itens.map((x) => linha(x, false)).join("");
   if (!r.janelas.length) h += "<h3>Próximas entregas</h3><p class='nota'>Nenhuma entrega prevista nos próximos " + q.regras.dias_marcos + " dias.</p>";
   if (r.semPrazo.length) h += "<h3>Sem prazo final cadastrado <small>— " + r.semPrazo.length + "</small></h3><p class='nota'>" +
-    r.semPrazo.slice(0, 8).map((x) => "<a href='" + esc(x.url) + "' target='_blank'>" + esc(x.nome) + "</a>").join(" · ") + (r.semPrazo.length > 8 ? " · …" : "") + "</p>";
-  if (r.entregues.length) h += "<h3>Entregues no mês <small>— " + r.entregues.length + "</small></h3>" + r.entregues.map((x) => "<div class='lin'><span class='data'>" + dm(x.fim) + "</span><span class='nome'><a href='" + esc(x.url) + "' target='_blank'>" + esc(x.nome) + "</a></span></div>").join("");
+    r.semPrazo.slice(0, 8).map((x) => "<a href='" + esc(x.url) + "' target='_blank' rel='noopener noreferrer'>" + esc(x.nome) + "</a>").join(" · ") + (r.semPrazo.length > 8 ? " · …" : "") + "</p>";
+  if (r.entregues.length) h += "<h3>Entregues no mês <small>— " + r.entregues.length + "</small></h3>" + r.entregues.map((x) => "<div class='lin'><span class='data'>" + dm(x.fim) + "</span><span class='nome'><a href='" + esc(x.url) + "' target='_blank' rel='noopener noreferrer'>" + esc(x.nome) + "</a></span></div>").join("");
   h += "<p class='nota'>" + r.total + " projetos no quadro. Mesma regra do painel da CEO: não concluído, com prazo final, até " + q.regras.dias_marcos +
     " dias (calendário de Brasília). ⚠️ = prazo em até " + q.regras.ceo_dias_prazo_amarelo + " dias com menos de " + q.regras.ceo_pct_prazo_amarelo +
     "% do checklist. A barra é o progresso do checklist. Só leitura; nada é alterado.</p>";

@@ -6,8 +6,8 @@
 <title>Painel de saúde do quadro</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611121717"></script>
-<script src="./dados.js?v=202611121717"></script>
+<script src="./motor.js?v=202611121737"></script>
+<script src="./dados.js?v=202611121737"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  .sem{display:flex;gap:8px;margin-bottom:14px}
@@ -21,7 +21,7 @@
 <div id="raiz">Lendo o quadro…</div>
 <script>
 const t = TrelloPowerUp.iframe();
-const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const lista = (arr, f, vazio) => arr.length ? "<ul>" + arr.slice(0, 8).map(f).join("") + (arr.length > 8 ? "<li>… e mais " + (arr.length - 8) + "</li>" : "") + "</ul>" : "<p class='nota'>" + vazio + "</p>";
 const indicadores = (k) => !k.ativos ? "" :
   "<h3>Indicadores do quadro (" + k.ativos + " projetos ativos)</h3><ul>" +
@@ -32,7 +32,7 @@ const indicadores = (k) => !k.ativos ? "" :
   "<p class='nota'>Calculado pelas regras do PMO sobre os projetos ativos (fora de Backlog e Concluídos); pode diferir do portal.</p>";
 PmoDados.render(t, async () => {
   const q = await PmoDados.quadro(t), r = q.resumo, g = q.regras.grupos;
-  const link = (x) => "<a href='" + esc(x.url) + "' target='_blank'>" + esc(x.nome) + "</a>";
+  const link = (x) => "<a href='" + esc(x.url) + "' target='_blank' rel='noopener noreferrer'>" + esc(x.nome) + "</a>";
   // Semaforo so dos projetos ATIVOS (mesma conta da Tendencia): fora Backlog, Concluidos e listas ignoradas.
   const ret = PmoMotor.retrato(q.itens, q.regras, new Date());
   document.getElementById("raiz").innerHTML =

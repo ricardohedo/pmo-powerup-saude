@@ -6,8 +6,8 @@
 <title>Radar</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611121717"></script>
-<script src="./dados.js?v=202611121717"></script>
+<script src="./motor.js?v=202611121737"></script>
+<script src="./dados.js?v=202611121737"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  h3{margin:14px 0 4px} ul{margin:0;padding-left:18px} li{margin:0 0 4px}
@@ -23,7 +23,7 @@
 <div id="raiz">Lendo o quadro…</div>
 <script>
 const t = TrelloPowerUp.iframe();
-const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const dias = (n) => n + (n === 1 ? " dia" : " dias");
 
 PmoDados.render(t, async () => {
@@ -39,7 +39,7 @@ PmoDados.render(t, async () => {
       h = "<div class='foco'><b>" + r.total + (r.total === 1 ? " projeto vai" : " projetos vão") + " cair em alerta nos próximos " + dias(r.janela) + " se ninguém mexer.</b>" +
         (nP1 ? "<br><span class='p1'>" + nP1 + (nP1 === 1 ? " vira" : " viram") + " P1 (Crítico) por atraso.</span>" : "") + "</div>" +
         [...grupos].map(([d, ls]) => "<h3>Em " + dias(d) + " (" + ls.length + ")</h3><ul>" + ls.map((l) =>
-          "<li>" + (l.prioridade ? "<span class='tag " + esc(l.prioridade) + "'>" + esc(l.prioridade) + "</span>" : "") + "<a href='" + esc(l.url) + "' target='_blank'>" + esc(l.nome) +
+          "<li>" + (l.prioridade ? "<span class='tag " + esc(l.prioridade) + "'>" + esc(l.prioridade) + "</span>" : "") + "<a href='" + esc(l.url) + "' target='_blank' rel='noopener noreferrer'>" + esc(l.nome) +
           "</a><br><span class='nota'>" + esc(l.texto) + " · " + esc(l.lista) + "</span></li>").join("") + "</ul>").join("");
     }
     document.getElementById("raiz").innerHTML = h + "<p class='nota'>O que o motor do PMO já prevê com os números de hoje (sem IA). Mexer no card (comentar, mover, ajustar o prazo) tira ele da lista. Só leitura; nada é alterado.</p>";

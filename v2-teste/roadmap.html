@@ -6,8 +6,8 @@
 <title>Roadmap do quadro</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611121717"></script>
-<script src="./dados.js?v=202611121717"></script>
+<script src="./motor.js?v=202611121737"></script>
+<script src="./dados.js?v=202611121737"></script>
 <style>
  body{font:13px/1.4 system-ui,sans-serif;padding:12px;color:#172b4d}
  .ok{background:#e3fcef;border-radius:4px;padding:10px}
@@ -46,7 +46,7 @@ function linhaDoProjeto(x, hojePos, varejo) {
   const titulo = x.nome + " (" + sub + ")" + (x.avisos.length ? ". " + x.avisos.join(", ") : "");
   const fundo = "<i class='hoje' style='left:" + Number(hojePos) + "%'></i>" + varejo.map((v) => "<i class='vj' title='" + esc(v.nome + " " + dm(v.data)) + "' style='left:" + Number(v.pos) + "%'></i>").join("");
   const barra = "<a class='bar n-" + esc(x.nivel) + (x.atrasado ? " atras" : "") + (x.marcador ? " mrc" : "") + (x.cortaEsq ? " esq" : "") + (x.cortaDir ? " dir" : "") +
-    "' href='" + esc(x.url) + "' target='_blank' rel='noopener noreferrer' title='" + esc(titulo) + "' style='left:" + Number(x.left) + "%;width:" + Number(x.width) + "%'>" +
+    "' href='" + esc(x.url) + "' target='_blank' rel='noopener noreferrer' title='" + esc(titulo) + "' aria-label='" + esc(titulo) + "' style='left:" + Number(x.left) + "%;width:" + Number(x.width) + "%'>" +
     (x.pct && !x.marcador ? "<span style='width:" + Number(x.pct) + "%'></span>" : "") + "</a>";
   return "<div class='lab'><a href='" + esc(x.url) + "' target='_blank' rel='noopener noreferrer'>" + esc(x.nome) + "</a><small>" + esc(sub) +
     (x.avisos.length ? " <span class='aviso'>⚠️ " + esc(x.avisos.join(", ")) + "</span>" : "") + "</small></div><div class='tl'>" + fundo + barra + "</div>";

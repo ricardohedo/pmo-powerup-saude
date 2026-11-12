@@ -6,31 +6,26 @@
 <title>Riscos e premissas</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611121717"></script>
-<script src="./dados.js?v=202611121717"></script>
-<script src="./tendencia.js?v=202611121717"></script>
+<script src="./motor.js?v=202611121737"></script>
+<script src="./dados.js?v=202611121737"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
- h3{margin:16px 0 6px} .nota{color:#5e6c84;font-size:12px}
- .foco{background:#e9f2ff;border-radius:4px;padding:10px;margin-bottom:6px}
+ h3{margin:16px 0 6px} ul{margin:0;padding-left:18px} li{margin:0 0 4px}
  .ok{background:#e3fcef;border-radius:4px;padding:10px}
- ul{margin:0;padding-left:18px} li{margin:0 0 4px}
- a{color:#172b4d} .mot{color:#5e6c84;font-size:12px}
- .tag{display:inline-block;padding:0 7px;border-radius:9px;color:#fff;font-size:11px;font-weight:600;margin-right:6px}
- .missao{background:#f4f5f7;border-radius:4px;padding:10px;margin-bottom:8px}
- .barra{height:10px;background:#dfe1e6;border-radius:5px;margin:6px 0;overflow:hidden}
- .barra span{display:block;height:100%;background:#2e7d4f}
- .boa{color:#1f6f43;margin:0 0 8px}
- details{margin-top:4px} summary{cursor:pointer;color:#0c66e4} details ul{margin:6px 0 0}
- .tag.P1{background:#c0392b}.tag.P2{background:#d9730d}.tag.P3{background:#b8860b}.tag.P4{background:#2e7d4f}
-</style>
-<style>
- .mapa{border-collapse:collapse;margin:6px 0 4px} .mapa td,.mapa th{border:1px solid #fff;text-align:center;padding:8px 14px;font-size:13px}
- .mapa td{font-weight:600;min-width:64px} .mapa th{background:#f4f5f7;font-weight:600;color:#44546f}
+ .nota{color:#5e6c84;font-size:12px} .mot{color:#5e6c84;font-size:12px} .boa{color:#1f6f43}
+ a{color:#172b4d}
+ .mapa{border-collapse:collapse;margin:6px 0 4px} .mapa td,.mapa th{border:1px solid #fff;text-align:center;padding:6px 12px;font-size:13px}
+ .mapa td{font-weight:600;min-width:74px} .mapa th{background:#f4f5f7;font-weight:600;color:#44546f}
+ .mapa td small{display:block;font-weight:400;font-size:11px}
  .c-alto{background:#c0392b;color:#fff}.c-medio{background:#f5cd47;color:#172b4d}.c-baixo{background:#cce0ff;color:#172b4d}
  .num{display:inline-block;margin-right:14px}.num b{font-size:20px;display:block}
- .tag.alto{background:#c0392b}.tag.medio{background:#946f00}.tag.baixo{background:#2e7d4f}.tag.indefinido{background:#5e6c84}
- .como{background:#f4f5f7;border-radius:4px;padding:8px 10px;font-size:12px} code{display:block;white-space:pre-wrap;margin-top:4px}
+ .tag{display:inline-block;padding:0 7px;border-radius:9px;color:#fff;font-size:11px;font-weight:600;margin-right:6px}
+ .tag.alto{background:#c0392b}.tag.medio{background:#946f00}.tag.baixo{background:#2e7d4f}.tag.indefinido{background:#5e6c84}.tag.premissa{background:#44546f}
+ .como{background:#f4f5f7;border-radius:4px;padding:8px 10px;font-size:12px;margin-top:10px}
+ code{display:block;white-space:pre-wrap;margin:6px 0;background:#fff;border:1px solid #dfe1e6;border-radius:3px;padding:6px 8px;font-size:12px}
+ button{padding:4px 10px;border:1px solid #c1c7d0;border-radius:4px;background:#fff;cursor:pointer;font:inherit}
+ .glos{font-size:12px;color:#44546f;margin-top:8px} .glos b{color:#172b4d}
+ .aviso{color:#946f00}
 </style>
 </head>
 <body>
@@ -39,9 +34,26 @@
 const t = TrelloPowerUp.iframe();
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const link = (nome, url) => "<a href='" + esc(url) + "' target='_blank' rel='noopener noreferrer'>" + esc(nome) + "</a>";
-const NOME = { alto: "ALTO", medio: "MÉDIO", baixo: "BAIXO", indefinido: "?" };
+const NOME = { alto: "ALTO", medio: "MÉDIO", baixo: "BAIXO", indefinido: "SEM NÍVEL" };
 const classe = (score, r) => score >= r.riscos_limite_alto ? "c-alto" : score >= r.riscos_limite_medio ? "c-medio" : "c-baixo";
+const NIVEL_TXT = (score, r) => score >= r.riscos_limite_alto ? "alto" : score >= r.riscos_limite_medio ? "médio" : "baixo";
 const ROT = ["baixa", "média", "alta"], ROTI = ["baixo", "médio", "alto"];
+
+function modelo(r) {
+  return "#### ***" + r.riscos_secao.toUpperCase() + "***\n- RISCO: o que pode dar errado | prob: alta | imp: alto | dono: quem cuida | resposta: o que fazer | revisar: AAAA-MM-DD\n" +
+    "- PREMISSA: o que estamos assumindo que é verdade | dono: quem confirma | revisar: AAAA-MM-DD";
+}
+async function copiar(texto, onde) {                                  // copia o modelo e avisa na tela (nunca em silencio)
+  let ok = false;
+  try { await navigator.clipboard.writeText(texto); ok = true; } catch (e) { /* tenta o jeito antigo */ }
+  if (!ok) {
+    try {
+      const ta = document.createElement("textarea"); ta.value = texto; document.body.appendChild(ta); ta.select();
+      ok = document.execCommand("copy"); document.body.removeChild(ta);
+    } catch (e) { ok = false; }
+  }
+  onde.textContent = ok ? "Copiado! Cole na descrição do card." : "Não consegui copiar. Selecione o texto acima e copie (Ctrl+C).";
+}
 
 PmoDados.render(t, async () => {
   const q = await PmoDados.quadro(t), r = q.regras;
@@ -51,31 +63,40 @@ PmoDados.render(t, async () => {
     return;
   }
   const g = PmoMotor.registroDeRiscos(q.itens, r, new Date());
+  const MODELO = modelo(r);
   let h = "<p class='nota'>" + g.riscos + (g.riscos === 1 ? " risco" : " riscos") + " e " + g.premissas + (g.premissas === 1 ? " premissa" : " premissas") +
     " em " + g.comRegistro + " de " + g.ativos + " projetos ativos.</p>";
   h += "<div><span class='num'><b>" + g.porNivel.alto + "</b>de nível alto</span><span class='num'><b>" + g.semDono + "</b>sem dono</span>" +
     "<span class='num'><b>" + g.semResposta + "</b>sem resposta</span><span class='num'><b>" + g.revisaoVencida + "</b>revisão vencida</span></div>";
   if (g.riscos) {
-    h += "<h3>Matriz probabilidade × impacto</h3><table class='mapa'><tr><th></th>" + ROTI.map((x) => "<th>impacto " + x + "</th>").join("") + "</tr>";
+    h += "<h3>Matriz probabilidade × impacto</h3><table class='mapa'><caption class='nota'>Quantos riscos há em cada combinação</caption><tr><td style='background:none'></td>" +
+      ROTI.map((x) => "<th scope='col'>impacto " + x + "</th>").join("") + "</tr>";
     for (let p = 3; p >= 1; p--) {
-      h += "<tr><th>prob. " + ROT[p - 1] + "</th>";
-      for (let i = 1; i <= 3; i++) h += "<td class='" + classe(p * i, r) + "' title='probabilidade " + ROT[p - 1] + ", impacto " + ROTI[i - 1] + "'>" + g.matriz[p - 1][i - 1] + "</td>";
+      h += "<tr><th scope='row'>prob. " + ROT[p - 1] + "</th>";
+      for (let i = 1; i <= 3; i++) h += "<td class='" + classe(p * i, r) + "' title='probabilidade " + ROT[p - 1] + ", impacto " + ROTI[i - 1] + "'>" + g.matriz[p - 1][i - 1] +
+        "<small>" + NIVEL_TXT(p * i, r) + "</small></td>";
       h += "</tr>";
     }
-    h += "</table><p class='nota'>Vermelho = alto, amarelo = médio, azul = baixo (probabilidade × impacto). Riscos sem probabilidade ou impacto ficam fora da matriz" +
+    h += "</table><p class='nota'>Cada célula traz a quantidade e o nível (alto, médio, baixo = probabilidade × impacto). Riscos sem probabilidade ou impacto ficam fora da matriz" +
       (g.incompletos ? " (" + g.incompletos + " agora)" : "") + ".</p>";
   }
   h += "<h3>Riscos que pedem atenção (" + g.atencaoTotal + ")</h3>";
-  h += g.atencao.length ? "<ul>" + g.atencao.map((x) => "<li><span class='tag " + esc(x.nivel || "indefinido") + "'>" + (x.tipo === "premissa" ? "PREMISSA" : NOME[x.nivel]) + "</span>" +
+  h += g.atencao.length ? "<ul>" + g.atencao.map((x) => "<li><span class='tag " + esc(x.tipo === "premissa" ? "premissa" : x.nivel || "indefinido") + "'>" + (x.tipo === "premissa" ? "PREMISSA" : NOME[x.nivel]) + "</span>" +
     esc(x.texto) + " — " + link(x.projeto, x.url) + (x.flags.length ? " <span class='mot'>· " + esc(x.flags.join(", ")) + "</span>" : "") + "</li>").join("") +
     (g.mais ? "<li class='nota'>… e mais " + g.mais + "</li>" : "") + "</ul>" : "<p class='nota'>Nada pedindo atenção agora.</p>";
-  h += "<h3>Projetos sem riscos registrados (" + g.semRegistroTotal + ")</h3>";
+  if (g.linhasComAviso) h += "<h3>Linhas para corrigir (" + g.linhasComAviso + ")</h3><p class='nota'>O Power-Up não entendeu parte destas linhas e ignorou o trecho; corrija na descrição do card.</p><ul>" +
+    g.comAviso.map((x) => "<li>" + link(x.projeto, x.url) + ": “" + esc(x.texto) + "” <span class='aviso'>— " + esc(x.avisos.join("; ")) + "</span></li>").join("") +
+    (g.maisComAviso ? "<li class='nota'>… e mais " + g.maisComAviso + "</li>" : "") + "</ul>";
+  h += "<h3>Projetos sem riscos registrados (" + g.semRegistroTotal + ")</h3><p class='nota'>Sem registro não quer dizer sem risco: quer dizer que ninguém escreveu ainda.</p>";
   h += g.semRegistro.length ? "<ul>" + g.semRegistro.map((x) => "<li>" + link(x.nome, x.url) + "</li>").join("") + (g.maisSemRegistro ? "<li class='nota'>… e mais " + g.maisSemRegistro + "</li>" : "") + "</ul>"
-    : "<p class='nota'>Todos os projetos ativos têm riscos ou premissas registrados. 👏</p>";
-  h += "<div class='como'><b>Como registrar:</b> na <b>descrição</b> do card, acrescente uma seção e escreva uma linha por item:" +
-    "<code>#### ***" + esc(r.riscos_secao.toUpperCase()) + "***\n- RISCO: o que pode dar errado | prob: alta | imp: alto | dono: Ana | resposta: o que fazer | revisar: 2026-12-10\n- PREMISSA: o que estamos assumindo | dono: Ana</code>" +
-    "Níveis: alta, média ou baixa (ou 3, 2, 1). O Power-Up só lê; nada é alterado.</div>";
+    : "<p class='nota boa'>Todos os projetos ativos têm riscos ou premissas registrados. 👏</p>";
+  h += "<div class='como'><b>Como registrar</b> (na <b>descrição</b> do card, uma linha por item):<code>" + esc(MODELO) + "</code>" +
+    "<button id='copiar'>Copiar modelo</button> <span id='msg' class='nota' role='status'></span>" +
+    "<p class='nota'>Níveis: alta, média ou baixa (ou 3, 2, 1). <b>Não cite pessoas no texto do risco</b>: descreva a situação, não quem. Só o texto até " + Number(r.riscos_max_texto) + " caracteres é lido. O Power-Up só lê; nada é alterado.</p></div>";
+  h += "<div class='glos'><b>O que significa</b><br><b>Risco</b>: algo que pode dar errado e atrapalhar o projeto. <b>Premissa</b>: algo que estamos assumindo que é verdade (ex.: “as lojas terão acesso ao sistema até 01/12”). " +
+    "<b>Sem nível</b>: falta a probabilidade ou o impacto. <b>Sem resposta</b>: risco médio ou alto sem plano do que fazer. <b>Revisão vencida</b>: a data de “revisar” já passou.</div>";
   document.getElementById("raiz").innerHTML = h;
+  document.getElementById("copiar").onclick = () => copiar(MODELO, document.getElementById("msg"));
   t.sizeTo("#raiz");
 });
 </script>

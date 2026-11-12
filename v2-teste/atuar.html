@@ -6,8 +6,8 @@
 <title>Minhas ações</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611121717"></script>
-<script src="./dados.js?v=202611121717"></script>
+<script src="./motor.js?v=202611121737"></script>
+<script src="./dados.js?v=202611121737"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  .abas{display:flex;gap:6px;margin-bottom:12px}
@@ -29,14 +29,14 @@
 <div id="raiz">Lendo o quadro…</div>
 <script>
 const t = TrelloPowerUp.iframe();
-const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 let dados = null, soMeus = false, primeiraVez = true;
 
 function cartao(x, i, destaque) {
   const lado = destaque ? "t1" : "t2";
   return "<div class='cartao " + lado + "'><span class='pts'>" + Math.round(x.pontos) + " pts</span><b>" + (i + 1) + ". " +
     (x.prioridade ? "<span class='tag " + x.prioridade + "'>" + x.prioridade + " " + esc(dados.regras.rotulo_prioridade[x.prioridade]) + "</span>" : "") + "<a href='" + esc(x.url) +
-    "' target='_blank'>" + esc(x.nome) + "</a></b><div class='mot'>" + esc(x.lista || "") + " · " + esc(x.motivos.slice(0, 3).join(" · ")) +
+    "' target='_blank' rel='noopener noreferrer'>" + esc(x.nome) + "</a></b><div class='mot'>" + esc(x.lista || "") + " · " + esc(x.motivos.slice(0, 3).join(" · ")) +
     (x.motivos.length > 3 ? " · +" + (x.motivos.length - 3) : "") + "</div><div class='fazer'>👉 " + esc(x.fazer) + "</div></div>";
 }
 
@@ -55,10 +55,10 @@ function desenha() {
     if (r.resto) h += "<p class='nota'>… e mais " + r.resto + " projetos pedindo atenção.</p>";
   }
   if (r.emRisco.length) h += "<h3>⏳ Em risco de atrasar (ainda no prazo)</h3><ul>" + r.emRisco.slice(0, 8).map((x) =>
-    "<li><span class='tag " + x.risco + "'>" + esc(dados.regras.rotulo_risco[x.risco]) + "</span><a href='" + esc(x.url) + "' target='_blank'>" + esc(x.nome) + "</a> — vence em " + x.dias +
+    "<li><span class='tag " + x.risco + "'>" + esc(dados.regras.rotulo_risco[x.risco]) + "</span><a href='" + esc(x.url) + "' target='_blank' rel='noopener noreferrer'>" + esc(x.nome) + "</a> — vence em " + x.dias +
     (x.dias === 1 ? " dia" : " dias") + ", " + (x.pct === null ? "sem checklist" : x.pct + "% do checklist") + "</li>").join("") + "</ul>" +
     (r.emRisco.length > 8 ? "<p class='nota'>… e mais " + (r.emRisco.length - 8) + " em risco.</p>" : "");
-  if (r.vitorias.length) h += "<h3>Vitórias rápidas (quase prontos)</h3><ul>" + r.vitorias.slice(0, 6).map((x) => "<li><a href='" + esc(x.url) + "' target='_blank'>" + esc(x.nome) + "</a> — falta só formalizar o encerramento</li>").join("") + "</ul>";
+  if (r.vitorias.length) h += "<h3>Vitórias rápidas (quase prontos)</h3><ul>" + r.vitorias.slice(0, 6).map((x) => "<li><a href='" + esc(x.url) + "' target='_blank' rel='noopener noreferrer'>" + esc(x.nome) + "</a> — falta só formalizar o encerramento</li>").join("") + "</ul>";
   h += "<p class='nota'>" + r.total + (r.total === 1 ? " projeto considerado, " : " projetos considerados, ") + r.semAtencao + " sem nada pedindo ação. A ordem usa a mesma pontuação do PMO " +
     "(atraso, prazo próximo, atraso oculto, prioridade e urgência). Pausado e em revisão sem comentário usam a contagem de comentários do Trello. Só leitura; nada é alterado.</p>";
   document.getElementById("raiz").innerHTML = h;

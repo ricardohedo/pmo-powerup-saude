@@ -6,9 +6,9 @@
 <title>Conquistas da área</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611121717"></script>
-<script src="./dados.js?v=202611121717"></script>
-<script src="./tendencia.js?v=202611121717"></script>
+<script src="./motor.js?v=202611121737"></script>
+<script src="./dados.js?v=202611121737"></script>
+<script src="./tendencia.js?v=202611121737"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  h3{margin:16px 0 6px} .nota{color:#5e6c84;font-size:12px}
@@ -46,7 +46,7 @@ PmoDados.render(t, async () => {
   let h = "";
   if (dest) h += "<div class='ok'><b>🏆 Destaque da semana</b><br>" + esc(dest.texto) + "</div>";
   h += bloco("🎉 Entregas da semana (" + ent.total + ")", ent.itens,
-    "Nenhuma entrega nos últimos " + ent.janela + " dias. A próxima pode ser a sua.", (x) => link(x) + " <span class='mot'>— " + (x.dias === 0 ? "hoje" : "há " + x.dias + (x.dias === 1 ? " dia" : " dias")) + "</span>", ent.mais);
+    "Nenhuma entrega registrada nos últimos " + ent.janela + " dias.", (x) => link(x) + " <span class='mot'>— " + (x.dias === 0 ? "hoje" : "há " + x.dias + (x.dias === 1 ? " dia" : " dias")) + "</span>", ent.mais);
   h += bloco("🏁 Reta final (" + reta.total + ")", reta.itens, "Nenhum projeto na reta final agora.",
     (x) => link(x) + " <span class='mot'>— " + x.pct + "% do checklist" + (x.faltam ? " · " + (x.faltam === 1 ? "falta 1 item" : "faltam " + x.faltam + " itens") : "") + "</span>", reta.mais);
   if (q.regras.funcoes.tendencia) {

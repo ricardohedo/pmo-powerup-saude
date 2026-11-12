@@ -6,8 +6,8 @@
 <title>Matriz impacto × esforço</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611121717"></script>
-<script src="./dados.js?v=202611121717"></script>
+<script src="./motor.js?v=202611121737"></script>
+<script src="./dados.js?v=202611121737"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  table.m{border-collapse:separate;border-spacing:6px;width:100%;table-layout:fixed}
@@ -28,7 +28,7 @@
 <div id="raiz">Lendo o quadro…</div>
 <script>
 const t = TrelloPowerUp.iframe();
-const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const NIVEIS = ["alto", "medio", "baixo"], ROT = { alto: "Alto", medio: "Médio", baixo: "Baixo" };
 const ESFORCO = ["baixo", "medio", "alto"];                         // colunas: do mais barato ao mais caro
 const NOME = { "alto|baixo": ["faz", "Fazer primeiro"], "alto|alto": ["plan", "Planejar com cuidado"], "baixo|baixo": ["vit", "Vitórias rápidas"], "baixo|alto": ["rev", "Reavaliar"] };
@@ -41,13 +41,13 @@ PmoDados.render(t, async () => {
     for (const esf of ESFORCO) {
       const k = imp + "|" + esf, lista = m.celulas[k] || [], nome = NOME[k];
       h += "<td class='cel " + (nome ? nome[0] : "") + "'>" + (nome ? "<h4>" + nome[1] + "<span class='n'>" + lista.length + "</span></h4>" : "<h4><span class='n'>" + lista.length + "</span></h4>") +
-        lista.map((x) => "<a href='" + esc(x.url) + "' target='_blank'>" + (x.prioridade ? "<span class='tag " + x.prioridade + "'>" + x.prioridade + "</span>" : "") + esc(x.nome) + "</a>").join("") + "</td>";
+        lista.map((x) => "<a href='" + esc(x.url) + "' target='_blank' rel='noopener noreferrer'>" + (x.prioridade ? "<span class='tag " + x.prioridade + "'>" + x.prioridade + "</span>" : "") + esc(x.nome) + "</a>").join("") + "</td>";
     }
     h += "</tr>";
   }
   h += "</table>";
   if (m.semClassificar.length) h += "<h3>Sem classificar (" + m.semClassificar.length + ")</h3>" + m.semClassificar.map((x) =>
-    "<div class='sem'><a href='" + esc(x.url) + "' target='_blank'>" + esc(x.nome) + "</a> <span class='nota'>· falta: " + esc(x.falta.join(" e ")) + "</span></div>").join("");
+    "<div class='sem'><a href='" + esc(x.url) + "' target='_blank' rel='noopener noreferrer'>" + esc(x.nome) + "</a> <span class='nota'>· falta: " + esc(x.falta.join(" e ")) + "</span></div>").join("");
   h += "<p class='nota'>Projetos não concluídos, pelos campos <b>Impacto no negócio</b> e <b>Esforço estimado</b> do card. Comece pelo verde (alto impacto, pouco esforço); revise o vermelho (baixo impacto, muito esforço). Só leitura; nada é alterado.</p>";
   document.getElementById("raiz").innerHTML = h;
   t.sizeTo("#raiz").catch(() => {});

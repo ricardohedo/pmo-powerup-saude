@@ -6,9 +6,9 @@
 <title>Meu dia</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611121717"></script>
-<script src="./dados.js?v=202611121717"></script>
-<script src="./tendencia.js?v=202611121717"></script>
+<script src="./motor.js?v=202611121737"></script>
+<script src="./dados.js?v=202611121737"></script>
+<script src="./tendencia.js?v=202611121737"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  h3{margin:16px 0 6px} .nota{color:#5e6c84;font-size:12px}
@@ -29,16 +29,16 @@
 <div id="raiz">Lendo o quadro…</div>
 <script>
 const t = TrelloPowerUp.iframe();
-const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const item = (x) => "<li>" + (x.prioridade ? "<span class='tag " + esc(x.prioridade) + "'>" + esc(x.prioridade) + "</span>" : "") +
-  "<a href='" + esc(x.url) + "' target='_blank'>" + esc(x.nome) + "</a> <span class='mot'>— " + esc(x.texto) + " · " + esc(x.lista) + "</span></li>";
+  "<a href='" + esc(x.url) + "' target='_blank' rel='noopener noreferrer'>" + esc(x.nome) + "</a> <span class='mot'>— " + esc(x.texto) + " · " + esc(x.lista) + "</span></li>";
 const dm = (iso) => iso.slice(8, 10) + "/" + iso.slice(5, 7);
-const lis = (l) => l.map((x) => "<li><a href='" + esc(x.url) + "' target='_blank'>" + esc(x.nome) + "</a> <span class='mot'>— " + esc(x.motivo) + "</span></li>").join("");
-const missaoHtml = (m) => "<div class='missao'><b>🎯 " + esc(m.nome) + "</b>" +
-  "<div class='barra'><span style='width:" + Number(m.pct) + "%'></span></div><span class='nota'>" +
-  (m.completa ? "Missão cumprida: os " + m.ativos + " projetos ativos estão em dia nesta meta. 👏"
+const lis = (l) => l.map((x) => "<li><a href='" + esc(x.url) + "' target='_blank' rel='noopener noreferrer'>" + esc(x.nome) + "</a> <span class='mot'>— " + esc(x.motivo) + "</span></li>").join("");
+const missaoHtml = (m) => "<div class='missao'><b><span aria-hidden='true'>🎯</span> " + esc(m.nome) + "</b>" +
+  "<div class='barra' role='progressbar' aria-valuemin='0' aria-valuemax='100' aria-valuenow='" + Number(m.pct) + "' aria-label='Progresso da meta: " + Number(m.pct) + "%'><span style='width:" + Number(m.pct) + "%'></span></div><span class='nota'>" +
+  (m.completa ? "Meta cumprida: os " + m.ativos + " projetos ativos estão em dia nesta meta. 👏"
     : m.ok + " de " + m.ativos + " projetos ativos em dia nesta meta (" + m.pct + "%) · faltam " + m.faltam +
-      (m.vencida ? " · o prazo da missão passou" : " · " + m.diasUteis + (m.diasUteis === 1 ? " dia útil" : " dias úteis") + " até " + esc(m.ateRotulo))) +
+      (m.vencida ? " · o prazo desta meta passou" : " · " + m.diasUteis + (m.diasUteis === 1 ? " dia útil" : " dias úteis") + " até " + esc(m.ateRotulo))) +
   "</span>" +
   (m.faltantes.length ? "<details><summary class='nota'>Ver os " + m.faltam + " que faltam</summary><ul>" + lis(m.faltantes) +
     (m.mais ? "<li class='nota'>… e mais " + m.mais + "</li>" : "") + "</ul></details>" : "") +
@@ -46,7 +46,7 @@ const missaoHtml = (m) => "<div class='missao'><b>🎯 " + esc(m.nome) + "</b>" 
 const zerou = (d, eng) => !eng
   ? "<div class='ok'><b>Nada pedindo você hoje. 🎉</b><br>Nenhum dos seus projetos vence hoje, está atrasado, parado ou com item de checklist vencido.</div>"
   : "<div class='ok'><b>Dia zerado. 🎉</b><br>Nenhum dos seus " + d.meusAtivos + (d.meusAtivos === 1 ? " projeto ativo pede" : " projetos ativos pedem") + " você hoje." +
-    (d.proximo ? "<br>Próximo prazo seu: <a href='" + esc(d.proximo.url) + "' target='_blank'>" + esc(d.proximo.nome) + "</a> em " + d.proximo.diasUteis +
+    (d.proximo ? "<br>Próximo prazo seu: <a href='" + esc(d.proximo.url) + "' target='_blank' rel='noopener noreferrer'>" + esc(d.proximo.nome) + "</a> em " + d.proximo.diasUteis +
       (d.proximo.diasUteis === 1 ? " dia útil" : " dias úteis") + " (" + dm(d.proximo.fim) + ")." : "") + "</div>";
 const secao = (titulo, lista) => lista.length ? "<h3>" + titulo + " (" + lista.length + ")</h3><ul>" + lista.map(item).join("") + "</ul>" : "";
 
@@ -70,7 +70,7 @@ PmoDados.render(t, async () => {
   } else if (!d.total) {
     h = zerou(d, eng);
   } else {
-    h = "<div class='foco'><b>Comece por:</b> <a href='" + esc(d.foco.url) + "' target='_blank'>" + esc(d.foco.nome) + "</a> — " + esc(d.foco.texto) + ".</div>" +
+    h = "<div class='foco'><b>Comece por:</b> <a href='" + esc(d.foco.url) + "' target='_blank' rel='noopener noreferrer'>" + esc(d.foco.nome) + "</a> — " + esc(d.foco.texto) + ".</div>" +
       "<p class='nota'>" + d.total + (d.total === 1 ? " projeto seu pede" : " projetos seus pedem") + " atenção hoje.</p>" +
       secao("🔴 Vence hoje", d.hoje) + secao("⏰ Atrasados", d.atrasadas) + secao("📅 Vencem nos próximos dias úteis", d.semana) +
       secao("☑️ Itens de checklist vencidos", d.checklist) + secao("😶 Parados, sem interação", d.parados);
