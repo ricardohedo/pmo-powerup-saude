@@ -749,18 +749,68 @@
     return r;
   }
 
-  /* ENGAJAMENTO (funcao opcional, so leitura): reconhecimento sem pressao. Nada aqui pontua pessoas, nem compara
-   * pessoas, nem conta sequencia de dias. "Missao da area": meta COLETIVA da area (a de pmo.toml: nome + data de
-   * [datas_varejo]); a meta e "projetos ativos sem cadastro incompleto". Devolve null sem missao configurada ou sem projeto ativo. */
-  function missaoDaArea(itens, regras, agora) {
-    const ate = (regras.datas_varejo || {})[regras.engajamento_missao_data];
-    if (!regras.engajamento_missao_nome || !ate) return null;
-    const ativos = itens.filter((it) => projetoAtivo(it, regras));
-    if (!ativos.length) return null;
-    const faltam = ativos.filter((it) => (it.alertas || []).some((a) => a.tipo === "cadastro_incompleto")).length;
-    const ok = ativos.length - faltam, hoje = dataLocal(agora, regras);
-    return { nome: regras.engajamento_missao_nome, ate, diasUteis: diasUteis(hoje, ate, regras.feriados), vencida: ate < hoje,
-      ativos: ativos.length, ok, faltam, pct: arredondaPar(100 * ok / ativos.length), completa: faltam === 0 };
+  /* ENGAJAMENTO (funcao opcional, so leitura): reconhecimento sem pressao. Nada aqui pontua pessoas, compara pessoas
+   * nem conta sequencia de dias. Tudo e da AREA (o quadro), nunca de uma pessoa.
+   * MISSOES (pmo.toml [engajamento_missoes], nome = "metrica | data"): meta coletiva "nenhum projeto ativo com tal problema".
+   * Cada missao devolve tambem QUAIS projetos faltam (ate engajamento_max_itens) e o motivo. */
+  const METRICA_ALERTA = { cadastro_completo: "cadastro_incompleto", com_responsavel: "sem_responsavel", com_prazo: "sem_prazo",
+    sem_atraso: "atrasado", com_interacao: "sem_interacao" };
+  const dmCurto = (iso) => iso.slice(8, 10) + "/" + iso.slice(5, 7);
+
+  function dataDaMissao(txt, regras, hoje) {                  // "semana" = a proxima sexta (hoje, se hoje e sexta)
+    const t = String(txt).trim();
+    if (t === "semana") { const dow = new Date(hoje + "T00:00:00Z").getUTCDay(); return somaDias(hoje, (5 - dow + 7) % 7); }
+    return (regras.datas_varejo || {})[t] || (/^\d{4}-\d{2}-\d{2}$/.test(t) ? t : null);
+  }
+
+  function missoesDaArea(itens, regras, agora) {
+    const hoje = dataLocal(agora, regras), ativos = itens.filter((it) => projetoAtivo(it, regras)), max = regras.engajamento_max_itens || 8;
+    if (!ativos.length) return [];
+    const out = [];
+    for (const [nome, def] of Object.entries(regras.engajamento_missoes || {})) {
+      const [metrica, quando] = String(def).split("|").map((x) => x.trim()), tipo = METRICA_ALERTA[metrica], ate = dataDaMissao(quando, regras, hoje);
+      if (!tipo || !ate) continue;
+      const falham = ativos.map((it) => ({ it, a: (it.alertas || []).find((x) => x.tipo === tipo && (tipo !== "atrasado" || x.valor > 0)) })).filter((x) => x.a);
+      const ok = ativos.length - falham.length;
+      out.push({ nome, metrica, ate, ateRotulo: (quando === "semana" ? "sexta " : "") + dmCurto(ate), diasUteis: diasUteis(hoje, ate, regras.feriados),
+        vencida: ate < hoje, ativos: ativos.length, ok, faltam: falham.length, pct: arredondaPar(100 * ok / ativos.length), completa: falham.length === 0,
+        faltantes: falham.sort((x, y) => x.it.card.name.localeCompare(y.it.card.name)).slice(0, max).map((x) => ({ nome: x.it.card.name, url: x.it.card.url, motivo: frase(x.a) })),
+        mais: Math.max(0, falham.length - max) });
+    }
+    return out;
+  }
+
+  /* ENTREGAS DA SEMANA: concluidos com atividade nos ultimos engajamento_janela_dias dias. O Trello nao entrega ao Power-Up a data
+   * de conclusao; a ultima atividade do card (o movimento para Concluidos conta) e a melhor aproximacao. */
+  function entregasDaSemana(itens, regras, agora) {
+    const max = regras.engajamento_max_itens || 8, janela = regras.engajamento_janela_dias || 7;
+    const lista = itens.filter((it) => !it.card.closed && regras.listas_concluido.includes((it.listaNome || "").trim().toLowerCase()) &&
+      it.card.dateLastActivity && diasDesde(it.card.dateLastActivity, agora) <= janela)
+      .map((it) => ({ nome: it.card.name, url: it.card.url, dias: diasDesde(it.card.dateLastActivity, agora) }))
+      .sort((a, b) => a.dias - b.dias || a.nome.localeCompare(b.nome));
+    return { total: lista.length, janela, itens: lista.slice(0, max), mais: Math.max(0, lista.length - max) };
+  }
+
+  /* RETA FINAL: projetos ativos que ja bateram o limite de "quase pronto" (regras.progresso_min_quase_pronto), com quantos itens faltam. */
+  function retaFinal(itens, regras) {
+    const max = regras.engajamento_max_itens || 8, ini = regras.checklist_inicio ? String(regras.checklist_inicio).toLowerCase() : null;
+    const lista = itens.filter((it) => projetoAtivo(it, regras) && (it.alertas || []).some((a) => a.tipo === "quase_pronto")).map((it) => {
+      let total = 0, feitos = 0;
+      for (const c of it.checklists || []) {
+        if (ini && c && c.name && String(c.name).trim().toLowerCase() === ini) continue;
+        for (const i of checkItens(c)) { total++; if (i.state === "complete") feitos++; }
+      }
+      return { nome: it.card.name, url: it.card.url, pct: (it.alertas.find((a) => a.tipo === "quase_pronto") || {}).valor, faltam: total ? total - feitos : null };
+    }).sort((a, b) => b.pct - a.pct || a.nome.localeCompare(b.nome));
+    return { total: lista.length, itens: lista.slice(0, max), mais: Math.max(0, lista.length - max) };
+  }
+
+  /* DESTAQUE DA SEMANA: texto escolhido pelo PMO (humano, por evidencia) em pmo.toml [engajamento_destaques]; vale
+   * engajamento_janela_dias dias a partir da data. Nada e calculado nem inventado aqui. */
+  function destaqueDaSemana(regras, agora) {
+    const hoje = dataLocal(agora, regras), janela = regras.engajamento_janela_dias || 7;
+    const dias = Object.keys(regras.engajamento_destaques || {}).filter((d) => d <= hoje && diasEntre(d, hoje) < janela).sort();
+    return dias.length ? { desde: dias[dias.length - 1], texto: regras.engajamento_destaques[dias[dias.length - 1]] } : null;
   }
 
   /* "Melhor semana": compara a area com o PROPRIO passado (retratos da Tendencia, % de projetos em Atencao). So devolve
@@ -903,7 +953,7 @@
     return { proxima: rotulo, faltam };
   }
 
-  return { missaoDaArea, melhorSemana, antecipar, prontidao, ordenarPorPrioridade, desvioPlano, historicoPlano, meuDia, projetoAtivo, pautaReuniao, radar, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, resumoArea, quadrosDoPortfolio, portfolioPermitido, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
+  return { missoesDaArea, entregasDaSemana, retaFinal, destaqueDaSemana, melhorSemana, antecipar, prontidao, ordenarPorPrioridade, desvioPlano, historicoPlano, meuDia, projetoAtivo, pautaReuniao, radar, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, resumoArea, quadrosDoPortfolio, portfolioPermitido, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
     checklistsDeBadges, pontuar, ondeAtuar, abaInicialMeus, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto, cargaDaEquipe, semEvidencia,
     retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal, diasEntre };
 });

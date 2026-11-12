@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conquistas da área</title>
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./motor.js?v=202611121605"></script>
+<script src="./dados.js?v=202611121605"></script>
+<script src="./tendencia.js?v=202611121605"></script>
+<style>
+ body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
+ h3{margin:16px 0 6px} .nota{color:#5e6c84;font-size:12px}
+ .foco{background:#e9f2ff;border-radius:4px;padding:10px;margin-bottom:6px}
+ .ok{background:#e3fcef;border-radius:4px;padding:10px}
+ ul{margin:0;padding-left:18px} li{margin:0 0 4px}
+ a{color:#172b4d} .mot{color:#5e6c84;font-size:12px}
+ .tag{display:inline-block;padding:0 7px;border-radius:9px;color:#fff;font-size:11px;font-weight:600;margin-right:6px}
+ .missao{background:#f4f5f7;border-radius:4px;padding:10px;margin-bottom:8px}
+ .barra{height:10px;background:#dfe1e6;border-radius:5px;margin:6px 0;overflow:hidden}
+ .barra span{display:block;height:100%;background:#2e7d4f}
+ .boa{color:#1f6f43;margin:0 0 8px}
+ details{margin-top:4px} summary{cursor:pointer;color:#0c66e4} details ul{margin:6px 0 0}
+ .tag.P1{background:#c0392b}.tag.P2{background:#d9730d}.tag.P3{background:#b8860b}.tag.P4{background:#2e7d4f}
+</style>
+</head>
+<body>
+<div id="raiz">Lendo o quadro…</div>
+<script>
+const t = TrelloPowerUp.iframe();
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const link = (x) => "<a href='" + esc(x.url) + "' target='_blank' rel='noopener noreferrer'>" + esc(x.nome) + "</a>";
+const bloco = (titulo, itens, vazio, f, mais) => "<h3>" + titulo + "</h3>" + (itens.length
+  ? "<ul>" + itens.map((x) => "<li>" + f(x) + "</li>").join("") + (mais ? "<li class='nota'>… e mais " + mais + "</li>" : "") + "</ul>"
+  : "<p class='nota'>" + vazio + "</p>");
+
+PmoDados.render(t, async () => {
+  const q = await PmoDados.quadro(t), agora = new Date();
+  if (!(q.regras.funcoes && q.regras.funcoes.engajamento)) {
+    document.getElementById("raiz").innerHTML = "<div class='ok'>Esta tela está desligada neste quadro.</div>";
+    t.sizeTo("#raiz");
+    return;
+  }
+  const dest = PmoMotor.destaqueDaSemana(q.regras, agora), ent = PmoMotor.entregasDaSemana(q.itens, q.regras, agora), reta = PmoMotor.retaFinal(q.itens, q.regras);
+  let h = "";
+  if (dest) h += "<div class='ok'><b>🏆 Destaque da semana</b><br>" + esc(dest.texto) + "</div>";
+  h += bloco("🎉 Entregas da semana (" + ent.total + ")", ent.itens,
+    "Nenhuma entrega nos últimos " + ent.janela + " dias. A próxima pode ser a sua.", (x) => link(x) + " <span class='mot'>— " + (x.dias === 0 ? "hoje" : "há " + x.dias + (x.dias === 1 ? " dia" : " dias")) + "</span>", ent.mais);
+  h += bloco("🏁 Reta final (" + reta.total + ")", reta.itens, "Nenhum projeto na reta final agora.",
+    (x) => link(x) + " <span class='mot'>— " + x.pct + "% do checklist" + (x.faltam ? " · " + (x.faltam === 1 ? "falta 1 item" : "faltam " + x.faltam + " itens") : "") + "</span>", reta.mais);
+  if (q.regras.funcoes.tendencia) {
+    try {
+      const ms = PmoMotor.melhorSemana(await PmoTendencia.ler(t), q.regras);
+      if (ms) h += "<h3>📈 Melhor momento</h3><p class='boa'>" + esc(ms.texto) + "</p>";
+    } catch (e) { /* sem retratos: nao mostra */ }
+  }
+  document.getElementById("raiz").innerHTML = h +
+    "<p class='nota'>Conquistas da área, não de pessoas. A data de entrega é a da última atividade do card. Só leitura; nada é alterado.</p>";
+  t.sizeTo("#raiz");
+});
+</script>
+</body>
+</html>

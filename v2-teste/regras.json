@@ -48,8 +48,16 @@
   "dias_prazo_proximo": 7,
   "dias_sem_interacao": 7,
   "divisor_sem_interacao": 10,
-  "engajamento_missao_data": "Páscoa",
-  "engajamento_missao_nome": "Cadastro 100% antes da Páscoa",
+  "engajamento_destaques": {
+    "2026-11-09": "Exemplo de teste: a área concluiu a revisão do cadastro antes do prazo. Parabéns pela atualização honesta!"
+  },
+  "engajamento_janela_dias": 7,
+  "engajamento_max_itens": 8,
+  "engajamento_missoes": {
+    "Cadastro 100% antes da Páscoa": "cadastro_completo | Páscoa",
+    "Desafio da semana: zerar os atrasados": "sem_atraso | semana",
+    "Todo projeto com responsável até o Natal": "com_responsavel | Natal"
+  },
   "evidencia_dias": 30,
   "evidencia_min_anexos": 1,
   "fases_execucao": [
