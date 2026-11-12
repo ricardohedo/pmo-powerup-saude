@@ -14,7 +14,11 @@
     alerta: "Sinal de alerta", etiqueta: "Etiqueta", risco: "Risco antecipado", prazo: "Faixa de prazo", atividade: "Atividade do card" };
   const ROT_SEMAFORO = { vermelho: "Atenção", amarelo: "De olho", verde: "Em dia" };
   const SEM_VALOR = "(sem valor)";
-  const MAX_TITULO = 40, MAX_FILTRO = 40, MAX_GRUPOS = 8;        // limites de tela, nao regra de negocio
+  const MAX_TITULO = 40, MAX_FILTRO = 60, MAX_GRUPOS = 8;        // limites de tela, nao regra de negocio
+  const MULTI = ["responsavel", "alerta", "etiqueta"];           // campos em que um projeto pode contar em varias barras
+
+  /* Rotulo de um alerta como aparece no campo "Sinal de alerta" (sem o emoji do inicio). */
+  const rotuloAlerta = (regras, tipo) => ((regras.grupos && regras.grupos[tipo]) || tipo).replace(/^[^\p{L}\p{N}]+/u, "").trim();
 
   /* ---- dados: um item do motor -> uma linha plana ---- */
   function linhaDoItem(it, regras, membros, agora) {
@@ -56,7 +60,7 @@
     else if (campo === "responsavel") v = l.responsaveis;
     else if (campo === "prioridade") v = l.prioridade ? [l.prioridade + " " + regras.rotulo_prioridade[l.prioridade]] : [];
     else if (campo === "semaforo") v = [ROT_SEMAFORO[l.semaforo]];
-    else if (campo === "alerta") v = l.alertas.map((t) => ((regras.grupos && regras.grupos[t]) || t).replace(/^[^\p{L}\p{N}]+/u, "").trim());   // sem o emoji do rotulo
+    else if (campo === "alerta") v = l.alertas.map((t) => rotuloAlerta(regras, t));                                                              // sem o emoji do rotulo
     else if (campo === "etiqueta") v = l.etiquetas;
     else if (campo === "risco") v = l.risco ? [regras.rotulo_risco[l.risco]] : [];
     else if (campo === "prazo") v = [l.faixaPrazo];
@@ -124,15 +128,40 @@
     return { ok: true, widget: out };
   }
 
-  /* Painel que aparece enquanto a pessoa ainda nao montou o dela (nao e gravado ate ela mexer). Sem limite de regra: so contagens. */
-  function padrao() {
+  /* Explicacao curta de cada bloco do painel padrao, por id (p1 a p12). Fica aqui e nao no armazenamento: nao gasta espaco do
+   * Trello e acompanha o texto novo sem o gestor precisar restaurar o painel. Blocos que a pessoa cria nao tem dica. */
+  const DICAS = {
+    p1: "Quantos projetos estão andando neste quadro agora (sem os concluídos e sem o backlog). Clique no número para ver quais.",
+    p2: "Projetos cujo prazo (Fim planejado) já passou. A meta é zero.",
+    p3: "Projetos com prazo chegando. Vale conferir o progresso de cada um antes da data.",
+    p4: "Projetos sem comentário nem movimento no card há dias. Um recado curto no card já resolve.",
+    p5: "Projetos em execução sem ninguém atribuído. Sem dono, ninguém puxa o projeto.",
+    p6: "Projetos com campo obrigatório vazio (prioridade, datas, área solicitante...). A meta é zero.",
+    p7: "Atenção = tem algum sinal vermelho (atraso, parado, cadastro...). De olho = só amarelo. Em dia = nada pendente.",
+    p8: "Em que lista do quadro cada projeto está agora.",
+    p9: "Os sinais de alerta que mais aparecem. Um projeto pode ter mais de um sinal, por isso a soma passa do total.",
+    p10: "Quando vencem os projetos: já atrasados, hoje, nos próximos dias e mais adiante.",
+    p11: "A prioridade que o PMO calcula de P1 (crítico, pede ação já) a P4 (em dia).",
+    p12: "Os projetos em Atenção, dos mais urgentes para os menos. Comece por eles.",
+  };
+
+  /* Painel que aparece enquanto a pessoa ainda nao montou o dela (nao e gravado ate ela mexer): os 12 blocos (o maximo do quadro),
+   * do mais simples ao mais detalhado. Os periodos vem do regras.json (dias_prazo_proximo, dias_sem_interacao). So contagens. */
+  function padrao(regras) {
+    const prox = regras.dias_prazo_proximo, parado = regras.dias_sem_interacao;
     return [
       { id: "p1", tipo: "contador", titulo: "Projetos ativos" },
-      { id: "p2", tipo: "contador", titulo: "Atrasados", filtro: { campo: "alerta", valor: "Atrasado" } },
-      { id: "p3", tipo: "pizza", titulo: "Semáforo dos projetos", campo: "semaforo" },
-      { id: "p4", tipo: "barras", titulo: "Projetos por fase", campo: "lista" },
-      { id: "p5", tipo: "barras", titulo: "Projetos por responsável", campo: "responsavel" },
-      { id: "p6", tipo: "tabela", titulo: "Prioridade P1", filtro: { campo: "prioridade", valor: "P1 Crítico" } },
+      { id: "p2", tipo: "contador", titulo: "Atrasados", filtro: { campo: "alerta", valor: rotuloAlerta(regras, "atrasado") }, meta: { sentido: "ate", valor: 0 } },
+      { id: "p3", tipo: "contador", titulo: "Vencem nos próximos " + prox + " dias", filtro: { campo: "prazo", valor: "Próximos " + prox + " dias" } },
+      { id: "p4", tipo: "contador", titulo: "Sem mexer há " + parado + "+ dias", filtro: { campo: "atividade", valor: "Parado há " + parado + "+ dias" } },
+      { id: "p5", tipo: "contador", titulo: "Sem responsável", filtro: { campo: "alerta", valor: rotuloAlerta(regras, "sem_responsavel") } },
+      { id: "p6", tipo: "contador", titulo: "Cadastro incompleto", filtro: { campo: "alerta", valor: rotuloAlerta(regras, "cadastro_incompleto") }, meta: { sentido: "ate", valor: 0 } },
+      { id: "p7", tipo: "pizza", titulo: "Semáforo dos projetos", campo: "semaforo" },
+      { id: "p8", tipo: "barras", titulo: "Projetos por fase", campo: "lista" },
+      { id: "p9", tipo: "barras", titulo: "O que mais pesa nos projetos", campo: "alerta" },
+      { id: "p10", tipo: "barras", titulo: "Quando vencem", campo: "prazo" },
+      { id: "p11", tipo: "pizza", titulo: "Prioridade P1 a P4", campo: "prioridade" },
+      { id: "p12", tipo: "tabela", titulo: "Comece por estes", filtro: { campo: "semaforo", valor: ROT_SEMAFORO.vermelho } },
     ].map((w) => normalizar(w).widget);
   }
 
@@ -146,14 +175,14 @@
   }
 
   /* ---- armazenamento (unica escrita deste Power-Up nos Paineis: a configuracao, escopo quadro/privado) ---- */
-  async function ler(t) {
+  async function ler(t, regras) {
     let txt;
-    try { txt = await t.get("board", "private", CHAVE_PAINEIS); } catch (e) { return { lista: padrao(), salvo: false }; }
+    try { txt = await t.get("board", "private", CHAVE_PAINEIS); } catch (e) { return { lista: padrao(regras), salvo: false }; }
     try {
       const bruto = typeof txt === "string" ? JSON.parse(txt || "null") : txt;
-      if (!Array.isArray(bruto)) return { lista: padrao(), salvo: false };
+      if (!Array.isArray(bruto)) return { lista: padrao(regras), salvo: false };
       return { lista: bruto.map((w) => normalizar(w)).filter((n) => n.ok).map((n) => n.widget), salvo: true };
-    } catch (e) { return { lista: padrao(), salvo: false }; }
+    } catch (e) { return { lista: padrao(regras), salvo: false }; }
   }
 
   async function salvar(t, lista, regras) {
@@ -169,10 +198,15 @@
 
   /* ---- desenho (strings HTML/SVG; tudo escapado) ---- */
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const PALETA = ["#0c66e4", "#2e7d4f", "#b8860b", "#c0392b", "#6f42c1", "#0aa6a6", "#d9730d", "#5e6c84"];
-  const COR_FIXA = { "Atenção": "#c0392b", "De olho": "#b8860b", "Em dia": "#2e7d4f", "(sem valor)": "#97a0af", "Outros": "#97a0af" };
-  const corDe = (rotulo, i) => COR_FIXA[rotulo] || (/^P1/.test(rotulo) ? "#c0392b" : /^P2/.test(rotulo) ? "#d9730d" : /^P3/.test(rotulo) ? "#b8860b" :
-    /^P4/.test(rotulo) ? "#2e7d4f" : PALETA[i % PALETA.length]);
+  /* Vermelho, amarelo e verde SO para o que tem esse sentido (semaforo, P1 a P4, atrasado, parado). O resto usa tons de azul, roxo
+   * e cinza, para ninguem ler "Em Revisao" em amarelo como se fosse alerta. */
+  const PALETA = ["#0c66e4", "#6f42c1", "#0aa6a6", "#5e6c84", "#357de8", "#8a5cd0", "#2b9ab8", "#7a869a"];
+  const COR_FIXA = { "Atenção": "#c0392b", "De olho": "#b8860b", "Em dia": "#2e7d4f", "(sem valor)": "#97a0af", "Outros": "#97a0af",
+    "Atrasado": "#c0392b", "Vence hoje": "#d9730d", "Sem prazo": "#97a0af", "Depois": "#97a0af", "Sem registro": "#97a0af" };
+  const corSemantica = (rotulo) => COR_FIXA[rotulo] || (/^P1/.test(rotulo) ? "#c0392b" : /^P2/.test(rotulo) ? "#d9730d" : /^P3/.test(rotulo) ? "#b8860b" :
+    /^P4/.test(rotulo) ? "#2e7d4f" : /^Próximos/.test(rotulo) ? "#b8860b" : /^Parado/.test(rotulo) ? "#c0392b" : /^Mexido/.test(rotulo) ? "#2e7d4f" : null);
+  const corDe = (rotulo, i) => corSemantica(rotulo) || PALETA[i % PALETA.length];
+  const corBarra = (rotulo) => corSemantica(rotulo) || PALETA[0];          // barras: um tom so, a nao ser quando a cor tem sentido
 
   function svgPizza(partes, tam) {
     const total = partes.reduce((s, p) => s + p.valor, 0);
@@ -194,9 +228,9 @@
   function htmlBarras(partes, ix) {            // ix (opcional) = indice do bloco: liga cada linha ao "ver dados" da tela
     const maior = Math.max(1, ...partes.map((p) => p.valor));
     return partes.map((p, i) => "<div class='lb'" + (ix === undefined ? "" : " data-ver='" + ix + ":" + i + "'") + "><span class='lbr' title='" + esc(p.rotulo) + "'>" + esc(p.rotulo) + "</span><span class='barra'><i style='width:" +
-      Math.max(2, Math.round(100 * p.valor / maior)) + "%;background:" + corDe(p.rotulo, i) + "'></i></span><b>" + p.valor + "</b></div>").join("");
+      Math.max(2, Math.round(100 * p.valor / maior)) + "%;background:" + corBarra(p.rotulo) + "'></i></span><b>" + p.valor + "</b></div>").join("");
   }
 
   return { CHAVE_PAINEIS, TIPOS, CAMPOS, SEM_VALOR, linhaDoItem, valoresDoCampo, calcular, normalizar, padrao, tamanho, validarLista, ler, salvar,
-    esc, corDe, svgPizza, htmlBarras };
+    esc, corDe, corBarra, svgPizza, htmlBarras, DICAS, MULTI, rotuloAlerta };
 });

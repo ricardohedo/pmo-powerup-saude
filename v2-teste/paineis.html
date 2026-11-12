@@ -6,9 +6,9 @@
 <title>Painéis PMO</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611121637"></script>
-<script src="./dados.js?v=202611121637"></script>
-<script src="./paineis.js?v=202611121637"></script>
+<script src="./motor.js?v=202611121656"></script>
+<script src="./dados.js?v=202611121656"></script>
+<script src="./paineis.js?v=202611121656"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  .topo{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
@@ -34,6 +34,8 @@
  .tag{display:inline-block;padding:0 6px;border-radius:9px;color:#fff;font-size:11px;font-weight:600}
  .tag.P1{background:#c0392b}.tag.P2{background:#d9730d}.tag.P3{background:#b8860b}.tag.P4{background:#2e7d4f}
  .nota{color:#5e6c84;font-size:12px} .erro{color:#c0392b;font-size:12px}
+ .dica{color:#5e6c84;font-size:12px;margin:-2px 0 8px;line-height:1.35}
+ .intro{background:#f4f5f7;border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:13px;color:#44546f}
  #form{border:1px solid #0c66e4;border-radius:6px;padding:10px 12px;margin-bottom:10px;background:#f7f9ff}
  #form label{display:block;margin:6px 0 2px;font-size:12px;color:#5e6c84}
  #form input[type=text],#form input[type=number],#form select{width:100%;box-sizing:border-box;padding:4px;font:inherit}
@@ -44,6 +46,7 @@
 <body>
 <div id="raiz">
  <div class="topo"><b>Painéis PMO</b><button id="novo" class="pri">+ Adicionar bloco</button><button id="padrao">Restaurar painel padrão</button><span id="msg" class="nota"></span></div>
+ <p class="intro" id="intro">Cada bloco responde a uma pergunta sobre os projetos deste quadro. <b>Clique num número, numa barra ou numa fatia</b> para ver quais projetos estão ali. Use ✎ para editar e ✕ para tirar um bloco, ou “+ Adicionar bloco” para criar o seu. Só leitura: nada é alterado nos cards.</p>
  <div id="form" hidden>
   <div class="lin"><div><label for="f-titulo">Título do bloco</label><input type="text" id="f-titulo" maxlength="40"></div>
    <div><label for="f-tipo">Tipo</label><select id="f-tipo"></select></div></div>
@@ -93,8 +96,9 @@ function blocoHtml(r, ix) {
   }
   const filtro = w.filtro ? " · " + esc(P.CAMPOS[w.filtro.campo]) + (w.filtro.nega ? " ≠ " : " = ") + esc(w.filtro.valor) : "";
   return "<div class='bloco'><h4><span title='" + esc(r.titulo) + "'>" + esc(r.titulo) + "</span><span class='ac'><button data-acao='editar' data-ix='" + ix +
-    "' title='Editar'>✎</button><button data-acao='remover' data-ix='" + ix + "' title='Remover'>✕</button></span></h4>" + corpo +
-    "<div class='meta'>" + r.total + " projeto(s)" + (w.campo ? " · por " + esc(P.CAMPOS[w.campo]) : "") + filtro + (w.ativos === false ? " · inclui concluídos" : "") + "</div></div>";
+    "' title='Editar'>✎</button><button data-acao='remover' data-ix='" + ix + "' title='Remover'>✕</button></span></h4>" + (P.DICAS[w.id] ? "<p class='dica'>" + esc(P.DICAS[w.id]) + "</p>" : "") + corpo +
+    "<div class='meta'>" + r.total + " projeto(s)" + (w.campo ? " · por " + esc(P.CAMPOS[w.campo]) : "") + filtro + (w.ativos === false ? " · inclui concluídos" : "") +
+    (w.campo && P.MULTI.includes(w.campo) ? " · um projeto pode contar em mais de uma barra" : "") + "</div></div>";
 }
 
 function desenhar() {
@@ -158,7 +162,7 @@ document.addEventListener("click", async (e) => {
   else if (el.dataset.acao === "remover") { if (el.dataset.ok) await aplicar(lista.filter((_, i) => i !== Number(el.dataset.ix))); else { el.dataset.ok = "1"; el.textContent = "Remover?"; } }
   else if (el.dataset.ver !== undefined) { const [ix, i] = el.dataset.ver.split(":"); verDados(Number(ix), i); }
   else if (el.id === "novo") abrirForm();
-  else if (el.id === "padrao") { if (el.dataset.ok) { el.dataset.ok = ""; el.textContent = "Restaurar painel padrão"; await aplicar(P.padrao()); } else { el.dataset.ok = "1"; el.textContent = "Confirmar: trocar os meus blocos pelo padrão?"; } }
+  else if (el.id === "padrao") { if (el.dataset.ok) { el.dataset.ok = ""; el.textContent = "Restaurar painel padrão"; await aplicar(P.padrao(q.regras)); } else { el.dataset.ok = "1"; el.textContent = "Confirmar: trocar os meus blocos pelo padrão?"; } }
   else if (el.id === "f-salvar") salvarForm();
   else if (el.id === "f-cancelar") $("form").hidden = true;
   else if (el.id === "fechar-dados") $("dados").innerHTML = "";
@@ -171,7 +175,7 @@ PmoDados.render(t, async () => {
     q = await PmoDados.quadro(t);
     const agora = new Date(); linhas = q.itens.map((i) => P.linhaDoItem(i, q.regras, q.membros, agora));
     opcoes($("f-tipo"), P.TIPOS); opcoes($("f-campo"), P.CAMPOS); opcoes($("f-fcampo"), P.CAMPOS, "(sem filtro)");
-    const r = await P.ler(t); lista = r.lista; salvo = r.salvo;
+    const r = await P.ler(t, q.regras); lista = r.lista; salvo = r.salvo;
     desenhar();
   } catch (e) {
     $("grade").innerHTML = "<p class='erro'>Não consegui ler o quadro (" + esc(String((e && e.message) || e).slice(0, 80)) + ").</p>";

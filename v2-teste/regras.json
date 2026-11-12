@@ -226,6 +226,7 @@
   },
   "prioridade_p1_prazo_dias": 1,
   "progresso_min_quase_pronto": 90,
+  "resumo_dias_a_frente": 14,
   "risco": [
     "atrasado",
     "atraso_oculto",
