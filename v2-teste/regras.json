@@ -113,6 +113,7 @@
     "pauta": true,
     "portfolio": true,
     "radar": true,
+    "riscos": true,
     "tendencia": true
   },
   "fuso_horas": -3,
@@ -236,6 +237,40 @@
     "sem_responsavel"
   ],
   "risco_agravantes_para_alto": 1,
+  "riscos_campos": {
+    "ate": "revisar",
+    "dono": "dono",
+    "imp": "imp",
+    "impacto": "imp",
+    "mitigacao": "resposta",
+    "plano": "resposta",
+    "prob": "prob",
+    "probabilidade": "prob",
+    "resp": "dono",
+    "responsavel": "dono",
+    "resposta": "resposta",
+    "revisao": "revisar",
+    "revisar": "revisar"
+  },
+  "riscos_limite_alto": 6,
+  "riscos_limite_medio": 3,
+  "riscos_max_itens": 8,
+  "riscos_niveis": {
+    "1": 1,
+    "2": 2,
+    "3": 3,
+    "alta": 3,
+    "alto": 3,
+    "baixa": 1,
+    "baixo": 1,
+    "media": 2,
+    "medio": 2
+  },
+  "riscos_secao": "riscos e premissas",
+  "riscos_tipos": {
+    "premissa": "premissa",
+    "risco": "risco"
+  },
   "rotulo_evidencia": "Sem evidência",
   "rotulo_prioridade": {
     "P1": "Crítico",

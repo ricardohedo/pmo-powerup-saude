@@ -813,6 +813,78 @@
     return dias.length ? { desde: dias[dias.length - 1], texto: regras.engajamento_destaques[dias[dias.length - 1]] } : null;
   }
 
+  /* RISCOS E PREMISSAS (funcao opcional, so leitura): o gestor registra na DESCRICAO do card, numa secao cujo titulo comeca por
+   * regras.riscos_secao (ex.: "#### ***RISCOS E PREMISSAS***"), UMA LINHA por item:
+   *   - RISCO: o que pode dar errado | prob: alta | imp: alto | dono: Ana | resposta: o que fazer | revisar: 2026-12-10
+   *   - PREMISSA: o que estamos assumindo | dono: Ana | revisar: 2026-12-10
+   * Vocabulario (niveis, apelidos de campo, tipos) e limites da matriz vem do pmo.toml. Nada e escrito no Trello. */
+  const semAcento = (x) => String(x == null ? "" : x).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  const ehCaixaAlta = (l) => /[A-ZÀ-Ý]/.test(l) && l === l.toUpperCase() && l.split(/\s+/).length <= 8 && !/[|]/.test(l);
+
+  function dataDeRisco(txt) {                                  // AAAA-MM-DD ou DD/MM/AAAA; o resto vira null (sem data)
+    const m = String(txt || "").trim().match(/^(\d{4})-(\d{2})-(\d{2})$/) || String(txt || "").trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!m) return null;
+    const iso = m[1].length === 4 ? m[1] + "-" + m[2] + "-" + m[3] : m[3] + "-" + m[2] + "-" + m[1];
+    return isNaN(Date.parse(iso)) ? null : iso;
+  }
+
+  function parseRiscos(desc, regras) {
+    const titulo = semAcento(regras.riscos_secao), niveis = regras.riscos_niveis || {}, campos = regras.riscos_campos || {}, tipos = regras.riscos_tipos || {};
+    const palavrasTitulo = titulo.split(/\s+/).filter((w) => w.length >= 5), out = []; let dentro = false;
+    for (const bruta of String(desc || "").split("\n")) {
+      const linha = bruta.trim();
+      if (!linha) continue;
+      const semDeco = linha.replace(/^[#>*_\s]+/, "").replace(/[*_:\s]+$/, "");
+      const ehTitulo = /^#/.test(linha) || (ehCaixaAlta(semDeco) && !tipos[semAcento(semDeco.split(":")[0])]);
+      if (ehTitulo) { const h = semAcento(semDeco); dentro = h.startsWith(titulo) || palavrasTitulo.includes(h.split(/\s+/)[0]); continue; }   // 'RISCOS' ou 'PREMISSAS' sozinhos tambem valem
+      if (!dentro) continue;
+      const partes = linha.replace(/^([-*•]|\d+[.)])\s*/, "").split("|").map((x) => x.trim());
+      const principal = partes[0].match(/^([A-Za-zÀ-ÿ]+)\s*:\s*(.*)$/);
+      const tipo = principal && tipos[semAcento(principal[1])] ? tipos[semAcento(principal[1])] : "risco";
+      const texto = (principal && tipos[semAcento(principal[1])] ? principal[2] : partes[0]).trim();
+      if (!texto) continue;
+      const r = { tipo, texto, prob: null, imp: null, dono: null, resposta: null, revisar: null };
+      for (const parte of partes.slice(1)) {
+        const kv = parte.match(/^([^:]+):\s*(.*)$/);
+        const campo = kv ? campos[semAcento(kv[1])] : null;
+        if (!campo || !kv[2].trim()) continue;
+        r[campo] = campo === "prob" || campo === "imp" ? (niveis[semAcento(kv[2])] || null) : campo === "revisar" ? dataDeRisco(kv[2]) : kv[2].trim();
+      }
+      out.push(r);
+    }
+    return out;
+  }
+
+  function avaliarRisco(r, regras, hoje) {
+    const score = r.tipo === "risco" && r.prob && r.imp ? r.prob * r.imp : null, flags = [];
+    const nivel = r.tipo !== "risco" ? null : score === null ? "indefinido" : score >= regras.riscos_limite_alto ? "alto" : score >= regras.riscos_limite_medio ? "medio" : "baixo";
+    if (!r.dono) flags.push("sem dono");
+    if (r.tipo === "risco" && nivel === "indefinido") flags.push("falta probabilidade ou impacto");
+    if (r.tipo === "risco" && (nivel === "alto" || nivel === "medio") && !r.resposta) flags.push("sem resposta");
+    if (r.revisar && r.revisar < hoje) flags.push("revisão vencida");
+    return { ...r, score, nivel, flags };
+  }
+
+  /* Registro do quadro: so projetos ATIVOS. matriz[prob-1][imp-1] = quantos riscos; "atencao" = altos ou com pendencia, os piores primeiro. */
+  function registroDeRiscos(itens, regras, agora) {
+    const hoje = dataLocal(agora, regras), max = regras.riscos_max_itens || 8, ativos = itens.filter((it) => projetoAtivo(it, regras));
+    const todos = [], semRegistro = []; let comRegistro = 0;
+    for (const it of ativos) {
+      const lista = parseRiscos(it.card.desc, regras).map((r) => ({ ...avaliarRisco(r, regras, hoje), projeto: it.card.name, url: it.card.url }));
+      if (lista.length) { comRegistro++; todos.push(...lista); } else semRegistro.push({ nome: it.card.name, url: it.card.url });
+    }
+    const riscos = todos.filter((r) => r.tipo === "risco"), matriz = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+    const porNivel = { alto: 0, medio: 0, baixo: 0, indefinido: 0 };
+    for (const r of riscos) { porNivel[r.nivel]++; if (r.prob && r.imp) matriz[r.prob - 1][r.imp - 1]++; }
+    const cont = (f) => todos.filter((r) => r.flags.includes(f)).length;
+    const atencao = todos.filter((r) => r.nivel === "alto" || r.flags.length)
+      .sort((a, b) => (b.score || 0) - (a.score || 0) || b.flags.length - a.flags.length || a.projeto.localeCompare(b.projeto) || a.texto.localeCompare(b.texto));
+    return { ativos: ativos.length, comRegistro, semRegistro: semRegistro.sort((a, b) => a.nome.localeCompare(b.nome)).slice(0, max), semRegistroTotal: semRegistro.length,
+      riscos: riscos.length, premissas: todos.length - riscos.length, porNivel, matriz,
+      semDono: cont("sem dono"), semResposta: cont("sem resposta"), revisaoVencida: cont("revisão vencida"), incompletos: cont("falta probabilidade ou impacto"),
+      atencao: atencao.slice(0, max), atencaoTotal: atencao.length, mais: Math.max(0, atencao.length - max), maisSemRegistro: Math.max(0, semRegistro.length - max) };
+  }
+
   /* "Melhor semana": compara a area com o PROPRIO passado (retratos da Tendencia, % de projetos em Atencao). So devolve
    * boa noticia: piorar ou ficar igual devolve null (nao se mostra nada, para nao virar cobranca). tipo "melhor" = o melhor
    * momento da janela guardada; "melhor_desde" = o melhor desde uma data; "melhora" = caiu o % de Atencao na janela. */
@@ -953,7 +1025,7 @@
     return { proxima: rotulo, faltam };
   }
 
-  return { missoesDaArea, entregasDaSemana, retaFinal, destaqueDaSemana, melhorSemana, antecipar, prontidao, ordenarPorPrioridade, desvioPlano, historicoPlano, meuDia, projetoAtivo, pautaReuniao, radar, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, resumoArea, quadrosDoPortfolio, portfolioPermitido, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
+  return { parseRiscos, registroDeRiscos, missoesDaArea, entregasDaSemana, retaFinal, destaqueDaSemana, melhorSemana, antecipar, prontidao, ordenarPorPrioridade, desvioPlano, historicoPlano, meuDia, projetoAtivo, pautaReuniao, radar, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, resumoArea, quadrosDoPortfolio, portfolioPermitido, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
     checklistsDeBadges, pontuar, ondeAtuar, abaInicialMeus, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto, cargaDaEquipe, semEvidencia,
     retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal, diasEntre };
 });
