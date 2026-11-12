@@ -6,9 +6,9 @@
 <title>Painéis PMO</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611121656"></script>
-<script src="./dados.js?v=202611121656"></script>
-<script src="./paineis.js?v=202611121656"></script>
+<script src="./motor.js?v=202611121717"></script>
+<script src="./dados.js?v=202611121717"></script>
+<script src="./paineis.js?v=202611121717"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  .topo{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
@@ -45,7 +45,7 @@
 </head>
 <body>
 <div id="raiz">
- <div class="topo"><b>Painéis PMO</b><button id="novo" class="pri">+ Adicionar bloco</button><button id="padrao">Restaurar painel padrão</button><span id="msg" class="nota"></span></div>
+ <div class="topo"><b>Painéis PMO</b><button id="novo" class="pri">+ Adicionar bloco</button><button id="completar" title="Acrescenta os blocos do painel padrão que você ainda não tem, sem apagar os seus">Completar com os blocos padrão</button><button id="padrao">Restaurar painel padrão</button><span id="msg" class="nota"></span></div>
  <p class="intro" id="intro">Cada bloco responde a uma pergunta sobre os projetos deste quadro. <b>Clique num número, numa barra ou numa fatia</b> para ver quais projetos estão ali. Use ✎ para editar e ✕ para tirar um bloco, ou “+ Adicionar bloco” para criar o seu. Só leitura: nada é alterado nos cards.</p>
  <div id="form" hidden>
   <div class="lin"><div><label for="f-titulo">Título do bloco</label><input type="text" id="f-titulo" maxlength="40"></div>
@@ -162,6 +162,12 @@ document.addEventListener("click", async (e) => {
   else if (el.dataset.acao === "remover") { if (el.dataset.ok) await aplicar(lista.filter((_, i) => i !== Number(el.dataset.ix))); else { el.dataset.ok = "1"; el.textContent = "Remover?"; } }
   else if (el.dataset.ver !== undefined) { const [ix, i] = el.dataset.ver.split(":"); verDados(Number(ix), i); }
   else if (el.id === "novo") abrirForm();
+  else if (el.id === "completar") {
+    const c = P.completar(lista, q.regras);
+    if (!c.adicionados) { msg(c.faltaram ? "Seu painel já está cheio (" + q.regras.paineis_max_blocos + " blocos). Tire algum bloco para caber os que faltam." : "Seu painel já tem todos os blocos do padrão.", false); }
+    else if (await aplicar(c.lista)) msg("Adicionei " + c.adicionados + (c.adicionados === 1 ? " bloco" : " blocos") + " do painel padrão; os seus ficaram como estavam." +
+      (c.faltaram ? " Faltaram " + c.faltaram + " por causa do limite de " + q.regras.paineis_max_blocos + " blocos: tire algum bloco e clique de novo." : ""));
+  }
   else if (el.id === "padrao") { if (el.dataset.ok) { el.dataset.ok = ""; el.textContent = "Restaurar painel padrão"; await aplicar(P.padrao(q.regras)); } else { el.dataset.ok = "1"; el.textContent = "Confirmar: trocar os meus blocos pelo padrão?"; } }
   else if (el.id === "f-salvar") salvarForm();
   else if (el.id === "f-cancelar") $("form").hidden = true;

@@ -131,18 +131,25 @@
   /* Explicacao curta de cada bloco do painel padrao, por id (p1 a p12). Fica aqui e nao no armazenamento: nao gasta espaco do
    * Trello e acompanha o texto novo sem o gestor precisar restaurar o painel. Blocos que a pessoa cria nao tem dica. */
   const DICAS = {
+    d1: "Quantos projetos estão andando neste quadro agora (sem os concluídos e sem o backlog). Clique no número para ver quais.",
+    d2: "Projetos cujo prazo (Fim planejado) já passou. A meta é zero.",
+    d3: "Projetos com prazo chegando. Vale conferir o progresso de cada um antes da data.",
+    d4: "Projetos sem comentário nem movimento no card há dias. Um recado curto no card já resolve.",
+    d5: "Projetos em execução sem ninguém atribuído. Sem dono, ninguém puxa o projeto.",
+    d6: "Projetos com campo obrigatório vazio (prioridade, datas, área solicitante...). A meta é zero.",
+    d7: "Atenção = tem algum sinal vermelho (atraso, parado, cadastro...). De olho = só amarelo. Em dia = nada pendente.",
+    d8: "Em que lista do quadro cada projeto está agora.",
+    d9: "Os sinais de alerta que mais aparecem. Um projeto pode ter mais de um sinal, por isso a soma passa do total.",
+    d10: "Quando vencem os projetos: já atrasados, hoje, nos próximos dias e mais adiante.",
+    d11: "A prioridade que o PMO calcula de P1 (crítico, pede ação já) a P4 (em dia).",
+    d12: "Os projetos em Atenção, dos mais urgentes para os menos. Comece por eles.",
+    // blocos do painel padrao ANTIGO (ids p1 a p6), que quem ja guardou o painel ainda tem:
     p1: "Quantos projetos estão andando neste quadro agora (sem os concluídos e sem o backlog). Clique no número para ver quais.",
     p2: "Projetos cujo prazo (Fim planejado) já passou. A meta é zero.",
-    p3: "Projetos com prazo chegando. Vale conferir o progresso de cada um antes da data.",
-    p4: "Projetos sem comentário nem movimento no card há dias. Um recado curto no card já resolve.",
-    p5: "Projetos em execução sem ninguém atribuído. Sem dono, ninguém puxa o projeto.",
-    p6: "Projetos com campo obrigatório vazio (prioridade, datas, área solicitante...). A meta é zero.",
-    p7: "Atenção = tem algum sinal vermelho (atraso, parado, cadastro...). De olho = só amarelo. Em dia = nada pendente.",
-    p8: "Em que lista do quadro cada projeto está agora.",
-    p9: "Os sinais de alerta que mais aparecem. Um projeto pode ter mais de um sinal, por isso a soma passa do total.",
-    p10: "Quando vencem os projetos: já atrasados, hoje, nos próximos dias e mais adiante.",
-    p11: "A prioridade que o PMO calcula de P1 (crítico, pede ação já) a P4 (em dia).",
-    p12: "Os projetos em Atenção, dos mais urgentes para os menos. Comece por eles.",
+    p3: "Atenção = tem algum sinal vermelho (atraso, parado, cadastro...). De olho = só amarelo. Em dia = nada pendente.",
+    p4: "Em que lista do quadro cada projeto está agora.",
+    p5: "Quantos projetos cada pessoa tem. Um projeto com mais de um responsável conta em cada um; serve para equilibrar a carga, não para comparar pessoas.",
+    p6: "Os projetos de prioridade P1 (crítico, pedem ação já), com o motivo de cada um.",
   };
 
   /* Painel que aparece enquanto a pessoa ainda nao montou o dela (nao e gravado ate ela mexer): os 12 blocos (o maximo do quadro),
@@ -150,19 +157,30 @@
   function padrao(regras) {
     const prox = regras.dias_prazo_proximo, parado = regras.dias_sem_interacao;
     return [
-      { id: "p1", tipo: "contador", titulo: "Projetos ativos" },
-      { id: "p2", tipo: "contador", titulo: "Atrasados", filtro: { campo: "alerta", valor: rotuloAlerta(regras, "atrasado") }, meta: { sentido: "ate", valor: 0 } },
-      { id: "p3", tipo: "contador", titulo: "Vencem nos próximos " + prox + " dias", filtro: { campo: "prazo", valor: "Próximos " + prox + " dias" } },
-      { id: "p4", tipo: "contador", titulo: "Sem mexer há " + parado + "+ dias", filtro: { campo: "atividade", valor: "Parado há " + parado + "+ dias" } },
-      { id: "p5", tipo: "contador", titulo: "Sem responsável", filtro: { campo: "alerta", valor: rotuloAlerta(regras, "sem_responsavel") } },
-      { id: "p6", tipo: "contador", titulo: "Cadastro incompleto", filtro: { campo: "alerta", valor: rotuloAlerta(regras, "cadastro_incompleto") }, meta: { sentido: "ate", valor: 0 } },
-      { id: "p7", tipo: "pizza", titulo: "Semáforo dos projetos", campo: "semaforo" },
-      { id: "p8", tipo: "barras", titulo: "Projetos por fase", campo: "lista" },
-      { id: "p9", tipo: "barras", titulo: "O que mais pesa nos projetos", campo: "alerta" },
-      { id: "p10", tipo: "barras", titulo: "Quando vencem", campo: "prazo" },
-      { id: "p11", tipo: "pizza", titulo: "Prioridade P1 a P4", campo: "prioridade" },
-      { id: "p12", tipo: "tabela", titulo: "Comece por estes", filtro: { campo: "semaforo", valor: ROT_SEMAFORO.vermelho } },
+      { id: "d1", tipo: "contador", titulo: "Projetos ativos" },
+      { id: "d2", tipo: "contador", titulo: "Atrasados", filtro: { campo: "alerta", valor: rotuloAlerta(regras, "atrasado") }, meta: { sentido: "ate", valor: 0 } },
+      { id: "d3", tipo: "contador", titulo: "Vencem nos próximos " + prox + " dias", filtro: { campo: "prazo", valor: "Próximos " + prox + " dias" } },
+      { id: "d4", tipo: "contador", titulo: "Sem mexer há " + parado + "+ dias", filtro: { campo: "atividade", valor: "Parado há " + parado + "+ dias" } },
+      { id: "d5", tipo: "contador", titulo: "Sem responsável", filtro: { campo: "alerta", valor: rotuloAlerta(regras, "sem_responsavel") } },
+      { id: "d6", tipo: "contador", titulo: "Cadastro incompleto", filtro: { campo: "alerta", valor: rotuloAlerta(regras, "cadastro_incompleto") }, meta: { sentido: "ate", valor: 0 } },
+      { id: "d7", tipo: "pizza", titulo: "Semáforo dos projetos", campo: "semaforo" },
+      { id: "d8", tipo: "barras", titulo: "Projetos por fase", campo: "lista" },
+      { id: "d9", tipo: "barras", titulo: "O que mais pesa nos projetos", campo: "alerta" },
+      { id: "d10", tipo: "barras", titulo: "Quando vencem", campo: "prazo" },
+      { id: "d11", tipo: "pizza", titulo: "Prioridade P1 a P4", campo: "prioridade" },
+      { id: "d12", tipo: "tabela", titulo: "Comece por estes", filtro: { campo: "semaforo", valor: ROT_SEMAFORO.vermelho } },
     ].map((w) => normalizar(w).widget);
+  }
+
+  /* "Assinatura" de um bloco: o que ele mostra (tipo, agrupamento e filtro), sem titulo, id nem meta. */
+  const assinatura = (w) => [w.tipo, w.campo || "", w.filtro ? w.filtro.campo + "=" + w.filtro.valor + (w.filtro.nega ? "!" : "") : "", w.ativos === false ? "todos" : ""].join("|");
+
+  /* Acrescenta ao painel da pessoa os blocos do padrao que ela ainda nao tem (mesmo conteudo = ja tem), sem apagar nem alterar nenhum
+   * dos dela. Respeita o limite de blocos: o que nao couber e contado em `faltaram`. */
+  function completar(lista, regras) {
+    const tem = new Set(lista.map(assinatura)), novos = padrao(regras).filter((w) => !tem.has(assinatura(w)));
+    const livres = Math.max(0, regras.paineis_max_blocos - lista.length), cabem = novos.slice(0, livres);
+    return { lista: lista.concat(cabem), adicionados: cabem.length, faltaram: novos.length - cabem.length };
   }
 
   /* Caracteres que a lista ocupa no armazenamento (o conector grava texto e o Trello serializa de novo: codificacao dupla). */
@@ -232,5 +250,5 @@
   }
 
   return { CHAVE_PAINEIS, TIPOS, CAMPOS, SEM_VALOR, linhaDoItem, valoresDoCampo, calcular, normalizar, padrao, tamanho, validarLista, ler, salvar,
-    esc, corDe, corBarra, svgPizza, htmlBarras, DICAS, MULTI, rotuloAlerta };
+    esc, corDe, corBarra, svgPizza, htmlBarras, DICAS, MULTI, rotuloAlerta, completar, assinatura };
 });
