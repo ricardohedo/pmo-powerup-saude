@@ -1,5 +1,6 @@
 /* "Pergunte ao PMO": o gestor escolhe uma pergunta pronta ou digita palavras e recebe a resposta montada POR REGRA com os dados do quadro.
- * SEM IA, SO LEITURA: um catalogo fixo de perguntas e as mesmas funcoes do motor (meuDia, pedidosParaMim, datasVarejo, regraDoAlerta...).
+ * SEM IA, SO LEITURA: um catalogo fixo de perguntas e as mesmas funcoes do motor (meuDia, pedidosParaMim, datasVarejo, explicar...).
+ * Entende: palavras com erro de digitacao, plural/singular e sinonimos; e o NOME de um projeto do quadro ("por que o P.I.V esta vermelho?").
  * O que nao estiver no catalogo recebe "nao sei, fale com o PMO" (regras.pergunte_contato). Funciona no navegador (window.PmoPergunte) e no node. */
 (function (raiz, fabrica) {
   if (typeof module === "object" && module.exports) module.exports = fabrica(require("./motor.js"));
@@ -14,25 +15,91 @@
     { id: "hoje", pergunta: "O que preciso fazer hoje?", palavras: ["hoje", "fazer", "preciso", "comecar", "comeco", "tarefa", "dia", "agora"] },
     { id: "semaforo", pergunta: "Por que meu projeto está vermelho ou amarelo?", palavras: ["vermelho", "amarelo", "verde", "semaforo", "selo", "saude", "atencao", "de olho", "cor"] },
     { id: "cadastro", pergunta: "O que falta no cadastro dos meus projetos?", palavras: ["cadastro", "falta", "campos", "preencher", "obrigatorio", "objetivo", "escopo", "descricao"] },
-    { id: "prazos", pergunta: "O que vence esta semana ou está atrasado?", palavras: ["vence", "vencimento", "vencer", "atrasado", "atraso", "atrasados", "semana", "prazo"] },
-    { id: "espera", pergunta: "Quem espera a minha área?", palavras: ["espera", "esperando", "aguardando", "pedido", "pedidos", "outra area", "interdependencia", "depende"] },
+    { id: "prazos", pergunta: "O que vence esta semana ou está atrasado?", palavras: ["vence", "vencimento", "vencer", "atrasado", "atraso", "semana", "prazo"] },
+    { id: "espera", pergunta: "Quem espera a minha área?", palavras: ["espera", "esperando", "aguardando", "pedido", "outra area", "interdependencia", "depende"] },
     { id: "proximo", pergunta: "Qual é o meu próximo prazo?", palavras: ["proximo", "proxima", "quando", "entrega", "fim planejado", "prazo"] },
-    { id: "parado", pergunta: "Por que meu projeto aparece como parado?", palavras: ["parado", "parados", "interacao", "sem interacao", "comentario", "movimentacao", "esquecido"] },
+    { id: "parado", pergunta: "Por que meu projeto aparece como parado?", palavras: ["parado", "interacao", "sem interacao", "comentario", "movimentacao", "esquecido"] },
     { id: "medido", pergunta: "Como sou medido?", palavras: ["medido", "medicao", "regras", "regra", "criterio", "como funciona", "pontuacao", "prioridade", "p1"] },
-    { id: "varejo", pergunta: "Quais datas do varejo pedem atenção?", palavras: ["varejo", "data", "datas", "pascoa", "natal", "black", "campanha", "sazonal"] },
-    { id: "padrao", pergunta: "O que o PMO espera de um projeto?", palavras: ["espera", "padrao", "conformidade", "conforme", "leia-me", "leiame", "projeto", "checklist", "responsavel"] },
+    { id: "varejo", pergunta: "Quais datas do varejo pedem atenção?", palavras: ["varejo", "data", "pascoa", "natal", "black", "campanha", "sazonal"] },
+    { id: "padrao", pergunta: "O que o PMO espera de um projeto?", palavras: ["padrao", "conformidade", "conforme", "leia-me", "leiame", "checklist", "responsavel", "pmo espera", "de um projeto"] },
   ];
 
+  // palavra que o gestor costuma usar -> palavra do catalogo (sem acento). So sinonimos de uso do varejo/PMO; nada de adivinhacao.
+  const SINONIMOS = {
+    estourou: "atrasado", estourado: "atrasado", vencido: "atrasado", vencida: "atrasado", demorado: "atrasado", atrasada: "atrasado",
+    travado: "parado", travou: "parado", abandonado: "parado", esquecida: "parado", parada: "parado",
+    pendencia: "falta", pendente: "falta", faltando: "falta", incompleto: "cadastro", incompleta: "cadastro",
+    nota: "medido", avaliado: "medido", avaliacao: "medido", status: "semaforo", sinal: "semaforo", alerta: "semaforo",
+    amanha: "proximo", cobranca: "espera", cobrando: "espera", solicitacao: "pedido", solicitado: "pedido",
+  };
+
+  const radical = (p) => { let w = sem(p).replace(/[^a-z0-9]/g, ""); if (w.length > 3 && w.endsWith("s")) w = w.slice(0, -1); return w; };
+  const palavras = (texto) => sem(texto).replace(/[^a-z0-9]+/g, " ").trim().split(" ").filter(Boolean);
+
+  function distancia(a, b) {                       // distancia de edicao (erro de digitacao)
+    const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+    for (let j = 1; j <= b.length; j++) d[0][j] = j;
+    for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    return d[a.length][b.length];
+  }
+  const igual = (a, b) => a === b || (a.length >= 5 && b.length >= 5 && distancia(a, b) <= (a.length >= 8 ? 2 : 1));
+
   function buscar(texto) {
-    const t = " " + sem(texto).replace(/[^a-z0-9\- ]/g, " ").replace(/ +/g, " ").trim() + " ";
-    if (t.trim().length < 3) return [];
-    return CATALOGO.map((c) => ({ c, n: c.palavras.filter((p) => t.includes(p.length <= 3 ? " " + p + " " : p)).length }))
-      .filter((x) => x.n > 0).sort((a, b) => b.n - a.n || CATALOGO.indexOf(a.c) - CATALOGO.indexOf(b.c)).slice(0, 3).map((x) => x.c);
+    const base = palavras(texto);
+    if (base.join("").length < 3) return [];
+    const tn = " " + base.join(" ") + " ", orig = base.map(radical), sinon = base.filter((w) => SINONIMOS[w]).map((w) => radical(SINONIMOS[w]));
+    // peso: palavra igual (ou sinonimo) = 2; so parecida por erro de digitacao = 1 (o sinonimo nunca vira "parecida": pedido x medido)
+    const peso = (p) => {
+      if (/[ -]/.test(p)) return tn.includes(" " + palavras(p).join(" ") + " ") ? 2 : 0;
+      const r = radical(p);
+      if (orig.includes(r) || sinon.includes(r)) return 2;
+      return p.length > 3 && orig.some((t) => igual(r, t)) ? 1 : 0;
+    };
+    const lista = CATALOGO.map((c) => ({ c, n: c.palavras.reduce((s, p) => s + peso(p), 0) })).filter((x) => x.n > 0)
+      .sort((a, b) => b.n - a.n || CATALOGO.indexOf(a.c) - CATALOGO.indexOf(b.c));
+    return lista.filter((x) => x.n > lista[0].n / 2).slice(0, 3).map((x) => x.c);       // some quem so tem um resto fraco de acerto
+  }
+
+  // Projetos do quadro citados na pergunta. Devolve [{it, inteiro}]: inteiro = o nome todo aparece na pergunta (mais seguro).
+  function acharProjetos(itens, texto) {
+    const base = palavras(texto), tn = " " + base.join(" ") + " ", toks = base.map(radical), achados = [];
+    for (const it of itens) {
+      const nome = palavras(it.card.name).join(" ");
+      if (!nome) continue;
+      if (nome.length >= 3 && tn.includes(" " + nome + " ")) { achados.push({ it, inteiro: true, score: 1 + nome.length / 100 }); continue; }
+      const ntoks = nome.split(" ").filter((w) => w.length >= 3).map(radical);
+      const achou = ntoks.filter((w) => toks.some((q) => igual(w, q)));
+      if (achou.length && achou.some((w) => w.length >= 5)) achados.push({ it, inteiro: false, score: achou.length / ntoks.length });
+    }
+    achados.sort((a, b) => b.score - a.score || a.it.card.name.localeCompare(b.it.card.name));
+    return achados.length ? achados.filter((x) => x.score >= achados[0].score - 0.0001).slice(0, 3) : [];
+  }
+
+  // O que fazer com o texto digitado: {tipo:"projeto", itens} | {tipo:"catalogo", perguntas} | {tipo:"talvez_projeto", itens} | {tipo:"nada"}
+  function entender(texto, itens) {
+    const ps = acharProjetos(itens || [], texto);
+    if (ps.length && ps[0].inteiro) return { tipo: "projeto", itens: ps.filter((x) => x.inteiro).map((x) => x.it) };
+    const cs = buscar(texto);
+    if (cs.length) return { tipo: "catalogo", perguntas: cs };
+    if (ps.length) return { tipo: "talvez_projeto", itens: ps.map((x) => x.it) };
+    return { tipo: "nada" };
   }
 
   const meus = (itens, regras, meuId) => itens.filter((it) => meuId && (it.card.idMembers || []).includes(meuId) && M.projetoAtivo(it, regras));
   const link = (x, detalhe) => ({ texto: x.nome, url: x.url, detalhe: detalhe || "" });
   const SEM_CARD = "Você não está em nenhum card deste quadro. As respostas sobre “meus projetos” olham só os cards em que você é membro.";
+
+  function responderProjeto(it, regras, agora) {
+    const pct = M.progressoChecklists(it.checklists || [], regras), alertas = it.alertas || [];
+    const fim = it.valores && it.valores["Fim planejado"], diasPrazo = fim ? Math.floor((Date.parse(fim) - agora.getTime()) / 86400000) : null;
+    const ex = M.explicar(alertas, pct, diasPrazo, regras), cor = M.semaforo(alertas, regras);
+    const lista = ex.sinais.slice(0, 6).map((s) => ({ texto: s.frase, url: "", detalhe: s.regra + (s.fazer ? " O que fazer: " + s.fazer : "") }));
+    if (ex.risco) lista.push({ texto: "Risco antecipado (" + ex.risco.nivel + ")", url: "", detalhe: ex.risco.texto });
+    return { titulo: it.card.name, resumo: "Está " + (cor === "verde" ? "em dia (verde)" : cor) + " na lista " + (it.listaNome || "") +
+      (pct !== null ? ", com o checklist em " + pct + "%" : ", sem checklist") + ". " + ex.porquePrioridade +
+      (lista.length ? "" : " Nenhum sinal pedindo ação neste card agora."), itens: lista, mais: Math.max(0, ex.sinais.length - 6), nota: "", url: it.card.url };
+  }
 
   function responder(id, itens, regras, meuId, agora) {
     const max = regras.bom_dia_max_itens || 5, cap = (l) => l.slice(0, max);
@@ -111,8 +178,8 @@
   }
 
   function naoSei(regras) {
-    return { titulo: "Não sei responder isso", resumo: "Ainda não tenho essa resposta pronta. Fale com " + (regras.pergunte_contato || "o PMO") + ".", itens: [], mais: 0, nota: "" };
+    return { titulo: "Não sei responder isso", resumo: "Ainda não tenho essa resposta pronta. Fale com " + (regras.pergunte_contato || "o PMO") + ". Anotei a sua pergunta para o PMO ensinar o bot.", itens: [], mais: 0, nota: "" };
   }
 
-  return { CATALOGO, buscar, responder, naoSei };
+  return { CATALOGO, buscar, acharProjetos, entender, responder, responderProjeto, naoSei };
 });

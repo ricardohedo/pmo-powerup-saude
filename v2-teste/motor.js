@@ -436,6 +436,33 @@
     return { total: lista.length, maisAntigo: lista.length ? lista[0].dias : null, itens: lista.slice(0, max), mais: Math.max(0, lista.length - max) };
   }
 
+  /* "O QUE MUDOU DESDE A SUA ULTIMA VISITA" (ideia do What's New Since Your Last Visit): seus projetos abertos com movimento depois de `desdeIso`.
+   * A ultima atividade do card inclui o que a propria pessoa fez (o Trello nao diz quem mexeu), por isso o texto fala em "movimento". So le. */
+  function mudouDesde(itens, regras, meuId, desdeIso, agora) {
+    const desde = Date.parse(desdeIso), max = regras.bom_dia_max_itens || 5, lista = [];
+    if (!meuId || isNaN(desde)) return { total: 0, itens: [], mais: 0 };
+    for (const it of itens) {
+      const c = it.card, t = c.dateLastActivity ? Date.parse(c.dateLastActivity) : NaN;
+      if (!(c.idMembers || []).includes(meuId) || isNaN(t) || concluidoOuFechado(it, regras)) continue;
+      if (t <= desde || t > agora.getTime() + 3600000) continue;
+      lista.push({ nome: c.name, url: c.url, lista: it.listaNome, dias: Math.max(0, Math.floor((agora.getTime() - t) / 86400000)), quando: c.dateLastActivity });
+    }
+    lista.sort((a, b) => (a.quando < b.quando ? 1 : a.quando > b.quando ? -1 : a.nome.localeCompare(b.nome)));
+    return { total: lista.length, itens: lista.slice(0, max), mais: Math.max(0, lista.length - max) };
+  }
+
+  /* ATALHOS DA LISTA (list-actions do Trello): os cards de UMA lista, do mais para o menos prioritario. filtro: "todos", "atrasados"
+   * (alerta de atraso) ou "pendencias" (sem responsavel, sem prazo ou cadastro incompleto). So le. */
+  const RANK_P = { P1: 1, P2: 2, P3: 3, P4: 4 };
+  function daLista(itens, regras, idLista, filtro) {
+    const tem = (it, tipos) => (it.alertas || []).some((a) => tipos.includes(a.tipo) && (a.tipo !== "atrasado" || a.valor > 0));
+    const sel = itens.filter((it) => it.card.idList === idLista && !it.card.closed &&
+      (filtro === "atrasados" ? tem(it, ["atrasado"]) : filtro === "pendencias" ? tem(it, ["sem_responsavel", "sem_prazo", "cadastro_incompleto"]) : true));
+    return sel.map((it) => ({ nome: it.card.name, url: it.card.url, prioridade: it.prio ? it.prio.prioridade : null, cor: semaforo(it.alertas || [], regras),
+      motivos: ordenar(it.alertas || [], regras).filter((a) => regras.nivel[a.tipo]).map((a) => frase(a)), prazo: (it.valores || {})["Fim planejado"] || null }))
+      .sort((a, b) => (RANK_P[a.prioridade] || 9) - (RANK_P[b.prioridade] || 9) || a.nome.localeCompare(b.nome));
+  }
+
   function dataLocal(d, regras) { return new Date(d.getTime() + regras.fuso_horas * 3600000).toISOString().slice(0, 10); }
   function diasEntre(a, b) { return Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / DIA_MS); }
   function somaDias(a, n) { return new Date(Date.parse(a + "T00:00:00Z") + n * DIA_MS).toISOString().slice(0, 10); }
@@ -1138,5 +1165,5 @@
 
   return { roadmap, parseRiscos, registroDeRiscos, riscosDoCard, missoesDaArea, entregasDaSemana, retaFinal, destaqueDaSemana, melhorSemana, antecipar, prontidao, ordenarPorPrioridade, desvioPlano, historicoPlano, meuDia, projetoAtivo, pautaReuniao, radar, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, resumoArea, quadrosDoPortfolio, portfolioPermitido, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
     checklistsDeBadges, pontuar, ondeAtuar, abaInicialMeus, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto, cargaDaEquipe, semEvidencia,
-    retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal, diasEntre, bomDiaAbrir, pedidosParaMim };
+    retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal, diasEntre, bomDiaAbrir, pedidosParaMim, mudouDesde, daLista };
 });

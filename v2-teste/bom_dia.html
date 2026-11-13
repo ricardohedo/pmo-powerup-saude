@@ -6,9 +6,9 @@
 <title>Bom dia</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611131545"></script>
-<script src="./dados.js?v=202611131545"></script>
-<script src="./bom_dia.js?v=202611131545"></script>
+<script src="./motor.js?v=202611131557"></script>
+<script src="./dados.js?v=202611131557"></script>
+<script src="./bom_dia.js?v=202611131557"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  h3{margin:14px 0 6px;font-size:14px} .nota{color:#5e6c84;font-size:12px}
@@ -33,8 +33,12 @@ PmoDados.render(t, async () => {
   const q = await PmoDados.quadro(t), agora = new Date(), max = q.regras.bom_dia_max_itens || 5;
   const md = PmoMotor.meuDia(q.itens, q.regras, q.meuId, agora);
   const ped = PmoMotor.pedidosParaMim(q.itens, q.regras, q.meuId, agora);
+  // O que mudou desde a ultima visita: a marca do Bom dia guarda a visita anterior (so existe a partir da segunda abertura)
+  let mud = { total: 0, itens: [], mais: 0 }, anterior = null;
+  try { const m = await PmoBomDia.ler(t); anterior = m && m.anterior; } catch (e) { /* sem marca: sem o bloco */ }
+  if (anterior) mud = PmoMotor.mudouDesde(q.itens, q.regras, q.meuId, anterior, agora);
   // Nada a dizer = nao incomoda: a propria janela se fecha (o botao "Meu dia" continua na barra)
-  if (!ped.total && !md.total) { t.closeModal(); return; }
+  if (!ped.total && !md.total && !mud.total) { t.closeModal(); return; }
   let h = "";
 
   if (ped.total) {
@@ -42,6 +46,11 @@ PmoDados.render(t, async () => {
       (ped.maisAntigo != null ? "; o mais antigo há " + plural(ped.maisAntigo, "dia", "dias") : "") + ".<ul>" +
       ped.itens.map((x) => "<li>" + link(x) + " <span class='mot'>— pedido de " + esc(x.origem) + (x.dias != null ? " há " + plural(x.dias, "dia", "dias") : "") +
         (x.semMembro ? " · sem responsável: alguém da área precisa pegar" : "") + "</span></li>").join("") + mais(ped.mais) + "</ul></div>";
+  }
+
+  if (mud.total) {
+    h += "<h3>Desde a sua última visita (" + esc(dm(PmoMotor.dataLocal(new Date(anterior), q.regras))) + ")</h3><p class='nota'>Houve movimento em " + plural(mud.total, "projeto seu", "projetos seus") + ":</p><ul>" +
+      mud.itens.map((x) => "<li>" + link(x) + " <span class='mot'>— " + esc(x.lista || "") + " · " + (x.dias === 0 ? "hoje" : "há " + plural(x.dias, "dia", "dias")) + "</span></li>").join("") + mais(mud.mais) + "</ul>";
   }
 
   if (md.total) {

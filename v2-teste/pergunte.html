@@ -6,9 +6,10 @@
 <title>Pergunte ao PMO</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611131545"></script>
-<script src="./dados.js?v=202611131545"></script>
-<script src="./pergunte.js?v=202611131545"></script>
+<script src="./motor.js?v=202611131557"></script>
+<script src="./dados.js?v=202611131557"></script>
+<script src="./pergunte.js?v=202611131557"></script>
+<script src="./pergunte_log.js?v=202611131557"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  h3{margin:14px 0 6px;font-size:14px} .nota{color:#5e6c84;font-size:12px}
@@ -30,30 +31,47 @@ const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&":
 PmoDados.render(t, async () => {
   const q = await PmoDados.quadro(t), agora = new Date();
   const raiz = document.getElementById("raiz");
+  let caderno = [];
+  try { caderno = await PmoPerguntas.ler(t); } catch (e) { /* sem caderno: segue sem a lista */ }
   const botoes = (lista) => lista.map((c) => "<button class='perg' data-id='" + esc(c.id) + "'>" + esc(c.pergunta) + "</button>").join("");
-  const resposta = (r, naoSei) => "<div class='resp" + (naoSei ? " naosei" : "") + "'><b>" + esc(r.titulo) + "</b><br>" + esc(r.resumo) +
+  const botoesProjeto = (lista) => lista.map((it) => "<button class='perg' data-card='" + esc(it.card.id) + "'>" + esc(it.card.name) + " <span class='mot'>— " + esc(it.listaNome || "") + "</span></button>").join("");
+  const resposta = (r, naoSei) => "<div class='resp" + (naoSei ? " naosei" : "") + "'><b>" + (r.url ? "<a href='" + esc(r.url) + "' target='_blank' rel='noopener noreferrer'>" + esc(r.titulo) + "</a>" : esc(r.titulo)) + "</b><br>" + esc(r.resumo) +
     (r.itens.length ? "<ul>" + r.itens.map((x) => "<li>" + (x.url ? "<a href='" + esc(x.url) + "' target='_blank' rel='noopener noreferrer'>" + esc(x.texto) + "</a>" : "<b>" + esc(x.texto) + "</b>") +
       (x.detalhe ? " <span class='mot'>— " + esc(x.detalhe) + "</span>" : "") + "</li>").join("") +
       (r.mais ? "<li class='mot'>… e mais " + r.mais + "</li>" : "") + "</ul>" : "") +
     (r.nota ? "<p class='nota'>" + esc(r.nota) + "</p>" : "") + "</div>";
+  const anotadas = () => caderno.length ? "<h3>Perguntas que o bot ainda não sabe (o PMO vai ensinar)</h3><ul>" + caderno.slice(-5).reverse().map((x) => "<li class='mot'>" + esc(x.q) + "</li>").join("") + "</ul>" : "";
 
   function desenha(htmlResposta) {
-    raiz.innerHTML = "<div class='busca'><input id='texto' type='search' placeholder='Digite uma pergunta ou palavras (ex.: vermelho, prazo, cadastro)' aria-label='Pergunta'>" +
+    raiz.innerHTML = "<div class='busca'><input id='texto' type='search' placeholder='Digite uma pergunta, palavras ou o nome de um projeto' aria-label='Pergunta'>" +
       "<button id='ir'>Perguntar</button></div><div id='resp'>" + (htmlResposta || "") + "</div><h3>Perguntas prontas</h3>" + botoes(PmoPergunte.CATALOGO) +
-      "<p class='nota'>Respostas montadas por regra com os dados deste quadro, sem inteligência artificial. Só leitura; nada é alterado.</p>";
-    const responde = (id) => { desenha(resposta(PmoPergunte.responder(id, q.itens, q.regras, q.meuId, agora), false)); };
-    raiz.querySelectorAll(".perg").forEach((b) => { b.onclick = () => responde(b.dataset.id); });
-    const pergunta = () => {
-      const achadas = PmoPergunte.buscar(document.getElementById("texto").value);
-      if (!achadas.length) { desenha(resposta(PmoPergunte.naoSei(q.regras), true)); return; }
-      if (achadas.length === 1) { responde(achadas[0].id); return; }
-      document.getElementById("resp").innerHTML = "<div class='resp'><b>Você quis dizer:</b>" + botoes(achadas) + "</div>";
-      document.getElementById("resp").querySelectorAll(".perg").forEach((b) => { b.onclick = () => responde(b.dataset.id); });
-      t.sizeTo("#raiz");
-    };
-    document.getElementById("ir").onclick = pergunta;
-    document.getElementById("texto").onkeydown = (e) => { if (e.key === "Enter") pergunta(); };
+      anotadas() + "<p class='nota'>Respostas montadas por regra com os dados deste quadro, sem inteligência artificial. Só leitura; o que o bot não souber fica anotado neste quadro para o PMO melhorar.</p>";
+    ligar(raiz);
+    const input = document.getElementById("texto");
+    document.getElementById("ir").onclick = () => pergunta(input.value);
+    input.onkeydown = (e) => { if (e.key === "Enter") pergunta(input.value); };
     t.sizeTo("#raiz");
+  }
+  function ligar(escopo) {
+    escopo.querySelectorAll(".perg[data-id]").forEach((b) => { b.onclick = () => desenha(resposta(PmoPergunte.responder(b.dataset.id, q.itens, q.regras, q.meuId, agora), false)); });
+    escopo.querySelectorAll(".perg[data-card]").forEach((b) => {
+      b.onclick = () => { const it = q.itens.find((x) => x.card.id === b.dataset.card); if (it) desenha(resposta(PmoPergunte.responderProjeto(it, q.regras, agora), false)); };
+    });
+  }
+  async function pergunta(texto) {
+    if (String(texto || "").trim().length < 3) return;
+    const e = PmoPergunte.entender(texto, q.itens);
+    if (e.tipo === "projeto" && e.itens.length === 1) { desenha(resposta(PmoPergunte.responderProjeto(e.itens[0], q.regras, agora), false)); return; }
+    if (e.tipo === "projeto" || e.tipo === "talvez_projeto") {
+      document.getElementById("resp").innerHTML = "<div class='resp'><b>Qual destes projetos?</b>" + botoesProjeto(e.itens) + "</div>"; ligar(document.getElementById("resp")); t.sizeTo("#raiz"); return;
+    }
+    if (e.tipo === "catalogo" && e.perguntas.length === 1) { desenha(resposta(PmoPergunte.responder(e.perguntas[0].id, q.itens, q.regras, q.meuId, agora), false)); return; }
+    if (e.tipo === "catalogo") {
+      document.getElementById("resp").innerHTML = "<div class='resp'><b>Você quis dizer:</b>" + botoes(e.perguntas) + "</div>"; ligar(document.getElementById("resp")); t.sizeTo("#raiz"); return;
+    }
+    // nao soube: anota para o PMO ensinar o bot (a unica escrita desta tela) e diz com honestidade
+    try { await PmoPerguntas.registrar(t, texto, agora); caderno = await PmoPerguntas.ler(t); } catch (err) { /* sem permissao de gravar: so nao anota */ }
+    desenha(resposta(PmoPergunte.naoSei(q.regras), true));
   }
   desenha("");
 });

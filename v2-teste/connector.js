@@ -26,7 +26,7 @@ async function bomDia(t, regras) {
     const guardado = await PmoBomDia.ler(t);
     const dec = PmoMotor.bomDiaAbrir(guardado, new Date(), regras);
     if (!dec.abrir) return;
-    await PmoBomDia.guardar(t, { dia: dec.hoje });
+    await PmoBomDia.guardar(t, { dia: dec.hoje, visto: new Date().toISOString(), anterior: (guardado && guardado.visto) || null });
     await t.modal({ title: "Bom dia: o que pede você hoje", url: "./bom_dia.html", height: 560 });
   } catch (e) { console.error("[PMO Power-Up] bom dia", e); }
 }
@@ -98,6 +98,19 @@ TrelloPowerUp.initialize({
       text: "Prioridade PMO (P1 a P4)",
       callback: async (tt, opts) => ({ sortedIds: await PmoDados.ordenarLista(tt, opts.cards) }),
     }];
+  },
+
+  // Menu "..." da lista: ate 3 atalhos (o Trello pede resposta em ate 150 ms: o regras.json ja esta em memoria depois do selo dos cards). So leitura.
+  "list-actions": async (t) => {
+    let f;
+    try { f = (await PmoDados.regras()).funcoes; } catch (e) { return []; }
+    if (!f.lista_atalhos) return [];
+    const abre = (titulo, filtro) => (tt) => tt.list("id").then((l) => tt.popup({ title: titulo, url: "./lista.html", args: { listId: l.id, filtro }, height: 420 }));
+    return [
+      { text: "Projetos desta etapa...", callback: abre("Projetos desta etapa", "todos") },
+      { text: "Atrasados desta etapa...", callback: abre("Atrasados desta etapa", "atrasados") },
+      { text: "Faltam dados nesta etapa...", callback: abre("Faltam dados nesta etapa", "pendencias") },
+    ];
   },
 
   "board-buttons": async (t) => {

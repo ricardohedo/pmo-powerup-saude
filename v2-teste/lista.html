@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Projetos da etapa</title>
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./motor.js?v=202611131557"></script>
+<script src="./dados.js?v=202611131557"></script>
+<style>
+ body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
+ .nota{color:#5e6c84;font-size:12px} ul{margin:6px 0 0;padding:0;list-style:none} li{margin:0 0 8px;padding:6px 8px;border-radius:4px;background:#f4f5f7}
+ a{color:#172b4d;font-weight:600} .mot{display:block;color:#5e6c84;font-size:12px}
+ .tag{display:inline-block;padding:0 7px;border-radius:9px;color:#fff;font-size:11px;font-weight:600;margin-right:6px}
+ .tag.P1{background:#c0392b}.tag.P2{background:#d9730d}.tag.P3{background:#b8860b}.tag.P4{background:#2e7d4f}.tag.sem{background:#7a869a}
+ .cor{display:inline-block;width:10px;height:10px;border-radius:5px;margin-right:6px}
+ .cor.vermelho{background:#c0392b}.cor.amarelo{background:#d9a400}.cor.verde{background:#2e7d4f}
+</style>
+</head>
+<body>
+<div id="raiz">Lendo a lista…</div>
+<script>
+const t = TrelloPowerUp.iframe();
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const VAZIO = { todos: "Nenhum projeto nesta etapa.", atrasados: "Nenhum projeto atrasado nesta etapa. 👏", pendencias: "Nenhum projeto desta etapa com falta de responsável, prazo ou cadastro. 👏" };
+const TITULO = { todos: "Projetos desta etapa", atrasados: "Atrasados desta etapa", pendencias: "Faltam dados nesta etapa" };
+const dm = (iso) => iso.slice(8, 10) + "/" + iso.slice(5, 7);
+
+PmoDados.render(t, async () => {
+  const q = await PmoDados.quadro(t);
+  const filtro = ["todos", "atrasados", "pendencias"].includes(t.arg("filtro")) ? t.arg("filtro") : "todos";
+  const lista = PmoMotor.daLista(q.itens, q.regras, t.arg("listId"), filtro);
+  const max = 15;
+  document.getElementById("raiz").innerHTML = "<b>" + esc(TITULO[filtro]) + "</b> <span class='nota'>(" + lista.length + ")</span>" +
+    (lista.length ? "<ul>" + lista.slice(0, max).map((x) => "<li><span class='tag " + (x.prioridade ? esc(x.prioridade) : "sem") + "'>" + (x.prioridade ? esc(x.prioridade) : "—") + "</span>" +
+      "<span class='cor " + esc(x.cor) + "' title='" + esc(x.cor) + "'></span><a href='" + esc(x.url) + "' target='_blank' rel='noopener noreferrer'>" + esc(x.nome) + "</a>" +
+      "<span class='mot'>" + esc(x.motivos.length ? x.motivos.join(" · ") : "em dia") + (x.prazo ? " · prazo " + esc(dm(x.prazo)) : "") + "</span></li>").join("") +
+      (lista.length > max ? "<li class='nota'>… e mais " + (lista.length - max) + "</li>" : "") + "</ul>" : "<p>" + esc(VAZIO[filtro]) + "</p>") +
+    "<p class='nota'>Do mais para o menos prioritário (P1 a P4). Só leitura; nada é alterado.</p>";
+  t.sizeTo("#raiz");
+});
+</script>
+</body>
+</html>
