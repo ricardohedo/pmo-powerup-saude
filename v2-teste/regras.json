@@ -103,6 +103,7 @@
     "2027-12-25"
   ],
   "funcoes": {
+    "bom_dia": true,
     "carga_equipe": true,
     "engajamento": true,
     "evidencia": true,

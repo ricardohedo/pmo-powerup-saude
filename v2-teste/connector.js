@@ -16,6 +16,21 @@ function erro(e) {
   return String((e && e.message) || e).slice(0, 60);
 }
 
+// "Bom dia": o Trello pode chamar o board-buttons varias vezes na mesma abertura; este marcador de modulo segura as chamadas
+// simultaneas e o t.set ANTES do t.modal segura as das aberturas seguintes. Experimento so do palco (funcao bom_dia).
+let bomDiaTentado = false;
+async function bomDia(t, regras) {
+  if (bomDiaTentado) return;
+  bomDiaTentado = true;
+  try {
+    const guardado = await PmoBomDia.ler(t);
+    const dec = PmoMotor.bomDiaAbrir(guardado, new Date(), regras);
+    if (!dec.abrir) return;
+    await PmoBomDia.guardar(t, { dia: dec.hoje });
+    await t.modal({ title: "Bom dia: o que pede você hoje", url: "./meu_dia.html", args: { auto: 1 }, height: 600 });
+  } catch (e) { console.error("[PMO Power-Up] bom dia", e); }
+}
+
 TrelloPowerUp.initialize({
   "card-badges": async (t) => {
     try {
@@ -89,6 +104,7 @@ TrelloPowerUp.initialize({
     PmoTendencia.automatico(t);          // guarda o retrato do dia (so se a Tendencia estiver ligada), sem travar nada
     let f;
     try { f = (await PmoDados.regras()).funcoes; } catch (e) { return []; }   // regras.json fora do ar: sem botoes, mas sem derrubar o Power-Up; funcoes opcionais ligadas/desligadas no pmo.toml
+    if (f.bom_dia) bomDia(t, await PmoDados.regras());        // sem await: nao atrasa os botoes
     const nomeQuadro = f.portfolio ? ((await t.board("name")) || {}).name : "";
     const regrasBt = f.portfolio ? await PmoDados.regras() : null;
     const botao = (text, title, url, height) => ({ icon: ICONE, text, callback: (tt) => tt.modal({ title, url, height }) });

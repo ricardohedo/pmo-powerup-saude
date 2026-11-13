@@ -406,6 +406,12 @@
   }
 
   // Data local (fuso do PMO, Brasilia) como "AAAA-MM-DD"; dias de calendario, igual ao Plano (plano.projetos_do_board).
+  // "Bom dia" (popup ao abrir o quadro): abre no maximo 1 vez por dia (dia no fuso do PMO) por pessoa e por quadro, e nunca mais se a pessoa
+  // pediu para nao ver. `guardado` = o que ficou salvo no quadro para a pessoa: { dia: "AAAA-MM-DD", nunca: bool } ou vazio.
+  function bomDiaAbrir(guardado, agora, regras) {
+    const hoje = dataLocal(agora, regras), g = guardado && typeof guardado === "object" ? guardado : {};
+    return { abrir: !g.nunca && g.dia !== hoje, hoje };
+  }
   function dataLocal(d, regras) { return new Date(d.getTime() + regras.fuso_horas * 3600000).toISOString().slice(0, 10); }
   function diasEntre(a, b) { return Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / DIA_MS); }
   function somaDias(a, n) { return new Date(Date.parse(a + "T00:00:00Z") + n * DIA_MS).toISOString().slice(0, 10); }
@@ -1108,5 +1114,5 @@
 
   return { roadmap, parseRiscos, registroDeRiscos, riscosDoCard, missoesDaArea, entregasDaSemana, retaFinal, destaqueDaSemana, melhorSemana, antecipar, prontidao, ordenarPorPrioridade, desvioPlano, historicoPlano, meuDia, projetoAtivo, pautaReuniao, radar, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, resumoArea, quadrosDoPortfolio, portfolioPermitido, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
     checklistsDeBadges, pontuar, ondeAtuar, abaInicialMeus, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto, cargaDaEquipe, semEvidencia,
-    retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal, diasEntre };
+    retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal, diasEntre, bomDiaAbrir };
 });
