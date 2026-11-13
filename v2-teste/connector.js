@@ -98,16 +98,16 @@ TrelloPowerUp.initialize({
       ...(f.riscos ? [botao("Riscos", "Riscos e premissas: matriz, o que falta e projetos sem registro", "./riscos.html", 640)] : []),
       ...(f.engajamento ? [botao("Conquistas", "Conquistas da área: entregas, reta final e destaque", "./conquistas.html", 560)] : []),
       ...(f.paineis ? [botao("Painéis PMO", "Painéis PMO: seus blocos sobre os projetos do quadro", "./paineis.html", 680)] : []),
+      ...(f.portfolio && PmoMotor.portfolioPermitido(nomeQuadro, regrasBt) ? [botao("Portfólio PMO", "Portfólio do PMO: as áreas", "./portfolio.html", 640)] : []),   // perto do começo: a barra do Trello pode cortar o fim
       ...(f.pauta ? [botao("Pauta da reunião", "Pauta da reunião: do que o quadro pede", "./pauta.html", 640)] : []),
       ...(f.radar ? [botao("Radar", "Radar: o que vai cair em alerta se ninguém mexer", "./radar.html", 600)] : []),
       botao("Minhas ações", "Minhas ações: onde atuar primeiro", "./atuar.html", 600),
       botao("Atrasadas e a vencer", "Atrasadas, a vencer, marcos e datas do varejo", "./prazos.html", 560),
       botao("Impacto × esforço", "Matriz impacto × esforço", "./matriz.html", 600),
-      ...(f.portfolio && PmoMotor.portfolioPermitido(nomeQuadro, regrasBt) ? [botao("Portfólio PMO", "Portfólio do PMO: as áreas", "./portfolio.html", 640)] : []),
       botao("Linha do tempo", "Linha do tempo de entregas", "./linha.html", 600),
       ...(f.carga_equipe ? [botao("Carga da equipe", "Carga da equipe", "./equipe.html", 520)] : []),
       ...(f.tendencia ? [botao("Tendência", "Tendência do quadro", "./tendencia.html", 560)] : []),
-      botao("Painel PMO", "Painel de saúde do quadro", "./painel.html", 560),
+      ...(f.paineis ? [] : [botao("Painel PMO", "Painel de saúde do quadro", "./painel.html", 560)]),   // o novo "Painéis PMO" o substitui: menos botões na barra
       botao("Como sou medido", "Como o PMO mede os projetos", "./como.html", 600),
     ];
   },
