@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pergunte ao PMO</title>
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./motor.js?v=202611131534"></script>
+<script src="./dados.js?v=202611131534"></script>
+<script src="./pergunte.js?v=202611131534"></script>
+<style>
+ body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
+ h3{margin:14px 0 6px;font-size:14px} .nota{color:#5e6c84;font-size:12px}
+ .busca{display:flex;gap:6px} .busca input{flex:1;padding:6px 8px;border:1px solid #c1c7d0;border-radius:4px;font:inherit}
+ .perg{display:block;width:100%;text-align:left;margin:0 0 4px;padding:6px 8px;border:1px solid #dfe1e6;border-radius:4px;background:#fff;color:#172b4d;cursor:pointer;font:inherit}
+ .perg:hover{background:#f4f5f7}
+ .resp{background:#e9f2ff;border-radius:4px;padding:10px;margin:10px 0}
+ .resp.naosei{background:#fff4e5}
+ ul{margin:6px 0 0;padding-left:18px} li{margin:0 0 4px} a{color:#172b4d}
+ .mot{color:#5e6c84;font-size:12px}
+</style>
+</head>
+<body>
+<div id="raiz">Lendo o quadro…</div>
+<script>
+const t = TrelloPowerUp.iframe();
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+PmoDados.render(t, async () => {
+  const q = await PmoDados.quadro(t), agora = new Date();
+  const raiz = document.getElementById("raiz");
+  const botoes = (lista) => lista.map((c) => "<button class='perg' data-id='" + esc(c.id) + "'>" + esc(c.pergunta) + "</button>").join("");
+  const resposta = (r, naoSei) => "<div class='resp" + (naoSei ? " naosei" : "") + "'><b>" + esc(r.titulo) + "</b><br>" + esc(r.resumo) +
+    (r.itens.length ? "<ul>" + r.itens.map((x) => "<li>" + (x.url ? "<a href='" + esc(x.url) + "' target='_blank' rel='noopener noreferrer'>" + esc(x.texto) + "</a>" : "<b>" + esc(x.texto) + "</b>") +
+      (x.detalhe ? " <span class='mot'>— " + esc(x.detalhe) + "</span>" : "") + "</li>").join("") +
+      (r.mais ? "<li class='mot'>… e mais " + r.mais + "</li>" : "") + "</ul>" : "") +
+    (r.nota ? "<p class='nota'>" + esc(r.nota) + "</p>" : "") + "</div>";
+
+  function desenha(htmlResposta) {
+    raiz.innerHTML = "<div class='busca'><input id='texto' type='search' placeholder='Digite uma pergunta ou palavras (ex.: vermelho, prazo, cadastro)' aria-label='Pergunta'>" +
+      "<button id='ir'>Perguntar</button></div><div id='resp'>" + (htmlResposta || "") + "</div><h3>Perguntas prontas</h3>" + botoes(PmoPergunte.CATALOGO) +
+      "<p class='nota'>Respostas montadas por regra com os dados deste quadro, sem inteligência artificial. Só leitura; nada é alterado.</p>";
+    const responde = (id) => { desenha(resposta(PmoPergunte.responder(id, q.itens, q.regras, q.meuId, agora), false)); };
+    raiz.querySelectorAll(".perg").forEach((b) => { b.onclick = () => responde(b.dataset.id); });
+    const pergunta = () => {
+      const achadas = PmoPergunte.buscar(document.getElementById("texto").value);
+      if (!achadas.length) { desenha(resposta(PmoPergunte.naoSei(q.regras), true)); return; }
+      if (achadas.length === 1) { responde(achadas[0].id); return; }
+      document.getElementById("resp").innerHTML = "<div class='resp'><b>Você quis dizer:</b>" + botoes(achadas) + "</div>";
+      document.getElementById("resp").querySelectorAll(".perg").forEach((b) => { b.onclick = () => responde(b.dataset.id); });
+      t.sizeTo("#raiz");
+    };
+    document.getElementById("ir").onclick = pergunta;
+    document.getElementById("texto").onkeydown = (e) => { if (e.key === "Enter") pergunta(); };
+    t.sizeTo("#raiz");
+  }
+  desenha("");
+});
+</script>
+</body>
+</html>

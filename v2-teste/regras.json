@@ -113,6 +113,7 @@
     "ordenar_prioridade": true,
     "paineis": true,
     "pauta": true,
+    "pergunte": true,
     "portfolio": true,
     "radar": true,
     "riscos": true,
@@ -199,12 +200,14 @@
   "painel_atraso_dias": 30,
   "painel_prazo_pct_max": 25,
   "perfil": "atual",
+  "pergunte_contato": "Ricardo Nabout, PMO BigBox",
   "pesos": {
     "atrasado": 100,
     "atraso_oculto": 60,
     "prazo_proximo": 40,
     "sem_comentario_pausado": 30
   },
+  "plano_prefixo_execucao": "Execução",
   "portfolio_excluir_prefixos": [
     "modelo"
   ],

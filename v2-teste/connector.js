@@ -110,6 +110,7 @@ TrelloPowerUp.initialize({
     const botao = (text, title, url, height) => ({ icon: ICONE, text, callback: (tt) => tt.modal({ title, url, height }) });
     return [
       ...(f.meu_dia ? [botao("Meu dia", "Meu dia: o que pede você hoje", "./meu_dia.html", 600)] : []),
+      ...(f.pergunte ? [botao("Pergunte ao PMO", "Pergunte ao PMO: respostas prontas sobre os seus projetos", "./pergunte.html", 600)] : []),   // ocupa o lugar do "Como sou medido" (a barra do Trello corta acima de 15 botoes)
       ...(f.roadmap ? [botao("Roadmap", "Roadmap do quadro: início e fim de cada projeto ativo", "./roadmap.html", 680)] : []),
       ...(f.riscos ? [botao("Riscos", "Riscos e premissas: matriz, o que falta e projetos sem registro", "./riscos.html", 640)] : []),
       ...(f.engajamento ? [botao("Conquistas", "Conquistas da área: entregas, reta final e destaque", "./conquistas.html", 560)] : []),
@@ -124,7 +125,7 @@ TrelloPowerUp.initialize({
       ...(f.carga_equipe ? [botao("Carga da equipe", "Carga da equipe", "./equipe.html", 520)] : []),
       ...(f.tendencia ? [botao("Tendência", "Tendência do quadro", "./tendencia.html", 560)] : []),
       ...(f.paineis ? [] : [botao("Painel PMO", "Painel de saúde do quadro", "./painel.html", 560)]),   // o novo "Painéis PMO" o substitui: menos botões na barra
-      botao("Como sou medido", "Como o PMO mede os projetos", "./como.html", 600),
+      ...(f.pergunte ? [] : [botao("Como sou medido", "Como o PMO mede os projetos", "./como.html", 600)]),   // com o Pergunte ligado, "como sou medido" vira uma das respostas
     ];
   },
 }, window.PMO_APP);

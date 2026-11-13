@@ -6,7 +6,7 @@ window.PmoDados = (function () {
     if (!regrasP) {
       // Erro de rede/404/HTML no lugar do JSON NAO fica guardado: a proxima chamada tenta de novo (antes a promise
       // rejeitada ficava para sempre e o Power-Up inteiro sumia ate recarregar a pagina).
-      regrasP = fetch("./regras.json?v=202611131526").then((r) => {
+      regrasP = fetch("./regras.json?v=202611131534").then((r) => {
         if (!r.ok) throw new Error("regras.json respondeu " + r.status);
         return r.json();
       }).catch((e) => { regrasP = null; throw e; });
