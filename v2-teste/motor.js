@@ -426,8 +426,10 @@
       if (membros.length && !membros.includes(meuId)) continue;
       const criado = /^[0-9a-f]{8}/i.test(c.id || "") ? parseInt(c.id.slice(0, 8), 16) * 1000 : null;
       const dias = criado == null ? null : Math.max(0, Math.floor((agora.getTime() - criado) / 86400000));
-      const desc = String(c.desc), ini = desc.indexOf(marca) + marca.length, fim = desc.indexOf(")", ini);    // "<marca> (Area)": sem regex
-      const origem = desc.startsWith(" (", ini) && fim > ini + 2 && fim - ini < 64 && !desc.slice(ini, fim).includes("\n") ? desc.slice(ini + 2, fim) : "outra área";
+      // "<marca> (Area)": a area pode ter parenteses (ex.: "Comercial (teste)"); vale ate o ULTIMO ")" da mesma linha (o texto do gancho nao tem outros)
+      const desc = String(c.desc), ini = desc.indexOf(marca) + marca.length, fimLinha = desc.indexOf("\n", ini);
+      const resto = desc.slice(ini + 2, fimLinha < 0 ? desc.length : fimLinha), ultimo = resto.lastIndexOf(")");
+      const origem = desc.startsWith(" (", ini) && ultimo > 0 && ultimo <= 62 ? resto.slice(0, ultimo) : "outra área";
       lista.push({ nome: c.name, url: c.url, lista: it.listaNome, origem, dias, semMembro: !membros.length });
     }
     lista.sort((a, b) => (b.dias == null ? -1 : b.dias) - (a.dias == null ? -1 : a.dias) || a.nome.localeCompare(b.nome));
