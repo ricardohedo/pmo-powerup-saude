@@ -6,15 +6,15 @@
 <title>Minhas preferências</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611131733"></script>
-<script src="./dados.js?v=202611131733"></script>
-<script src="./perfil.js?v=202611131733"></script>
+<script src="./motor.js?v=202611131739"></script>
+<script src="./dados.js?v=202611131739"></script>
+<script src="./perfil.js?v=202611131739"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  h3{margin:0 0 6px;font-size:15px} .nota{color:#5e6c84;font-size:12px}
  label.op{display:block;border:1px solid #dfe1e6;border-radius:4px;padding:8px 10px;margin:0 0 6px;cursor:pointer}
  label.op:hover{background:#f4f5f7} label.op.sel{border-color:#0c66e4;background:#e9f2ff}
- label.op b{display:block} label.op .d{color:#5e6c84;font-size:12px}
+ label.op b{display:block;font-weight:600} label.op .d{display:block;color:#5e6c84;font-size:12px;font-weight:400}
  button{padding:6px 12px;border:0;border-radius:4px;background:#0c66e4;color:#fff;cursor:pointer;font:inherit;margin-top:4px}
  .ok{background:#e3fcef;border-radius:4px;padding:8px 10px;margin-top:8px}
 </style>
@@ -47,6 +47,7 @@ PmoDados.render(t, async () => {
     "<button id='salvar'>Salvar</button><div id='msg'></div>";
   document.getElementById("salvar").onclick = async () => {
     const marcado = raiz.querySelector("input[name=perfil]:checked");
+    document.getElementById("msg").innerHTML = "<div class='ok'>Salvando…</div>";           // feedback na hora; o Trello pode demorar a responder
     try {
       await PmoPerfil.guardar(t, marcado ? marcado.value : "");
       document.getElementById("msg").innerHTML = "<div class='ok'>Salvo. Recarregue o quadro (F5) para ver os botões do seu perfil.</div>";
