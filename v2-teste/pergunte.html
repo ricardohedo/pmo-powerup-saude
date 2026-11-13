@@ -6,10 +6,10 @@
 <title>Pergunte ao PMO</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611131557"></script>
-<script src="./dados.js?v=202611131557"></script>
-<script src="./pergunte.js?v=202611131557"></script>
-<script src="./pergunte_log.js?v=202611131557"></script>
+<script src="./motor.js?v=202611131606"></script>
+<script src="./dados.js?v=202611131606"></script>
+<script src="./pergunte.js?v=202611131606"></script>
+<script src="./pergunte_log.js?v=202611131606"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  h3{margin:14px 0 6px;font-size:14px} .nota{color:#5e6c84;font-size:12px}
@@ -28,6 +28,7 @@
 const t = TrelloPowerUp.iframe();
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
+let ultima = "";          // a ultima resposta fica guardada: se o Trello redesenhar a janela, o gestor nao perde o que estava lendo
 PmoDados.render(t, async () => {
   const q = await PmoDados.quadro(t), agora = new Date();
   const raiz = document.getElementById("raiz");
@@ -43,6 +44,7 @@ PmoDados.render(t, async () => {
   const anotadas = () => caderno.length ? "<h3>Perguntas que o bot ainda não sabe (o PMO vai ensinar)</h3><ul>" + caderno.slice(-5).reverse().map((x) => "<li class='mot'>" + esc(x.q) + "</li>").join("") + "</ul>" : "";
 
   function desenha(htmlResposta) {
+    ultima = htmlResposta || "";
     raiz.innerHTML = "<div class='busca'><input id='texto' type='search' placeholder='Digite uma pergunta, palavras ou o nome de um projeto' aria-label='Pergunta'>" +
       "<button id='ir'>Perguntar</button></div><div id='resp'>" + (htmlResposta || "") + "</div><h3>Perguntas prontas</h3>" + botoes(PmoPergunte.CATALOGO) +
       anotadas() + "<p class='nota'>Respostas montadas por regra com os dados deste quadro, sem inteligência artificial. Só leitura; o que o bot não souber fica anotado neste quadro para o PMO melhorar.</p>";
@@ -73,7 +75,7 @@ PmoDados.render(t, async () => {
     try { await PmoPerguntas.registrar(t, texto, agora); caderno = await PmoPerguntas.ler(t); } catch (err) { /* sem permissao de gravar: so nao anota */ }
     desenha(resposta(PmoPergunte.naoSei(q.regras), true));
   }
-  desenha("");
+  desenha(ultima);
 });
 </script>
 </body>
