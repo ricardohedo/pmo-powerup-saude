@@ -6,9 +6,9 @@
 <title>Painéis PMO</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611121737"></script>
-<script src="./dados.js?v=202611121737"></script>
-<script src="./paineis.js?v=202611121737"></script>
+<script src="./motor.js?v=202611131024"></script>
+<script src="./dados.js?v=202611131024"></script>
+<script src="./paineis.js?v=202611131024"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  .topo{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
@@ -24,6 +24,7 @@
  .num{font-size:38px;font-weight:700;cursor:pointer;line-height:1.1} .num.ok{color:#2e7d4f} .num.ruim{color:#c0392b}
  .meta{font-size:12px;color:#5e6c84}
  .pizza{display:flex;gap:10px;align-items:center}
+ .ver{border:0;background:none;color:#0c66e4;padding:4px 0;font-size:12px;cursor:pointer;text-decoration:underline}
  .leg{display:block;border:0;background:none;padding:2px 0;text-align:left;font-size:12px;cursor:pointer}
  .q{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
  .lb{display:flex;gap:6px;align-items:center;margin:3px 0;font-size:12px;cursor:pointer}
@@ -83,7 +84,8 @@ function blocoHtml(r, ix) {
   let corpo;
   if (r.tipo === "contador") {
     corpo = "<div class='num " + (r.ok === true ? "ok" : r.ok === false ? "ruim" : "") + "' data-ver='" + ix + ":' title='Clique para ver os projetos'>" + r.valor + "</div>" +
-      (r.meta ? "<div class='meta'>Meta: " + (r.meta.sentido === "ate" ? "no máximo " : "pelo menos ") + r.meta.valor + (r.ok ? " ✓" : " ✗") + "</div>" : "");
+      (r.meta ? "<div class='meta'>Meta: " + (r.meta.sentido === "ate" ? "no máximo " : "pelo menos ") + r.meta.valor + (r.ok ? " ✓" : " ✗") + "</div>" : "") +
+      (r.valor ? "<button class='ver' data-ver='" + ix + ":'>Ver " + (r.valor === 1 ? "o projeto" : "os " + r.valor + " projetos") + " ▸</button>" : "");
   } else if (r.tipo === "tabela") {
     corpo = r.linhas.length ? tabelaProjetos(r.linhas) + (r.mais ? "<p class='nota'>… e mais " + r.mais + "</p>" : "") : "<p class='nota'>Nenhum projeto.</p>";
   } else if (!r.partes.length) {
@@ -94,6 +96,7 @@ function blocoHtml(r, ix) {
   } else {
     corpo = P.htmlBarras(r.partes, ix);
   }
+  if (r.partes && r.partes.length) corpo += "<p class='nota'>Clique em " + (r.tipo === "pizza" ? "uma fatia da legenda" : "uma barra") + " para ver os projetos.</p>";
   const filtro = w.filtro ? " · " + esc(P.CAMPOS[w.filtro.campo]) + (w.filtro.nega ? " ≠ " : " = ") + esc(w.filtro.valor) : "";
   return "<div class='bloco'><h4><span title='" + esc(r.titulo) + "'>" + esc(r.titulo) + "</span><span class='ac'><button data-acao='editar' data-ix='" + ix +
     "' title='Editar'>✎</button><button data-acao='remover' data-ix='" + ix + "' title='Remover'>✕</button></span></h4>" + (P.dica(w, q.regras) ? "<p class='dica'>" + esc(P.dica(w, q.regras)) + "</p>" : "") + corpo +
@@ -112,7 +115,7 @@ function verDados(ix, i) {
   const r = resultados[ix]; if (!r) return;
   const parte = i === "" ? null : r.partes && r.partes[Number(i)];
   const ls = parte ? parte.linhas : r.linhas || [];
-  $("dados").innerHTML = "<h4>" + esc(r.titulo) + (parte ? " — " + esc(parte.rotulo) : "") + " (" + ls.length + ")</h4>" + (ls.length ? tabelaProjetos(ls) : "<p class='nota'>Nenhum projeto.</p>") +
+  $("dados").innerHTML = "<h4>" + esc(r.titulo) + (parte ? " — " + esc(parte.rotulo) : "") + " (" + ls.length + ")</h4>" + (ls.length ? tabelaProjetos(ls.slice(0, q.regras.paineis_max_linhas)) + (ls.length > q.regras.paineis_max_linhas ? "<p class='nota'>… e mais " + (ls.length - q.regras.paineis_max_linhas) + "</p>" : "") : "<p class='nota'>Nenhum projeto.</p>") +
     " <button id='fechar-dados'>Fechar</button>";
   $("dados").scrollIntoView({ block: "nearest" });
 }

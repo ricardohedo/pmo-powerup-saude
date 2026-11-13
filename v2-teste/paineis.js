@@ -89,7 +89,7 @@
     const base = linhas.filter((l) => passa(l, w, regras));
     const r = { id: w.id, titulo: w.titulo, tipo: w.tipo, total: base.length };
     if (w.tipo === "contador") {
-      r.valor = base.length; r.linhas = base;
+      r.valor = base.length; r.linhas = [...base].sort(ordemTabela);       // ordem: P1 primeiro, mais atrasado primeiro
       if (w.meta) { r.meta = w.meta; r.ok = w.meta.sentido === "pelo_menos" ? base.length >= w.meta.valor : base.length <= w.meta.valor; }
     } else if (w.tipo === "tabela") {
       r.linhas = [...base].sort(ordemTabela).slice(0, regras.paineis_max_linhas); r.mais = Math.max(0, base.length - r.linhas.length);
