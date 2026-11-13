@@ -82,6 +82,15 @@
       "<small>Você vê só o andamento. Quem cria e executa as atividades é a área de destino.</small>";
   }
 
+  // Medida de espera (so numeros do backend): ha quantos dias o pedido existe e ha quantos a origem esta sem atividade.
+  function dias(n) { return esc(n) + (n === 1 ? " dia" : " dias"); }
+  function espera(s, o) {
+    const p = Number.isInteger(s.pedidoDias) && s.pedidoDias >= 0, m = Number.isInteger(o.paradoDias) && o.paradoDias >= 0;
+    if (!p && !m) { return ""; }
+    return "<br><small>" + (p ? "Pedido há " + dias(s.pedidoDias) : "") + (p && m ? " · " : "") +
+      (m ? "origem sem atividade há " + dias(o.paradoDias) : "") + "</small>";
+  }
+
   function htmlDestino(s) {
     if (s.origemRemovida) {
       return '<div class="l">O projeto de origem foi removido ou arquivado fora do vínculo.</div>' + blocoFilhos(s) +
@@ -92,7 +101,7 @@
       "<br><small>Projeto da área: " + esc(s.areaOrigem) + "</small>" +
       (s.donoRaiz && s.donoRaiz !== s.areaOrigem ? "<br><small>Dono do projeto: <b>" + esc(s.donoRaiz) + "</b> (você está no nível " + esc(Number(s.nivel) + 1) + " da cadeia)</small>" : "") +
       "<h4>Escopo</h4>" + (o.escopo ? escopoHtml(o.escopo) : "<small>Não encontrei a seção \"Escopo\" na descrição do projeto de origem (ou ela está vazia). Peça ao dono do projeto para preenchê-la.</small>") +
-      "<h4>Andamento da origem</h4>" + barra(o.pct) + "<br><small>" + itens(o) + " · Prazo: " + esc(dataBr(o.prazo)) + "</small></div>" +
+      "<h4>Andamento da origem</h4>" + barra(o.pct) + "<br><small>" + itens(o) + " · Prazo: " + esc(dataBr(o.prazo)) + "</small>" + espera(s, o) + "</div>" +
       "<small>Você vê só este resumo. O quadro da área de origem continua privado. As atividades de execução da sua área ficam neste card.</small>" +
       blocoFilhos(s) +
       '<br><button data-acao="desfazer">Desfazer este vínculo</button>';
