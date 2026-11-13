@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bom dia</title>
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./motor.js?v=202611131526"></script>
+<script src="./dados.js?v=202611131526"></script>
+<script src="./bom_dia.js?v=202611131526"></script>
+<style>
+ body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
+ h3{margin:14px 0 6px;font-size:14px} .nota{color:#5e6c84;font-size:12px}
+ .espera{background:#fff4e5;border-radius:4px;padding:10px;margin-bottom:6px}
+ .foco{background:#e9f2ff;border-radius:4px;padding:10px;margin-bottom:6px}
+ ul{margin:0;padding-left:18px} li{margin:0 0 4px} a{color:#172b4d}
+ .mot{color:#5e6c84;font-size:12px}
+ .acoes{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+</style>
+</head>
+<body>
+<div id="raiz">Lendo o quadro…</div>
+<script>
+const t = TrelloPowerUp.iframe();
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const link = (x) => "<a href='" + esc(x.url) + "' target='_blank' rel='noopener noreferrer'>" + esc(x.nome) + "</a>";
+const plural = (n, um, varios) => n + " " + (n === 1 ? um : varios);
+const dm = (iso) => iso.slice(8, 10) + "/" + iso.slice(5, 7);
+const mais = (n) => n > 0 ? "<li class='nota'>… e mais " + n + "</li>" : "";
+
+PmoDados.render(t, async () => {
+  const q = await PmoDados.quadro(t), agora = new Date(), max = q.regras.bom_dia_max_itens || 5;
+  const md = PmoMotor.meuDia(q.itens, q.regras, q.meuId, agora);
+  const ped = PmoMotor.pedidosParaMim(q.itens, q.regras, q.meuId, agora);
+  // Nada a dizer = nao incomoda: a propria janela se fecha (o botao "Meu dia" continua na barra)
+  if (!ped.total && !md.total) { t.closeModal(); return; }
+  let h = "";
+
+  if (ped.total) {
+    h += "<div class='espera'><b>Alguém espera você.</b> " + plural(ped.total, "pedido de outra área espera", "pedidos de outras áreas esperam") + " a sua área" +
+      (ped.maisAntigo != null ? "; o mais antigo há " + plural(ped.maisAntigo, "dia", "dias") : "") + ".<ul>" +
+      ped.itens.map((x) => "<li>" + link(x) + " <span class='mot'>— pedido de " + esc(x.origem) + (x.dias != null ? " há " + plural(x.dias, "dia", "dias") : "") +
+        (x.semMembro ? " · sem responsável: alguém da área precisa pegar" : "") + "</span></li>").join("") + mais(ped.mais) + "</ul></div>";
+  }
+
+  if (md.total) {
+    const contagem = [[md.hoje.length, "vence hoje", "vencem hoje"], [md.atrasadas.length, "atrasado", "atrasados"], [md.semana.length, "vence nos próximos dias úteis", "vencem nos próximos dias úteis"],
+      [md.checklist.length, "com item de checklist vencido", "com itens de checklist vencidos"], [md.parados.length, "parado sem interação", "parados sem interação"]]
+      .filter((c) => c[0]).map((c) => plural(c[0], c[1], c[2]));
+    h += "<div class='foco'><b>Comece por:</b> " + link(md.foco) + " — " + esc(md.foco.texto) + ".</div>" +
+      "<p class='nota'>Plano de ação de hoje, nos seus projetos: " + esc(contagem.join(" · ")) + ".</p>";
+    const quente = [...md.hoje, ...md.atrasadas].slice(0, max);
+    if (quente.length) h += "<ul>" + quente.map((x) => "<li>" + link(x) + " <span class='mot'>— " + esc(x.texto) + "</span></li>").join("") + mais(md.hoje.length + md.atrasadas.length - quente.length) + "</ul>";
+  }
+
+  const mc = PmoMotor.marcos(q.itens, q.regras, agora).filter((x) => x.data !== null && x.dias >= 0 && x.dias <= q.regras.dias_marcos).slice(0, 3);
+  const dv = PmoMotor.datasVarejo(q.itens, q.regras, agora).slice(0, 2);
+  if (mc.length || dv.length) {
+    h += "<h3>Datas que pedem atenção</h3><ul>" +
+      mc.map((x) => "<li>🚩 " + link(x) + " <span class='mot'>— " + esc(dm(x.data)) + (x.dias === 0 ? " · hoje" : " · " + plural(x.diasUteis, "dia útil", "dias úteis")) + "</span></li>").join("") +
+      dv.map((d) => "<li>📅 " + esc(d.nome) + " <span class='mot'>— " + esc(dm(d.data)) + " · " + plural(d.diasUteis, "dia útil", "dias úteis") +
+        (d.emRisco ? " · " + plural(d.emRisco, "projeto em risco", "projetos em risco") : "") + "</span></li>").join("") + "</ul>";
+  }
+
+  if (q.regras.funcoes && q.regras.funcoes.engajamento) {
+    const en = PmoMotor.entregasDaSemana(q.itens, q.regras, agora);
+    if (en.total) h += "<p class='nota'>👏 A área entregou " + plural(en.total, "projeto", "projetos") + " nos últimos " + plural(en.janela, "dia", "dias") + ".</p>";
+  }
+
+  h += "<div class='acoes'><button id='hoje'>Dispensar hoje</button> <button id='nunca'>Não mostrar mais ao abrir</button> " +
+    "<span class='nota'>Para ver tudo: botão “Meu dia” na barra. Só leitura; nada é alterado.</span></div>";
+  document.getElementById("raiz").innerHTML = h;
+  document.getElementById("hoje").onclick = () => t.closeModal();
+  document.getElementById("nunca").onclick = () => PmoBomDia.guardar(t, { nunca: true }).then(() => t.closeModal());
+  t.sizeTo("#raiz");
+});
+</script>
+</body>
+</html>

@@ -6,10 +6,9 @@
 <title>Meu dia</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611131504"></script>
-<script src="./dados.js?v=202611131504"></script>
-<script src="./tendencia.js?v=202611131504"></script>
-<script src="./bom_dia.js?v=202611131504"></script>
+<script src="./motor.js?v=202611131526"></script>
+<script src="./dados.js?v=202611131526"></script>
+<script src="./tendencia.js?v=202611131526"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  h3{margin:16px 0 6px} .nota{color:#5e6c84;font-size:12px}
@@ -78,16 +77,6 @@ PmoDados.render(t, async () => {
   }
   document.getElementById("raiz").innerHTML = topo + h +
     "<p class='nota'>Só os cards em que você é membro. Dias úteis descontam fim de semana e os feriados do PMO. Só leitura; nada é alterado.</p>";
-  // Aberto sozinho pelo "Bom dia" (args.auto): sem nada a dizer fecha na hora; senao oferece dispensar hoje ou nunca mais
-  const auto = typeof t.arg === "function" && t.arg("auto");
-  if (auto && d.souMembro && !d.total) { t.closeModal(); return; }
-  if (auto) {
-    document.getElementById("raiz").insertAdjacentHTML("beforeend",
-      "<p><button id='hoje'>Dispensar hoje</button> <button id='nunca'>Não mostrar mais ao abrir</button> " +
-      "<span class='nota'>O botão “Meu dia” continua na barra.</span></p>");
-    document.getElementById("hoje").onclick = () => t.closeModal();
-    document.getElementById("nunca").onclick = () => PmoBomDia.guardar(t, { nunca: true }).then(() => t.closeModal());
-  }
   t.sizeTo("#raiz");
 });
 </script>

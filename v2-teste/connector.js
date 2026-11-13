@@ -27,7 +27,7 @@ async function bomDia(t, regras) {
     const dec = PmoMotor.bomDiaAbrir(guardado, new Date(), regras);
     if (!dec.abrir) return;
     await PmoBomDia.guardar(t, { dia: dec.hoje });
-    await t.modal({ title: "Bom dia: o que pede você hoje", url: "./meu_dia.html", args: { auto: 1 }, height: 600 });
+    await t.modal({ title: "Bom dia: o que pede você hoje", url: "./bom_dia.html", height: 560 });
   } catch (e) { console.error("[PMO Power-Up] bom dia", e); }
 }
 

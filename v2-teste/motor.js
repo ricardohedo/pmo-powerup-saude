@@ -412,6 +412,28 @@
     const hoje = dataLocal(agora, regras), g = guardado && typeof guardado === "object" ? guardado : {};
     return { abrir: !g.nunca && g.dia !== hoje, hoje };
   }
+  /* "ALGUEM ESPERA VOCE": os pedidos de outras areas (cards GANCHO criados pela Interdependencia v2 neste quadro) que ainda nao foram
+   * concluidos. Acha o gancho pela marca da descricao (regras.gancho_marca, a mesma que o backend escreve). Conta para quem e membro do card
+   * e, quando o card nao tem NENHUM membro, para todos (alguem da area precisa pegar; vem com semMembro). Dias = desde a criacao do card
+   * (o id do Trello carrega o instante). So le. */
+  function pedidosParaMim(itens, regras, meuId, agora) {
+    const marca = regras.gancho_marca, max = regras.bom_dia_max_itens || 5, lista = [];
+    if (!marca || !meuId) return { total: 0, maisAntigo: null, itens: [], mais: 0 };
+    for (const it of itens) {
+      const c = it.card, ln = (it.listaNome || "").trim().toLowerCase();
+      if (c.closed || regras.listas_concluido.includes(ln) || !String(c.desc || "").includes(marca)) continue;
+      const membros = c.idMembers || [];
+      if (membros.length && !membros.includes(meuId)) continue;
+      const criado = /^[0-9a-f]{8}/i.test(c.id || "") ? parseInt(c.id.slice(0, 8), 16) * 1000 : null;
+      const dias = criado == null ? null : Math.max(0, Math.floor((agora.getTime() - criado) / 86400000));
+      const desc = String(c.desc), ini = desc.indexOf(marca) + marca.length, fim = desc.indexOf(")", ini);    // "<marca> (Area)": sem regex
+      const origem = desc.startsWith(" (", ini) && fim > ini + 2 && fim - ini < 64 && !desc.slice(ini, fim).includes("\n") ? desc.slice(ini + 2, fim) : "outra área";
+      lista.push({ nome: c.name, url: c.url, lista: it.listaNome, origem, dias, semMembro: !membros.length });
+    }
+    lista.sort((a, b) => (b.dias == null ? -1 : b.dias) - (a.dias == null ? -1 : a.dias) || a.nome.localeCompare(b.nome));
+    return { total: lista.length, maisAntigo: lista.length ? lista[0].dias : null, itens: lista.slice(0, max), mais: Math.max(0, lista.length - max) };
+  }
+
   function dataLocal(d, regras) { return new Date(d.getTime() + regras.fuso_horas * 3600000).toISOString().slice(0, 10); }
   function diasEntre(a, b) { return Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / DIA_MS); }
   function somaDias(a, n) { return new Date(Date.parse(a + "T00:00:00Z") + n * DIA_MS).toISOString().slice(0, 10); }
@@ -1114,5 +1136,5 @@
 
   return { roadmap, parseRiscos, registroDeRiscos, riscosDoCard, missoesDaArea, entregasDaSemana, retaFinal, destaqueDaSemana, melhorSemana, antecipar, prontidao, ordenarPorPrioridade, desvioPlano, historicoPlano, meuDia, projetoAtivo, pautaReuniao, radar, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, resumoArea, quadrosDoPortfolio, portfolioPermitido, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
     checklistsDeBadges, pontuar, ondeAtuar, abaInicialMeus, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto, cargaDaEquipe, semEvidencia,
-    retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal, diasEntre, bomDiaAbrir };
+    retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal, diasEntre, bomDiaAbrir, pedidosParaMim };
 });

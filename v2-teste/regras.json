@@ -14,6 +14,7 @@
     "sem_responsavel": "Adicione no card quem é o responsável."
   },
   "aviso_antecipado_dias": 3,
+  "bom_dia_max_itens": 5,
   "bonus_prioridade": {
     "Alta": 30,
     "Máxima": 50,
@@ -119,6 +120,7 @@
     "tendencia": true
   },
   "fuso_horas": -3,
+  "gancho_marca": "Projeto de outra área",
   "grupos": {
     "atrasado": "🔴 Atrasado",
     "atraso_oculto": "🕵️ Atraso oculto — itens de checklist vencidos",
