@@ -6,9 +6,9 @@
 <title>Minhas preferências</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611131739"></script>
-<script src="./dados.js?v=202611131739"></script>
-<script src="./perfil.js?v=202611131739"></script>
+<script src="./motor.js?v=202611131754"></script>
+<script src="./dados.js?v=202611131754"></script>
+<script src="./perfil.js?v=202611131754"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  h3{margin:0 0 6px;font-size:15px} .nota{color:#5e6c84;font-size:12px}
@@ -24,6 +24,7 @@
 <script>
 const t = TrelloPowerUp.iframe();
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+let ultimaMsg = "";
 const FREQ = { diario: "todo dia", semanal: "só às segundas", desligado: "desligado" };
 const NOME_BOTAO = { meu_dia: "Meu dia", pergunte: "Pergunte ao PMO", roadmap: "Roadmap", riscos: "Riscos", conquistas: "Conquistas", paineis: "Painéis PMO",
   portfolio: "Portfólio", pauta: "Pauta", radar: "Radar", minhas_acoes: "Minhas ações", prazos: "Atrasadas e a vencer", matriz: "Impacto × esforço",
@@ -44,15 +45,15 @@ PmoDados.render(t, async () => {
   raiz.innerHTML = "<h3>Como você quer usar o PMO no Trello?</h3><p class='nota'>Sua escolha vale só para você, em todos os quadros. O que é atrasado, o que é projeto e a prioridade continuam iguais para todos.</p>" +
     opcoes.map((o) => "<label class='op" + (o.id === atual ? " sel" : "") + "'><input type='radio' name='perfil' value='" + esc(o.id) + "'" + (o.id === atual ? " checked" : "") + "> <b>" + esc(o.nome) + "</b>" +
       "<span class='d'>" + esc(o.desc) + "</span>" + (o.linhas ? "<span class='d'>" + esc(o.linhas) + "</span>" : "") + "</label>").join("") +
-    "<button id='salvar'>Salvar</button><div id='msg'></div>";
+    "<button id='salvar'>Salvar</button><div id='msg'>" + ultimaMsg + "</div>";           // o Trello redesenha o popup depois do t.set: a mensagem sobrevive
   document.getElementById("salvar").onclick = async () => {
     const marcado = raiz.querySelector("input[name=perfil]:checked");
-    document.getElementById("msg").innerHTML = "<div class='ok'>Salvando…</div>";           // feedback na hora; o Trello pode demorar a responder
+    const mostra = (html) => { ultimaMsg = html; document.getElementById("msg").innerHTML = html; t.sizeTo("#raiz"); };
+    mostra("<div class='ok'>Salvando…</div>");                                              // feedback na hora; o Trello pode demorar a responder
     try {
       await PmoPerfil.guardar(t, marcado ? marcado.value : "");
-      document.getElementById("msg").innerHTML = "<div class='ok'>Salvo. Recarregue o quadro (F5) para ver os botões do seu perfil.</div>";
-    } catch (e) { document.getElementById("msg").innerHTML = "<div class='ok' style='background:#ffeceb'>Não consegui salvar agora. Tente de novo em instantes.</div>"; }
-    t.sizeTo("#raiz");
+      mostra("<div class='ok'>Salvo. Recarregue o quadro (F5) para ver os botões do seu perfil.</div>");
+    } catch (e) { mostra("<div class='ok' style='background:#ffeceb'>Não consegui salvar agora. Tente de novo em instantes.</div>"); }
   };
   t.sizeTo("#raiz");
 });
