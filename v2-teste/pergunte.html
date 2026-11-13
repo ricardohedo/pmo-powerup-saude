@@ -6,10 +6,11 @@
 <title>Pergunte ao PMO</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611131606"></script>
-<script src="./dados.js?v=202611131606"></script>
-<script src="./pergunte.js?v=202611131606"></script>
-<script src="./pergunte_log.js?v=202611131606"></script>
+<script src="./motor.js?v=202611131733"></script>
+<script src="./dados.js?v=202611131733"></script>
+<script src="./pergunte.js?v=202611131733"></script>
+<script src="./pergunte_log.js?v=202611131733"></script>
+<script src="./perfil.js?v=202611131733"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  h3{margin:14px 0 6px;font-size:14px} .nota{color:#5e6c84;font-size:12px}
@@ -31,6 +32,8 @@ const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&":
 let ultima = "";          // a ultima resposta fica guardada: se o Trello redesenhar a janela, o gestor nao perde o que estava lendo
 PmoDados.render(t, async () => {
   const q = await PmoDados.quadro(t), agora = new Date();
+  const perfil = await PmoPerfil.atual(t, q.regras);                  // perfil curto = menos itens por resposta
+  q.regras = { ...q.regras, bom_dia_max_itens: PmoMotor.limiteDoPerfil(perfil, q.regras) };
   const raiz = document.getElementById("raiz");
   let caderno = [];
   try { caderno = await PmoPerguntas.ler(t); } catch (e) { /* sem caderno: segue sem a lista */ }

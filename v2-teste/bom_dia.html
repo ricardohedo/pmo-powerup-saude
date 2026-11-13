@@ -6,9 +6,10 @@
 <title>Bom dia</title>
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
-<script src="./motor.js?v=202611131606"></script>
-<script src="./dados.js?v=202611131606"></script>
-<script src="./bom_dia.js?v=202611131606"></script>
+<script src="./motor.js?v=202611131733"></script>
+<script src="./dados.js?v=202611131733"></script>
+<script src="./bom_dia.js?v=202611131733"></script>
+<script src="./perfil.js?v=202611131733"></script>
 <style>
  body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
  h3{margin:14px 0 6px;font-size:14px} .nota{color:#5e6c84;font-size:12px}
@@ -30,7 +31,9 @@ const dm = (iso) => iso.slice(8, 10) + "/" + iso.slice(5, 7);
 const mais = (n) => n > 0 ? "<li class='nota'>… e mais " + n + "</li>" : "";
 
 PmoDados.render(t, async () => {
-  const q = await PmoDados.quadro(t), agora = new Date(), max = q.regras.bom_dia_max_itens || 5;
+  const q = await PmoDados.quadro(t), agora = new Date();
+  const perfil = await PmoPerfil.atual(t, q.regras), max = PmoMotor.limiteDoPerfil(perfil, q.regras);   // perfil curto = menos itens por bloco
+  q.regras = { ...q.regras, bom_dia_max_itens: max };
   const md = PmoMotor.meuDia(q.itens, q.regras, q.meuId, agora);
   const ped = PmoMotor.pedidosParaMim(q.itens, q.regras, q.meuId, agora);
   // O que mudou desde a ultima visita: a marca do Bom dia guarda a visita anterior (so existe a partir da segunda abertura)

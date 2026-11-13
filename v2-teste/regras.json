@@ -114,6 +114,7 @@
     "ordenar_prioridade": true,
     "paineis": true,
     "pauta": true,
+    "perfis": true,
     "pergunte": true,
     "portfolio": true,
     "radar": true,
@@ -201,6 +202,54 @@
   "painel_atraso_dias": 30,
   "painel_prazo_pct_max": 25,
   "perfil": "atual",
+  "perfil_padrao": "operacional",
+  "perfis": {
+    "essencial": {
+      "bom_dia": "diario",
+      "botoes": [
+        "meu_dia",
+        "pergunte",
+        "prazos"
+      ],
+      "descricao": "Poucos botões e textos curtos, para quem não gosta de tela cheia.",
+      "nome": "Essencial",
+      "tom": "curto"
+    },
+    "estrategico": {
+      "bom_dia": "semanal",
+      "botoes": [
+        "pergunte",
+        "roadmap",
+        "riscos",
+        "conquistas",
+        "paineis",
+        "portfolio",
+        "pauta",
+        "radar",
+        "linha",
+        "tendencia"
+      ],
+      "descricao": "A visão do conjunto: roadmap, riscos, portfólio, tendência e a pauta da semana.",
+      "nome": "Estratégico",
+      "tom": "completo"
+    },
+    "operacional": {
+      "bom_dia": "diario",
+      "botoes": [
+        "meu_dia",
+        "pergunte",
+        "minhas_acoes",
+        "prazos",
+        "equipe",
+        "painel",
+        "como"
+      ],
+      "descricao": "O dia a dia do gestor: o que pede você hoje, atrasados, minhas ações e pedidos que esperam.",
+      "nome": "Operacional",
+      "tom": "curto"
+    }
+  },
+  "perfis_areas": {},
   "pergunte_contato": "Ricardo Nabout, PMO BigBox",
   "pesos": {
     "atrasado": 100,

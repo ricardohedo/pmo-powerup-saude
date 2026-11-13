@@ -24,7 +24,8 @@ async function bomDia(t, regras) {
   bomDiaTentado = true;
   try {
     const guardado = await PmoBomDia.ler(t);
-    const dec = PmoMotor.bomDiaAbrir(guardado, new Date(), regras);
+    const perfil = await PmoPerfil.atual(t, regras);                 // o perfil define a frequencia (todo dia, so segundas, desligado)
+    const dec = PmoMotor.bomDiaAbrir(guardado, new Date(), regras, perfil);
     if (!dec.abrir) return;
     await PmoBomDia.guardar(t, { dia: dec.hoje, visto: new Date().toISOString(), anterior: (guardado && guardado.visto) || null });
     await t.modal({ title: "Bom dia: o que pede você hoje", url: "./bom_dia.html", height: 560 });
@@ -113,6 +114,9 @@ TrelloPowerUp.initialize({
     ];
   },
 
+  // Engrenagem do Power-Up ("Editar configuracoes"): Minhas preferencias, onde a pessoa escolhe o perfil. Nao ocupa lugar na barra de botoes.
+  "show-settings": (t) => t.popup({ title: "Minhas preferências", url: "./perfil.html", height: 430 }),
+
   "board-buttons": async (t) => {
     PmoTendencia.automatico(t);          // guarda o retrato do dia (so se a Tendencia estiver ligada), sem travar nada
     let f;
@@ -120,25 +124,26 @@ TrelloPowerUp.initialize({
     if (f.bom_dia) bomDia(t, await PmoDados.regras());        // sem await: nao atrasa os botoes
     const nomeQuadro = f.portfolio ? ((await t.board("name")) || {}).name : "";
     const regrasBt = f.portfolio ? await PmoDados.regras() : null;
-    const botao = (text, title, url, height) => ({ icon: ICONE, text, callback: (tt) => tt.modal({ title, url, height }) });
+    const regrasP = await PmoDados.regras(), perfil = await PmoPerfil.atual(t, regrasP);        // perfil da pessoa (null = funcao desligada: todos veem tudo)
+    const botao = (id, text, title, url, height) => PmoMotor.botaoVisivel(perfil, id) ? { icon: ICONE, text, callback: (tt) => tt.modal({ title, url, height }) } : null;
     return [
-      ...(f.meu_dia ? [botao("Meu dia", "Meu dia: o que pede você hoje", "./meu_dia.html", 600)] : []),
-      ...(f.pergunte ? [botao("Pergunte ao PMO", "Pergunte ao PMO: respostas prontas sobre os seus projetos", "./pergunte.html", 600)] : []),   // ocupa o lugar do "Como sou medido" (a barra do Trello corta acima de 15 botoes)
-      ...(f.roadmap ? [botao("Roadmap", "Roadmap do quadro: início e fim de cada projeto ativo", "./roadmap.html", 680)] : []),
-      ...(f.riscos ? [botao("Riscos", "Riscos e premissas: matriz, o que falta e projetos sem registro", "./riscos.html", 640)] : []),
-      ...(f.engajamento ? [botao("Conquistas", "Conquistas da área: entregas, reta final e destaque", "./conquistas.html", 560)] : []),
-      ...(f.paineis ? [botao("Painéis PMO", "Painéis PMO: seus blocos sobre os projetos do quadro", "./paineis.html", 680)] : []),
-      ...(f.portfolio && PmoMotor.portfolioPermitido(nomeQuadro, regrasBt) ? [botao("Portfólio PMO", "Portfólio do PMO: as áreas", "./portfolio.html", 640)] : []),   // perto do começo: a barra do Trello pode cortar o fim
-      ...(f.pauta ? [botao("Pauta da reunião", "Pauta da reunião: do que o quadro pede", "./pauta.html", 640)] : []),
-      ...(f.radar ? [botao("Radar", "Radar: o que vai cair em alerta se ninguém mexer", "./radar.html", 600)] : []),
-      botao("Minhas ações", "Minhas ações: onde atuar primeiro", "./atuar.html", 600),
-      botao("Atrasadas e a vencer", "Atrasadas, a vencer, marcos e datas do varejo", "./prazos.html", 560),
-      botao("Impacto × esforço", "Matriz impacto × esforço", "./matriz.html", 600),
-      botao("Linha do tempo", "Linha do tempo de entregas", "./linha.html", 600),
-      ...(f.carga_equipe ? [botao("Carga da equipe", "Carga da equipe", "./equipe.html", 520)] : []),
-      ...(f.tendencia ? [botao("Tendência", "Tendência do quadro", "./tendencia.html", 560)] : []),
-      ...(f.paineis ? [] : [botao("Painel PMO", "Painel de saúde do quadro", "./painel.html", 560)]),   // o novo "Painéis PMO" o substitui: menos botões na barra
-      ...(f.pergunte ? [] : [botao("Como sou medido", "Como o PMO mede os projetos", "./como.html", 600)]),   // com o Pergunte ligado, "como sou medido" vira uma das respostas
-    ];
+      ...(f.meu_dia ? [botao("meu_dia", "Meu dia", "Meu dia: o que pede você hoje", "./meu_dia.html", 600)] : []),
+      ...(f.pergunte ? [botao("pergunte", "Pergunte ao PMO", "Pergunte ao PMO: respostas prontas sobre os seus projetos", "./pergunte.html", 600)] : []),   // ocupa o lugar do "Como sou medido" (a barra do Trello corta acima de 15 botoes)
+      ...(f.roadmap ? [botao("roadmap", "Roadmap", "Roadmap do quadro: início e fim de cada projeto ativo", "./roadmap.html", 680)] : []),
+      ...(f.riscos ? [botao("riscos", "Riscos", "Riscos e premissas: matriz, o que falta e projetos sem registro", "./riscos.html", 640)] : []),
+      ...(f.engajamento ? [botao("conquistas", "Conquistas", "Conquistas da área: entregas, reta final e destaque", "./conquistas.html", 560)] : []),
+      ...(f.paineis ? [botao("paineis", "Painéis PMO", "Painéis PMO: seus blocos sobre os projetos do quadro", "./paineis.html", 680)] : []),
+      ...(f.portfolio && PmoMotor.portfolioPermitido(nomeQuadro, regrasBt) ? [botao("portfolio", "Portfólio PMO", "Portfólio do PMO: as áreas", "./portfolio.html", 640)] : []),   // perto do começo: a barra do Trello pode cortar o fim
+      ...(f.pauta ? [botao("pauta", "Pauta da reunião", "Pauta da reunião: do que o quadro pede", "./pauta.html", 640)] : []),
+      ...(f.radar ? [botao("radar", "Radar", "Radar: o que vai cair em alerta se ninguém mexer", "./radar.html", 600)] : []),
+      botao("minhas_acoes", "Minhas ações", "Minhas ações: onde atuar primeiro", "./atuar.html", 600),
+      botao("prazos", "Atrasadas e a vencer", "Atrasadas, a vencer, marcos e datas do varejo", "./prazos.html", 560),
+      botao("matriz", "Impacto × esforço", "Matriz impacto × esforço", "./matriz.html", 600),
+      botao("linha", "Linha do tempo", "Linha do tempo de entregas", "./linha.html", 600),
+      ...(f.carga_equipe ? [botao("equipe", "Carga da equipe", "Carga da equipe", "./equipe.html", 520)] : []),
+      ...(f.tendencia ? [botao("tendencia", "Tendência", "Tendência do quadro", "./tendencia.html", 560)] : []),
+      ...(f.paineis ? [] : [botao("painel", "Painel PMO", "Painel de saúde do quadro", "./painel.html", 560)]),   // o novo "Painéis PMO" o substitui: menos botões na barra
+      ...(f.pergunte ? [] : [botao("como", "Como sou medido", "Como o PMO mede os projetos", "./como.html", 600)]),   // com o Pergunte ligado, "como sou medido" vira uma das respostas
+    ].filter(Boolean);
   },
 }, window.PMO_APP);

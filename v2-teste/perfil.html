@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minhas preferências</title>
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./motor.js?v=202611131733"></script>
+<script src="./dados.js?v=202611131733"></script>
+<script src="./perfil.js?v=202611131733"></script>
+<style>
+ body{font:14px/1.45 system-ui,sans-serif;padding:12px;color:#172b4d}
+ h3{margin:0 0 6px;font-size:15px} .nota{color:#5e6c84;font-size:12px}
+ label.op{display:block;border:1px solid #dfe1e6;border-radius:4px;padding:8px 10px;margin:0 0 6px;cursor:pointer}
+ label.op:hover{background:#f4f5f7} label.op.sel{border-color:#0c66e4;background:#e9f2ff}
+ label.op b{display:block} label.op .d{color:#5e6c84;font-size:12px}
+ button{padding:6px 12px;border:0;border-radius:4px;background:#0c66e4;color:#fff;cursor:pointer;font:inherit;margin-top:4px}
+ .ok{background:#e3fcef;border-radius:4px;padding:8px 10px;margin-top:8px}
+</style>
+</head>
+<body>
+<div id="raiz">Lendo as preferências…</div>
+<script>
+const t = TrelloPowerUp.iframe();
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const FREQ = { diario: "todo dia", semanal: "só às segundas", desligado: "desligado" };
+const NOME_BOTAO = { meu_dia: "Meu dia", pergunte: "Pergunte ao PMO", roadmap: "Roadmap", riscos: "Riscos", conquistas: "Conquistas", paineis: "Painéis PMO",
+  portfolio: "Portfólio", pauta: "Pauta", radar: "Radar", minhas_acoes: "Minhas ações", prazos: "Atrasadas e a vencer", matriz: "Impacto × esforço",
+  linha: "Linha do tempo", equipe: "Carga da equipe", tendencia: "Tendência", painel: "Painel PMO", como: "Como sou medido" };
+
+PmoDados.render(t, async () => {
+  const regras = await PmoDados.regras(), raiz = document.getElementById("raiz");
+  if (!(regras.funcoes && regras.funcoes.perfis)) {
+    raiz.innerHTML = "<p>Os perfis ainda não estão ligados neste quadro. Por enquanto todos veem tudo.</p>";
+    t.sizeTo("#raiz"); return;
+  }
+  const escolha = await PmoPerfil.ler(t), quadro = (await t.board("name")) || {};
+  const padrao = PmoMotor.perfilEfetivo(regras, null, quadro.name);          // o que valeria sem escolha da pessoa
+  const atual = escolha && regras.perfis[escolha] ? escolha : "";
+  const opcoes = [{ id: "", nome: "Padrão: " + (padrao ? padrao.nome : "—"), desc: "Vale o perfil do meu quadro ou da empresa (" + (padrao ? padrao.origem === "area" ? "da área" : "da empresa" : "") + ").", linhas: "" }]
+    .concat(Object.entries(regras.perfis).map(([id, p]) => ({ id, nome: p.nome, desc: p.descricao,
+      linhas: "Popup Bom dia: " + FREQ[p.bom_dia] + " · Textos " + (p.tom === "curto" ? "curtos" : "completos") + " · Botões: " + p.botoes.map((b) => NOME_BOTAO[b] || b).join(", ") })));
+  raiz.innerHTML = "<h3>Como você quer usar o PMO no Trello?</h3><p class='nota'>Sua escolha vale só para você, em todos os quadros. O que é atrasado, o que é projeto e a prioridade continuam iguais para todos.</p>" +
+    opcoes.map((o) => "<label class='op" + (o.id === atual ? " sel" : "") + "'><input type='radio' name='perfil' value='" + esc(o.id) + "'" + (o.id === atual ? " checked" : "") + "> <b>" + esc(o.nome) + "</b>" +
+      "<span class='d'>" + esc(o.desc) + "</span>" + (o.linhas ? "<span class='d'>" + esc(o.linhas) + "</span>" : "") + "</label>").join("") +
+    "<button id='salvar'>Salvar</button><div id='msg'></div>";
+  document.getElementById("salvar").onclick = async () => {
+    const marcado = raiz.querySelector("input[name=perfil]:checked");
+    try {
+      await PmoPerfil.guardar(t, marcado ? marcado.value : "");
+      document.getElementById("msg").innerHTML = "<div class='ok'>Salvo. Recarregue o quadro (F5) para ver os botões do seu perfil.</div>";
+    } catch (e) { document.getElementById("msg").innerHTML = "<div class='ok' style='background:#ffeceb'>Não consegui salvar agora. Tente de novo em instantes.</div>"; }
+    t.sizeTo("#raiz");
+  };
+  t.sizeTo("#raiz");
+});
+</script>
+</body>
+</html>

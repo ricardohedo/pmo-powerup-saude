@@ -408,10 +408,38 @@
   // Data local (fuso do PMO, Brasilia) como "AAAA-MM-DD"; dias de calendario, igual ao Plano (plano.projetos_do_board).
   // "Bom dia" (popup ao abrir o quadro): abre no maximo 1 vez por dia (dia no fuso do PMO) por pessoa e por quadro, e nunca mais se a pessoa
   // pediu para nao ver. `guardado` = o que ficou salvo no quadro para a pessoa: { dia: "AAAA-MM-DD", nunca: bool } ou vazio.
-  function bomDiaAbrir(guardado, agora, regras) {
+  function bomDiaAbrir(guardado, agora, regras, perfil) {
     const hoje = dataLocal(agora, regras), g = guardado && typeof guardado === "object" ? guardado : {};
-    return { abrir: !g.nunca && g.dia !== hoje, hoje };
+    const freq = perfil && perfil.bom_dia ? perfil.bom_dia : "diario";
+    if (freq === "desligado" || g.nunca || g.dia === hoje) return { abrir: false, hoje };
+    if (freq === "semanal" && new Date(hoje + "T00:00:00Z").getUTCDay() !== 1) return { abrir: false, hoje };   // so as segundas
+    return { abrir: true, hoje };
   }
+
+  /* PERFIS (funcao opcional `perfis`): um perfil muda O QUE A PESSOA VE e RECEBE, nunca a regra de negocio.
+   * Vale: escolha da pessoa > perfil da area (regras.perfis_areas, por trecho do nome do quadro) > regras.perfil_padrao.
+   * Funcao desligada (como na raiz) ou perfil desconhecido = null = todos veem tudo, como antes. So le. */
+  function perfilEfetivo(regras, escolhaPessoa, nomeQuadro) {
+    const perfis = regras.perfis || {};
+    if (!(regras.funcoes && regras.funcoes.perfis) || !Object.keys(perfis).length) return null;
+    const norm2 = (x) => String(x || "").normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
+    let nome = null, origem = null;
+    if (escolhaPessoa && Object.prototype.hasOwnProperty.call(perfis, escolhaPessoa)) { nome = escolhaPessoa; origem = "pessoa"; }
+    if (!nome) {
+      const q = norm2(nomeQuadro);
+      for (const [area, p] of Object.entries(regras.perfis_areas || {})) {
+        if (q && norm2(area) && q.includes(norm2(area)) && perfis[p]) { nome = p; origem = "area"; break; }
+      }
+    }
+    if (!nome && perfis[regras.perfil_padrao]) { nome = regras.perfil_padrao; origem = "empresa"; }
+    return nome ? { ...perfis[nome], id: nome, origem } : null;
+  }
+  const botaoVisivel = (perfil, id) => !perfil || (perfil.botoes || []).includes(id);
+  function limiteDoPerfil(perfil, regras) {                  // "curto" = no maximo 3 itens por bloco; "completo" = o limite da regra
+    const max = regras.bom_dia_max_itens || 5;
+    return perfil && perfil.tom === "curto" ? Math.min(3, max) : max;
+  }
+
   /* "ALGUEM ESPERA VOCE": os pedidos de outras areas (cards GANCHO criados pela Interdependencia v2 neste quadro) que ainda nao foram
    * concluidos. Acha o gancho pela marca da descricao (regras.gancho_marca, a mesma que o backend escreve). Conta para quem e membro do card
    * e, quando o card nao tem NENHUM membro, para todos (alguem da area precisa pegar; vem com semMembro). Dias = desde a criacao do card
@@ -1165,5 +1193,5 @@
 
   return { roadmap, parseRiscos, registroDeRiscos, riscosDoCard, missoesDaArea, entregasDaSemana, retaFinal, destaqueDaSemana, melhorSemana, antecipar, prontidao, ordenarPorPrioridade, desvioPlano, historicoPlano, meuDia, projetoAtivo, pautaReuniao, radar, listaPrazos, diasUteis, marcos, datasVarejo, matrizImpactoEsforco, resumoArea, quadrosDoPortfolio, portfolioPermitido, indicadoresQuadro, explicar, regraDoAlerta, porquePrioridade, avaliarCard, semaforo, frase, ordenar, resumoQuadro, textoStatus, progressoChecklists, camposFaltando,
     checklistsDeBadges, pontuar, ondeAtuar, abaInicialMeus, valoresCustomfield, linhaDoTempo, prioridade, riscoAntecipado, avaliarProjeto, cargaDaEquipe, semEvidencia,
-    retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal, diasEntre, bomDiaAbrir, pedidosParaMim, mudouDesde, daLista };
+    retrato, registrarRetrato, tamanhoGuardado, direcaoTendencia, dataLocal, diasEntre, bomDiaAbrir, perfilEfetivo, botaoVisivel, limiteDoPerfil, pedidosParaMim, mudouDesde, daLista };
 });
