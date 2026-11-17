@@ -121,7 +121,9 @@
     return '<div class="l"><b>' + esc(o.titulo) + "</b> " + etiqueta(o.situacao) +
       "<br><small>Projeto da área: " + esc(s.areaOrigem) + "</small>" +
       (s.donoRaiz && s.donoRaiz !== s.areaOrigem ? "<br><small>Dono do projeto: <b>" + esc(s.donoRaiz) + "</b> (você está no nível " + esc(Number(s.nivel) + 1) + " da cadeia)</small>" : "") +
-      "<h4>Escopo</h4>" + (o.escopo && ESCOPO_PADRAO.test(String(o.escopo).trim())
+      "<h4>Escopo</h4>" + (o.situacao === "arquivado"
+        ? "<small>O projeto de origem foi arquivado, então o escopo não é mostrado. Fale com o dono do projeto (" + esc(s.donoRaiz || s.areaOrigem) + ") para saber se este pedido ainda vale.</small>"
+        : o.escopo && ESCOPO_PADRAO.test(String(o.escopo).trim())
         ? "<small>A área <b>" + esc(s.areaOrigem) + "</b> ainda não escreveu o que precisa de você: o escopo ainda é o texto padrão do pedido. Peça a ela para preencher a seção ESCOPO do card dela com o que espera da sua área.</small>"
         : o.escopo ? escopoHtml(o.escopo) : "<small>Não encontrei a seção \"Escopo\" na descrição do projeto de origem (ou ela está vazia). Peça ao dono do projeto para preenchê-la.</small>") +
       "<h4>Andamento da origem</h4>" + barra(o.pct) + "<br><small>" + itens(o) + " · Prazo: " + esc(dataBr(o.prazo)) + "</small>" + espera(s, o) + "</div>" +
