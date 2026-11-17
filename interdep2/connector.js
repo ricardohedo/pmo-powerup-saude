@@ -12,7 +12,10 @@ const capacidades = {
   }),
   "card-buttons": () => [{
     icon: ICONE, text: "Depende de outra área",
-    callback: (t) => t.popup({ title: "Depende de outra área", url: "./vincular.html", height: 230 }),
+    callback: (t) => t.popup({ title: "Depende de outra área", url: "./vincular.html", height: 400 }),
+  }, {
+    icon: ICONE, text: "Aceitar vínculo (código)",
+    callback: (t) => t.popup({ title: "Aceitar vínculo", url: "./aceitar.html", height: 230 }),
   }],
 };
 

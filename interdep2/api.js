@@ -38,5 +38,7 @@ window.Interdep2 = (function () {
     status: (t, cardId) => chamar(t, { acao: "status", cardId }),
     vincular: (t, cardId, areaDestino) => chamar(t, { acao: "vincular", cardId, areaDestino }),
     desfazer: (t, cardId) => chamar(t, { acao: "desfazer", cardId }),
+    convidar: (t, cardId, areaDestino) => chamar(t, { acao: "convidar", cardId, areaDestino }),
+    aceitar: (t, cardId, codigo) => chamar(t, { acao: "aceitar", cardId, codigo }),
   };
 })();

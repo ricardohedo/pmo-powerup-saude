@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
+<style>body{font:14px system-ui;margin:0;padding:8px}small{color:#626f86}button{width:100%;margin:6px 0}input{width:100%;margin:6px 0;letter-spacing:3px;text-transform:uppercase}.erro{color:#c9372c}</style>
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./config.js"></script>
+<script src="./api.js"></script>
+<script src="./render.js"></script>
+</head>
+<body>
+<div id="c">
+  <small>O gestor da outra área gerou um código de convite para este projeto. Cole aqui para ligar <b>este card</b> a ele. O seu card
+  continua seu (nada é copiado nem arquivado) e a outra área passa a ver só o andamento dele.</small>
+  <input id="codigo" maxlength="12" autocomplete="off" aria-label="Código do convite" placeholder="CÓDIGO">
+  <button class="mod-primary" id="ok">Vincular este card</button>
+  <div id="msg" aria-live="polite"></div>
+</div>
+<script>
+const t = TrelloPowerUp.iframe({ appKey: (window.INTERDEP2 || {}).APP_KEY, appName: (window.INTERDEP2 || {}).APP_NAME });
+const R = window.InterdepRender;
+const c = document.getElementById("c");
+function ajustar() { t.sizeTo(c.offsetHeight + 16); }
+
+document.getElementById("ok").onclick = async () => {
+  const msg = document.getElementById("msg"), btn = document.getElementById("ok");
+  const codigo = document.getElementById("codigo").value;
+  if (!codigo.trim()) { msg.innerHTML = '<div class="erro">Cole o código.</div>'; return ajustar(); }
+  if (!Interdep2.configurado()) { msg.innerHTML = "<small>Power-Up ainda não configurado.</small>"; return ajustar(); }
+  btn.disabled = true; msg.textContent = "Vinculando…"; ajustar();
+  try {
+    if (!(await t.getRestApi().isAuthorized())) { await Interdep2.autorizar(t); }
+    const { id } = await t.card("id");
+    const r = await Interdep2.aceitar(t, id, codigo);
+    msg.innerHTML = "<small>✓ Vinculado ao projeto da área " + R.esc(r.areaOrigem) + '. Use "Atualizar" na seção do card para ver o resumo.</small>';
+    ajustar();
+    setTimeout(() => t.closePopup(), 2500);
+    return;
+  } catch (e) { msg.innerHTML = '<div class="erro">' + R.esc((e && e.message) || "Não foi possível vincular.") + "</div>"; }
+  btn.disabled = false; ajustar();
+};
+t.render(ajustar);
+</script>
+</body>
+</html>

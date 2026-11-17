@@ -47,6 +47,21 @@
       "<button class='mod-primary' id='ok'>Criar vínculos</button><div id='msg' aria-live='polite'></div><small>Não feche esta janela até terminar.</small>";
   }
 
+  // "A outra area ja tem este projeto num card?": gera um codigo de convite em vez de criar card novo. Tudo escapado.
+  function htmlConvite(areas) {
+    const op = (areas || []).map((a) => '<option value="' + esc(a.key) + '">' + esc(a.nome) + "</option>").join("");
+    return "<hr><small><b>A outra área já tem este projeto num card?</b> Em vez de criar um card novo, gere um código. " +
+      "O gestor dela cola o código no card que ele já tem (botão <b>Aceitar vínculo</b>) e o card dele continua dele.</small>" +
+      '<select id="conv-area" aria-label="Área que já tem o card">' + op + "</select>" +
+      '<button id="conv-ok">Gerar código de convite</button><div id="conv-msg" aria-live="polite"></div>';
+  }
+
+  // Resposta do convite: { codigo, area, expiraEm }. O codigo so tem letras e numeros, mas passa por esc() do mesmo jeito.
+  function htmlCodigo(r) {
+    return '<div class="l"><b class="cod">' + esc(r && r.codigo) + "</b><br><small>Vale até " + esc(dataBr(r && r.expiraEm)) +
+      " e só serve para " + esc(r && r.area) + ". Mande ao gestor de lá.</small></div>";
+  }
+
   // Resultado por area: [{ nome, ok, jaExistia, erro }] -> linhas de texto (uma por area).
   function resumoVinculos(res) {
     return (res || []).map((r) => {
@@ -71,7 +86,8 @@
       }
       return '<div class="l"><b>' + esc(d.area) + "</b> " + etiqueta(d.situacao) +
         barra(d.pct) + "<br><small>" + itens(d, "Esta área ainda não montou o checklist.") + " · Prazo: " + esc(dataBr(d.prazo)) + "</small>" +
-        '<br><button data-acao="desfazer" data-id="' + esc(d.cardId) + '" aria-label="Desfazer o vínculo com esta área">Desfazer</button></div>';
+        (d.existente ? "<br><small>Card que a área já tinha (desfazer só tira o vínculo; o card dela não é arquivado).</small>" : "") +
+        '<br><button data-acao="desfazer"' + (d.existente ? ' data-existente="1"' : "") + ' data-id="' + esc(d.cardId) + '" aria-label="Desfazer o vínculo com esta área">Desfazer</button></div>';
     }).join("");
   }
 
@@ -104,7 +120,8 @@
       "<h4>Andamento da origem</h4>" + barra(o.pct) + "<br><small>" + itens(o) + " · Prazo: " + esc(dataBr(o.prazo)) + "</small>" + espera(s, o) + "</div>" +
       "<small>Você vê só este resumo. O quadro da área de origem continua privado. As atividades de execução da sua área ficam neste card.</small>" +
       blocoFilhos(s) +
-      '<br><button data-acao="desfazer">Desfazer este vínculo</button>';
+      '<br><button data-acao="desfazer"' + (s.existente ? ' data-existente="1"' : "") + ">Desfazer este vínculo</button>" +
+      (s.existente ? "<br><small>Este é um card que a sua área já tinha: desfazer só tira o vínculo, o card não é arquivado.</small>" : "");
   }
 
   function htmlOrigem(s) {
@@ -125,7 +142,7 @@
     return htmlNenhum();
   }
 
-  const api = { esc, htmlEscolhaAreas, resumoVinculos, escopoHtml, dataBr, barra, htmlDestino, htmlOrigem, htmlNenhum, htmlErro, htmlPorPapel };
+  const api = { esc, htmlEscolhaAreas, htmlConvite, htmlCodigo, resumoVinculos, escopoHtml, dataBr, barra, htmlDestino, htmlOrigem, htmlNenhum, htmlErro, htmlPorPapel };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; }
   root.InterdepRender = api;
 })(typeof window !== "undefined" ? window : globalThis);

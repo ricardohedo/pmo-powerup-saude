@@ -50,7 +50,10 @@ c.addEventListener("click", async (ev) => {
   try {
     if (b.dataset.acao === "autorizar") { await Interdep2.autorizar(t); }
     if (b.dataset.acao === "desfazer") {
-      if (!confirm("Desfazer o vínculo? O card da área de destino será arquivado e deixará de estar ligado a este projeto (reabri-lo depois NÃO restaura o vínculo).")) return;
+      const textoDesfazer = b.dataset.existente
+        ? "Desfazer o vínculo? Só o vínculo será removido: o card da área de destino já existia e NÃO será arquivado."
+        : "Desfazer o vínculo? O card da área de destino será arquivado e deixará de estar ligado a este projeto (reabri-lo depois NÃO restaura o vínculo).";
+      if (!confirm(textoDesfazer)) return;
       b.disabled = true;
       const { id } = await t.card("id");
       await Interdep2.desfazer(t, b.dataset.id || id);

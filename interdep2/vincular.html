@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css">
-<style>body{font:14px system-ui;margin:0;padding:8px}small{color:#626f86}button{width:100%;margin:6px 0}.erro{color:#c9372c}label.ar{display:block;margin:6px 0;cursor:pointer}label.ar input{margin-right:6px}</style>
+<style>body{font:14px system-ui;margin:0;padding:8px}small{color:#626f86}button{width:100%;margin:6px 0}.erro{color:#c9372c}label.ar{display:block;margin:6px 0;cursor:pointer}label.ar input{margin-right:6px}select{width:100%;margin:6px 0}.l{border:1px solid #dfe1e6;border-radius:6px;padding:8px;margin:6px 0}.cod{font-size:20px;letter-spacing:3px}</style>
 <script src="https://p.trellocdn.com/power-up.min.js"></script>
 <script src="./config.js"></script>
 <script src="./api.js"></script>
@@ -26,8 +26,30 @@ async function montar() {
   if (!(cfg.AREAS || []).concat(cfg.ORIGENS_EXTRAS || []).some((a) => a.key === atual)) { c.innerHTML = "<small>Este quadro ainda não está liberado para vínculos entre áreas.</small>"; return ajustar(); }
   const outras = (cfg.AREAS || []).filter((a) => a.key !== atual);
   if (!outras.length) { c.innerHTML = "<small>Não há outra área liberada para este quadro.</small>"; return ajustar(); }
-  c.innerHTML = R.htmlEscolhaAreas(outras);
+  // So ajuda de tela: esconde as areas que ja estao na cadeia ou ja tem gancho deste card. O servidor recusa de qualquer jeito.
+  // Sem autorizacao ainda, nao chama o servidor (nao forca a janela de autorizacao ao abrir).
+  let disponiveis = outras;
+  try {
+    if (await t.getRestApi().isAuthorized()) {
+      const { id } = await t.card("id");
+      const st = await Interdep2.status(t, id);
+      const bloq = (st && st.bloqueadas) || [];
+      disponiveis = outras.filter((a) => bloq.indexOf(a.key) < 0);
+    }
+  } catch (e) { disponiveis = outras; }
+  if (!disponiveis.length) { c.innerHTML = "<small>Todas as áreas liberadas já estão ligadas a este projeto ou fazem parte da cadeia dele.</small>"; return ajustar(); }
+  c.innerHTML = R.htmlEscolhaAreas(disponiveis) + R.htmlConvite(disponiveis);
   ajustar();
+  document.getElementById("conv-ok").onclick = async () => {
+    const msg = document.getElementById("conv-msg"), btn = document.getElementById("conv-ok");
+    btn.disabled = true; msg.textContent = "Gerando…"; ajustar();
+    try {
+      if (!(await t.getRestApi().isAuthorized())) { await Interdep2.autorizar(t); }
+      const { id } = await t.card("id");
+      msg.innerHTML = R.htmlCodigo(await Interdep2.convidar(t, id, document.getElementById("conv-area").value));
+    } catch (e) { msg.innerHTML = '<div class="erro">' + R.esc((e && e.message) || "Não foi possível gerar o convite.") + "</div>"; }
+    btn.disabled = false; ajustar();
+  };
   document.getElementById("ok").onclick = async () => {
     const msg = document.getElementById("msg"), btn = document.getElementById("ok");
     const marcadas = [...c.querySelectorAll("input[type=checkbox]:checked")].map((i) => i.value);
