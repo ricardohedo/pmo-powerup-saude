@@ -78,7 +78,8 @@
   }
 
   // Linhas "uma por area" com o andamento dos ganchos (so contagens). Usado na origem e no card encadeado.
-  function linhasDestinos(destinos) {
+  // somenteLeitura = linhas dos niveis de baixo da cadeia (sem Desfazer: quem esta na origem nao e membro desses quadros).
+  function linhasDestinos(destinos, somenteLeitura) {
     return (destinos || []).map((d) => {
       if (d.indisponivel) { return '<div class="l"><small>Não foi possível ler esta área agora. Tente de novo em instantes (botão Atualizar).</small></div>'; }
       if (d.removido) {
@@ -87,7 +88,8 @@
       return '<div class="l"><b>' + esc(d.area) + "</b> " + etiqueta(d.situacao) +
         barra(d.pct) + "<br><small>" + itens(d, "Esta área ainda não montou o checklist.") + " · Prazo: " + esc(dataBr(d.prazo)) + "</small>" +
         (d.existente ? "<br><small>Card que a área já tinha (desfazer só tira o vínculo; o card dela não é arquivado).</small>" : "") +
-        '<br><button data-acao="desfazer"' + (d.existente ? ' data-existente="1"' : "") + ' data-id="' + esc(d.cardId) + '" aria-label="Desfazer o vínculo com esta área">Desfazer</button></div>';
+        (somenteLeitura ? "" : '<br><button data-acao="desfazer"' + (d.existente ? ' data-existente="1"' : "") + ' data-id="' + esc(d.cardId) + '" aria-label="Desfazer o vínculo com esta área">Desfazer</button>') +
+        (d.filhos && d.filhos.length ? '<div class="sub"><small>↳ depende de:</small>' + linhasDestinos(d.filhos, true) + "</div>" : "") + "</div>";
     }).join("");
   }
 
