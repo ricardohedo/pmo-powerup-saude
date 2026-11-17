@@ -81,6 +81,15 @@
   }
 
   // Linhas "uma por area" com o andamento dos ganchos (so contagens). Usado na origem e no card encadeado.
+  // Atividades da area que executa (so nome e se esta feita), numa lista que se abre sob demanda. Tudo escapado.
+  function atividadesHtml(listas) {
+    if (!listas || !listas.length) { return ""; }
+    const total = listas.reduce((n, l) => n + (l.itens || []).length, 0);
+    const corpo = listas.map((l) => "<h5>" + esc(l.lista) + "</h5><ul>" + (l.itens || []).map((i) =>
+      "<li>" + (i.feito ? "✓ " : "○ ") + esc(i.nome) + "</li>").join("") + "</ul>").join("");
+    return "<details><summary>Ver as atividades (" + esc(total) + ")</summary>" + corpo + "</details>";
+  }
+
   // somenteLeitura = linhas dos niveis de baixo da cadeia (sem Desfazer: quem esta na origem nao e membro desses quadros).
   function linhasDestinos(destinos, somenteLeitura) {
     return (destinos || []).map((d) => {
@@ -90,6 +99,7 @@
       }
       return '<div class="l"><b>' + esc(d.area) + "</b> " + etiqueta(d.situacao) +
         barra(d.pct) + "<br><small>" + itens(d, "Esta área ainda não montou o checklist.") + " · Prazo: " + esc(dataBr(d.prazo)) + "</small>" +
+        atividadesHtml(d.atividades) +
         (d.existente ? "<br><small>Card que a área já tinha (desfazer só tira o vínculo; o card dela não é arquivado).</small>" : "") +
         (somenteLeitura ? "" : '<br><button data-acao="desfazer"' + (d.existente ? ' data-existente="1"' : "") + ' data-id="' + esc(d.cardId) + '" aria-label="Desfazer o vínculo com esta área">Desfazer</button>') +
         (d.filhos && d.filhos.length ? '<div class="sub"><small>↳ depende de:</small>' + linhasDestinos(d.filhos, true) + "</div>" : "") + "</div>";
@@ -128,6 +138,7 @@
         : o.escopo ? escopoHtml(o.escopo) : "<small>Não encontrei a seção \"Escopo\" na descrição do projeto de origem (ou ela está vazia). Peça ao dono do projeto para preenchê-la.</small>") +
       "<h4>Andamento da origem</h4>" + barra(o.pct) + "<br><small>" + itens(o) + " · Prazo: " + esc(dataBr(o.prazo)) + "</small>" + espera(s, o) + "</div>" +
       "<small>Você vê só este resumo. O quadro da área de origem continua privado. As atividades de execução da sua área ficam neste card.</small>" +
+      "<br><small>" + (s.existente ? "A área solicitante vê só os itens do checklist chamado <b>Visível ao solicitante</b> deste card." : "A área solicitante vê o <b>nome e o andamento das atividades</b> deste card (não vê comentários, anexos nem membros).") + "</small>" +
       blocoFilhos(s) +
       '<br><button data-acao="desfazer"' + (s.existente ? ' data-existente="1"' : "") + ">Desfazer este vínculo</button>" +
       (s.existente ? "<br><small>Este é um card que a sua área já tinha: desfazer só tira o vínculo, o card não é arquivado.</small>" : "");
