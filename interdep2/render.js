@@ -23,6 +23,9 @@
     return '<div class="barra" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + n + '"><div style="width:' + n + '%"></div></div><small>' + n + '% concluído</small>';
   }
 
+  // Texto padrao que o backend poe na secao ESCOPO do card gancho (descGancho_): enquanto for so isso, nao ha pedido escrito.
+  const ESCOPO_PADRAO = /^Atividades da SUA área para este projeto/;
+
   // Escopo estruturado do backend ("• item", "# subtitulo", texto): vira lista e subtitulos. Tudo passa por esc().
   function escopoHtml(texto) {
     const linhas = String(texto == null ? "" : texto).split("\n").filter((l) => l.trim());
@@ -118,7 +121,9 @@
     return '<div class="l"><b>' + esc(o.titulo) + "</b> " + etiqueta(o.situacao) +
       "<br><small>Projeto da área: " + esc(s.areaOrigem) + "</small>" +
       (s.donoRaiz && s.donoRaiz !== s.areaOrigem ? "<br><small>Dono do projeto: <b>" + esc(s.donoRaiz) + "</b> (você está no nível " + esc(Number(s.nivel) + 1) + " da cadeia)</small>" : "") +
-      "<h4>Escopo</h4>" + (o.escopo ? escopoHtml(o.escopo) : "<small>Não encontrei a seção \"Escopo\" na descrição do projeto de origem (ou ela está vazia). Peça ao dono do projeto para preenchê-la.</small>") +
+      "<h4>Escopo</h4>" + (o.escopo && ESCOPO_PADRAO.test(String(o.escopo).trim())
+        ? "<small>A área <b>" + esc(s.areaOrigem) + "</b> ainda não escreveu o que precisa de você: o escopo ainda é o texto padrão do pedido. Peça a ela para preencher a seção ESCOPO do card dela com o que espera da sua área.</small>"
+        : o.escopo ? escopoHtml(o.escopo) : "<small>Não encontrei a seção \"Escopo\" na descrição do projeto de origem (ou ela está vazia). Peça ao dono do projeto para preenchê-la.</small>") +
       "<h4>Andamento da origem</h4>" + barra(o.pct) + "<br><small>" + itens(o) + " · Prazo: " + esc(dataBr(o.prazo)) + "</small>" + espera(s, o) + "</div>" +
       "<small>Você vê só este resumo. O quadro da área de origem continua privado. As atividades de execução da sua área ficam neste card.</small>" +
       blocoFilhos(s) +
