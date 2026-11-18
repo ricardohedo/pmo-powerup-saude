@@ -138,7 +138,7 @@
         : o.escopo ? escopoHtml(o.escopo) : "<small>Não encontrei a seção \"Escopo\" na descrição do projeto de origem (ou ela está vazia). Peça ao dono do projeto para preenchê-la.</small>") +
       "<h4>Andamento da origem</h4>" + barra(o.pct) + "<br><small>" + itens(o) + " · Prazo: " + esc(dataBr(o.prazo)) + "</small>" + espera(s, o) + "</div>" +
       "<small>Você vê só este resumo. O quadro da área de origem continua privado. As atividades de execução da sua área ficam neste card.</small>" +
-      "<br><small>" + (s.existente ? "A área solicitante vê só os itens do checklist chamado <b>Visível ao solicitante</b> deste card." : "A área solicitante vê o <b>nome e o andamento das atividades</b> deste card (não vê comentários, anexos nem membros).") + "</small>" +
+      "<br><small>" + (s.existente ? "A área solicitante vê só os itens do checklist chamado <b>Visível ao solicitante</b> deste card." : "A área solicitante, e as áreas acima dela na cadeia do projeto, veem o <b>nome e o andamento das atividades</b> deste card (não veem comentários, anexos nem membros).") + "</small>" +
       blocoFilhos(s) +
       '<br><button data-acao="desfazer"' + (s.existente ? ' data-existente="1"' : "") + ">Desfazer este vínculo</button>" +
       (s.existente ? "<br><small>Este é um card que a sua área já tinha: desfazer só tira o vínculo, o card não é arquivado.</small>" : "");
