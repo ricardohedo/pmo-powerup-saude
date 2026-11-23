@@ -82,14 +82,14 @@
 
   // Linhas "uma por area" com o andamento dos ganchos (so contagens). Usado na origem e no card encadeado.
   // Atividades da area que executa (so nome e se esta feita), numa lista que se abre sob demanda. Tudo escapado.
-  function atividadesHtml(listas) {
+  function atividadesHtml(listas, rotulo) {
     if (!listas || !listas.length) { return ""; }
     const total = listas.reduce((n, l) => n + (l.itens || []).length, 0);
     // Cada item mostra o prazo (data) ou "sem prazo"; pendente com prazo vencido leva a marca "atrasada".
     const corpo = listas.map((l) => "<h5>" + esc(l.lista) + "</h5><ul>" + (l.itens || []).map((i) =>
       "<li>" + (i.feito ? "✓ " : "○ ") + esc(i.nome) + ' <small>· ' + esc(dataBr(i.prazo)) + "</small>" +
       (i.atrasada ? ' <span class="t red">atrasada</span>' : "") + "</li>").join("") + "</ul>").join("");
-    return "<details><summary>Ver as atividades (" + esc(total) + ")</summary>" + corpo + "</details>";
+    return "<details><summary>" + esc(rotulo || "Ver as atividades") + " (" + esc(total) + ")</summary>" + corpo + "</details>";
   }
 
   // O sufixo " (REAL)" e so nosso (tabela de quadros liberados): quem le a tela nao precisa dele.
@@ -168,8 +168,9 @@
         ? "<small>A área <b>" + esc(s.areaOrigem) + "</b> ainda não escreveu o que precisa de você: o escopo ainda é o texto padrão do pedido. Peça a ela para preencher a seção ESCOPO do card dela com o que espera da sua área.</small>"
         : o.escopo ? escopoHtml(o.escopo) : "<small>Não encontrei a seção \"Escopo\" na descrição do projeto de origem (ou ela está vazia). Peça ao dono do projeto para preenchê-la.</small>") +
       (o.dependencias && o.situacao !== "arquivado" ? "<h4>Dependências registradas pelo dono</h4><p>" + esc(o.dependencias) + "</p>" : "") +
-      "<h4>Andamento do projeto</h4>" + barra(o.pct) + "<br><small>" + itens(o) + " · Prazo: " + esc(dataBr(o.prazo)) + "</small>" + espera(s, o) + "</div>" +
-      "<small>Você vê só um resumo do projeto: o quadro do dono continua privado. As atividades da sua área ficam neste card.</small>" +
+      "<h4>Andamento do projeto</h4>" + barra(o.pct) + "<br><small>" + itens(o) + " · Prazo: " + esc(dataBr(o.prazo)) + "</small>" + espera(s, o) +
+      (o.situacao === "arquivado" ? "" : atividadesHtml(o.atividades, "Ver as atividades do projeto")) + "</div>" +
+      "<small>Você acompanha o projeto do dono: andamento e atividades (nome, estado e prazo). O quadro dele continua privado, e você não vê comentários, anexos nem membros. As atividades da sua área ficam neste card.</small>" +
       "<br><small>A área solicitante, e as áreas acima dela na cadeia do projeto, veem o <b>nome e o andamento das atividades</b> dos checklists deste card, menos o Início do Projeto (não veem comentários, anexos nem membros). Planeje e execute normalmente: Planejamento, Execução, Validação etc.</small>" +
       blocoFilhos(s) +
       "<br>" + maisAcoes({ existente: s.existente }, s.existente ? "<br><small>Este é um card que a sua área já tinha: desfazer só tira o vínculo, o card não é arquivado.</small>" : "");
