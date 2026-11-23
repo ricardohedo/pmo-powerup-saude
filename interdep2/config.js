@@ -14,6 +14,9 @@ window.INTERDEP2 = {
     { key: "wlj9Xouh", nome: "Auditoria (teste)" },
     { key: "FzpHY8K6", nome: "Processos (REAL)" },
     { key: "G2jNWLwy", nome: "Auditoria (REAL)" },
+    { key: "0eMPWyaQ", nome: "Comercial (REAL)" },
+    { key: "bMiGYH4b", nome: "T.I (REAL)" },
+    { key: "VhjVFJfr", nome: "Manutenção e Expansão (REAL)" },
   ],
   // Quadros que so podem ser ORIGEM (nunca aparecem como destino). Mesmo criterio do backend (soOrigem).
   ORIGENS_EXTRAS: [
