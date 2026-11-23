@@ -85,8 +85,10 @@
   function atividadesHtml(listas) {
     if (!listas || !listas.length) { return ""; }
     const total = listas.reduce((n, l) => n + (l.itens || []).length, 0);
+    // Cada item mostra o prazo (data) ou "sem prazo"; pendente com prazo vencido leva a marca "atrasada".
     const corpo = listas.map((l) => "<h5>" + esc(l.lista) + "</h5><ul>" + (l.itens || []).map((i) =>
-      "<li>" + (i.feito ? "✓ " : "○ ") + esc(i.nome) + "</li>").join("") + "</ul>").join("");
+      "<li>" + (i.feito ? "✓ " : "○ ") + esc(i.nome) + ' <small>· ' + esc(dataBr(i.prazo)) + "</small>" +
+      (i.atrasada ? ' <span class="t red">atrasada</span>' : "") + "</li>").join("") + "</ul>").join("");
     return "<details><summary>Ver as atividades (" + esc(total) + ")</summary>" + corpo + "</details>";
   }
 
