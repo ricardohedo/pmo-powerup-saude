@@ -36,6 +36,7 @@ window.Interdep2 = (function () {
   return {
     configurado, autorizar, chamar,
     status: (t, cardId) => chamar(t, { acao: "status", cardId }),
+    areas: (t, board) => chamar(t, { acao: "areas", board }),
     vincular: (t, cardId, areaDestino) => chamar(t, { acao: "vincular", cardId, areaDestino }),
     desfazer: (t, cardId) => chamar(t, { acao: "desfazer", cardId }),
     convidar: (t, cardId, areaDestino) => chamar(t, { acao: "convidar", cardId, areaDestino }),

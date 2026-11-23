@@ -107,7 +107,6 @@
     if (!Number.isInteger(d.paradoDias) || d.paradoDias < 0) { return ""; }
     return d.paradoDias === 0 ? "<br><small>A área mexeu no card hoje.</small>" : "<br><small>A área não mexe no card há " + dias(d.paradoDias) + ".</small>";
   }
-  const AVISO_SEM_VISIVEL = '<div class="aviso"><small>⚠ Esta área ainda não definiu quais atividades você pode ver: falta o checklist <b>Visível ao solicitante</b> no card dela.</small></div>';
 
   // somenteLeitura = linhas dos niveis de baixo da cadeia (sem Desfazer: quem esta na origem nao e membro desses quadros).
   function linhasDestinos(destinos, somenteLeitura) {
@@ -120,7 +119,6 @@
         ? '<span class="t gray">Aguardando a área</span><br><small>' + (d.itens ? "Ela ainda não começou o plano deste projeto." : "Esta área ainda não montou o checklist.") + "</small>"
         : etiqueta(d.situacao) + barra(d.pct) + "<br><small>" + itens(d, "Esta área ainda não montou o checklist.") + " · Prazo: " + esc(dataBr(d.prazo)) + "</small>";
       return '<div class="l"><b>' + esc(nomeArea(d.area)) + "</b> " + corpo + ultimaAtividade(d) +
-        (d.semVisivel ? AVISO_SEM_VISIVEL : "") +
         atividadesHtml(d.atividades) +
         (somenteLeitura ? "" : "<br>" + maisAcoes(d)) +
         (d.filhos && d.filhos.length ? '<div class="sub"><small>↳ depende de:</small>' + linhasDestinos(d.filhos, true) + "</div>" : "") + "</div>";
@@ -169,9 +167,8 @@
         : o.escopo ? escopoHtml(o.escopo) : "<small>Não encontrei a seção \"Escopo\" na descrição do projeto de origem (ou ela está vazia). Peça ao dono do projeto para preenchê-la.</small>") +
       (o.dependencias && o.situacao !== "arquivado" ? "<h4>Dependências registradas pelo dono</h4><p>" + esc(o.dependencias) + "</p>" : "") +
       "<h4>Andamento do projeto</h4>" + barra(o.pct) + "<br><small>" + itens(o) + " · Prazo: " + esc(dataBr(o.prazo)) + "</small>" + espera(s, o) + "</div>" +
-      (s.existente && s.semVisivel ? '<div class="aviso"><small>⚠ Seu card ainda não tem o checklist <b>Visível ao solicitante</b>: sem ele, <b>' + esc(nomeArea(s.areaOrigem)) + "</b> vê só o percentual e o prazo. Crie esse checklist com as atividades que o dono pode acompanhar.</small></div>" : "") +
       "<small>Você vê só um resumo do projeto: o quadro do dono continua privado. As atividades da sua área ficam neste card.</small>" +
-      "<br><small>" + (s.existente ? "<b>" + esc(nomeArea(s.areaOrigem)) + "</b> vê só o andamento dos itens que você marcar no checklist chamado <b>Visível ao solicitante</b> deste card." : "A área solicitante, e as áreas acima dela na cadeia do projeto, veem o <b>nome e o andamento das atividades</b> deste card (não veem comentários, anexos nem membros).") + "</small>" +
+      "<br><small>A área solicitante, e as áreas acima dela na cadeia do projeto, veem o <b>nome e o andamento das atividades</b> dos checklists deste card, menos o Início do Projeto (não veem comentários, anexos nem membros). Planeje e execute normalmente: Planejamento, Execução, Validação etc.</small>" +
       blocoFilhos(s) +
       "<br>" + maisAcoes({ existente: s.existente }, s.existente ? "<br><small>Este é um card que a sua área já tinha: desfazer só tira o vínculo, o card não é arquivado.</small>" : "");
   }

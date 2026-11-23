@@ -23,8 +23,19 @@ async function montar() {
   // area do quadro atual (para nao oferecer a propria area): vem do endereco do quadro (/b/<shortLink>/...)
   const { url } = await t.board("url");
   const atual = (/\/b\/([A-Za-z0-9]+)/.exec(url || "") || [])[1];
-  if (!(cfg.AREAS || []).concat(cfg.ORIGENS_EXTRAS || []).some((a) => a.key === atual)) { c.innerHTML = "<small>Este quadro ainda não está liberado para vínculos entre áreas.</small>"; return ajustar(); }
-  const outras = (cfg.AREAS || []).filter((a) => a.key !== atual && !a.oculta);   // quadros de teste (oculta) nao aparecem na lista
+  // Lista de areas: a do backend (fixas + quadros "Projetos da Area" reconhecidos por regra). Sem autorizacao ainda, ou se o backend nao
+  // responder, vale a lista fixa do config.js (reserva). Quadros de teste (oculta) nunca aparecem.
+  let lista = (cfg.AREAS || []).filter((a) => !a.oculta);
+  let liberado = (cfg.AREAS || []).concat(cfg.ORIGENS_EXTRAS || []).some((a) => a.key === atual);
+  try {
+    if (await t.getRestApi().isAuthorized()) {
+      const r = await Interdep2.areas(t, atual);
+      if (Array.isArray(r.areas)) { lista = r.areas; }
+      liberado = liberado || !!r.atualLiberado;
+    }
+  } catch (e) { /* fica a lista fixa */ }
+  if (!liberado) { c.innerHTML = "<small>Este quadro ainda não está liberado para vínculos entre áreas.</small>"; return ajustar(); }
+  const outras = lista.filter((a) => a.key !== atual && !a.oculta);
   if (!outras.length) { c.innerHTML = "<small>Não há outra área liberada para este quadro.</small>"; return ajustar(); }
   // So ajuda de tela: esconde as areas que ja estao na cadeia ou ja tem gancho deste card. O servidor recusa de qualquer jeito.
   // Sem autorizacao ainda, nao chama o servidor (nao forca a janela de autorizacao ao abrir).
