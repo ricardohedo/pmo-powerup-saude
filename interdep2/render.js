@@ -90,6 +90,18 @@
     return "<details><summary>Ver as atividades (" + esc(total) + ")</summary>" + corpo + "</details>";
   }
 
+  // O sufixo " (REAL)" e so nosso (tabela de quadros liberados): quem le a tela nao precisa dele.
+  function nomeArea(n) { return String(n == null ? "" : n).replace(/\s*\(REAL\)\s*$/, ""); }
+
+  // "Mais ações": o Desfazer fica recolhido para ninguem clicar sem querer. O texto da confirmacao continua em secao.html.
+  function maisAcoes(d, nota) {
+    return '<details class="mais"><summary>Mais ações</summary><button data-acao="desfazer"' + (d.existente ? ' data-existente="1"' : "") +
+      (d.cardId ? ' data-id="' + esc(d.cardId) + '"' : "") + ' aria-label="Desfazer o vínculo com esta área">Desfazer o vínculo</button>' + (nota || "") + "</details>";
+  }
+
+  // Gancho que a area ainda nao tocou (nenhum item feito e sem prazo): "Aguardando", nao uma barra em 0% que parece atraso.
+  const aguardando = (d) => !d.feitos && !d.prazo && d.situacao === "sem_prazo";
+
   // somenteLeitura = linhas dos niveis de baixo da cadeia (sem Desfazer: quem esta na origem nao e membro desses quadros).
   function linhasDestinos(destinos, somenteLeitura) {
     return (destinos || []).map((d) => {
@@ -97,29 +109,36 @@
       if (d.removido) {
         return '<div class="l"><small>O card na outra área foi removido.</small><br><button data-acao="desfazer" data-id="' + esc(d.cardId) + '" aria-label="Desfazer o vínculo com esta área">Desfazer</button></div>';
       }
-      return '<div class="l"><b>' + esc(d.area) + "</b> " + etiqueta(d.situacao) +
-        barra(d.pct) + "<br><small>" + itens(d, "Esta área ainda não montou o checklist.") + " · Prazo: " + esc(dataBr(d.prazo)) + "</small>" +
+      const corpo = aguardando(d)
+        ? '<span class="t gray">Aguardando a área</span><br><small>' + (d.itens ? "Ela ainda não começou o plano deste projeto." : "Esta área ainda não montou o checklist.") + "</small>"
+        : etiqueta(d.situacao) + barra(d.pct) + "<br><small>" + itens(d, "Esta área ainda não montou o checklist.") + " · Prazo: " + esc(dataBr(d.prazo)) + "</small>";
+      return '<div class="l"><b>' + esc(nomeArea(d.area)) + "</b> " + corpo +
         atividadesHtml(d.atividades) +
-        (d.existente ? "<br><small>Card que a área já tinha (desfazer só tira o vínculo; o card dela não é arquivado).</small>" : "") +
-        (somenteLeitura ? "" : '<br><button data-acao="desfazer"' + (d.existente ? ' data-existente="1"' : "") + ' data-id="' + esc(d.cardId) + '" aria-label="Desfazer o vínculo com esta área">Desfazer</button>') +
+        (somenteLeitura ? "" : "<br>" + maisAcoes(d)) +
         (d.filhos && d.filhos.length ? '<div class="sub"><small>↳ depende de:</small>' + linhasDestinos(d.filhos, true) + "</div>" : "") + "</div>";
     }).join("");
+  }
+
+  // Uma nota so (em vez de repetir em cada linha) quando alguma area ligou um card que ja tinha.
+  function notaExistentes(destinos) {
+    return (destinos || []).some((d) => d && d.existente)
+      ? "<br><small>Nos cards que a área já tinha, desfazer só tira o vínculo: o card dela não é arquivado.</small>" : "";
   }
 
   // Card encadeado: este card e gancho de um projeto E tambem foi vinculado a outras areas.
   function blocoFilhos(s) {
     if (!s.destinos || !s.destinos.length) { return ""; }
-    return "<h4>Áreas que executam atividades para este card</h4>" + linhasDestinos(s.destinos) +
-      "<small>Você vê só o andamento. Quem cria e executa as atividades é a área de destino.</small>";
+    return "<h4>Quem apoia este card</h4>" + linhasDestinos(s.destinos) +
+      "<small>Você vê só o andamento. O plano e as atividades são da área que apoia.</small>" + notaExistentes(s.destinos);
   }
 
-  // Medida de espera (so numeros do backend): ha quantos dias o pedido existe e ha quantos a origem esta sem atividade.
+  // Medida de espera (so numeros do backend): ha quantos dias o pedido existe e quando o projeto de origem teve atividade.
   function dias(n) { return esc(n) + (n === 1 ? " dia" : " dias"); }
   function espera(s, o) {
     const p = Number.isInteger(s.pedidoDias) && s.pedidoDias >= 0, m = Number.isInteger(o.paradoDias) && o.paradoDias >= 0;
     if (!p && !m) { return ""; }
-    return "<br><small>" + (p ? "Pedido há " + dias(s.pedidoDias) : "") + (p && m ? " · " : "") +
-      (m ? "origem sem atividade há " + dias(o.paradoDias) : "") + "</small>";
+    return "<br><small>" + (p ? (s.pedidoDias === 0 ? "Pedido hoje" : "Pedido há " + dias(s.pedidoDias)) : "") + (p && m ? " · " : "") +
+      (m ? (o.paradoDias === 0 ? "projeto atualizado hoje" : "última atividade do projeto há " + dias(o.paradoDias)) : "") + "</small>";
   }
 
   function htmlDestino(s) {
@@ -128,25 +147,27 @@
         '<button data-acao="desfazer">Desfazer este vínculo</button>';
     }
     const o = s.origem || {};
-    return '<div class="l"><b>' + esc(o.titulo) + "</b> " + etiqueta(o.situacao) +
-      "<br><small>Projeto da área: " + esc(s.areaOrigem) + "</small>" +
-      (s.donoRaiz && s.donoRaiz !== s.areaOrigem ? "<br><small>Dono do projeto: <b>" + esc(s.donoRaiz) + "</b> (você está no nível " + esc(Number(s.nivel) + 1) + " da cadeia)</small>" : "") +
-      "<h4>Escopo</h4>" + (o.situacao === "arquivado"
+    const cadeia = s.donoRaiz && s.donoRaiz !== s.areaOrigem;
+    return "<h4>Pedido de " + esc(nomeArea(s.areaOrigem)) + " para a sua área</h4>" +
+      '<div class="l"><b>' + esc(o.titulo) + "</b> " + etiqueta(o.situacao) +
+      (cadeia
+        ? "<br><small>Dono do projeto: <b>" + esc(nomeArea(s.donoRaiz)) + "</b> (você está no nível " + esc(Number(s.nivel) + 1) + " da cadeia)</small>"
+        : "<br><small>Dono do projeto: <b>" + esc(nomeArea(s.areaOrigem)) + "</b></small>") +
+      "<h4>Escopo do projeto</h4>" + (o.situacao === "arquivado"
         ? "<small>O projeto de origem foi arquivado, então o escopo não é mostrado. Fale com o dono do projeto (" + esc(s.donoRaiz || s.areaOrigem) + ") para saber se este pedido ainda vale.</small>"
         : o.escopo && ESCOPO_PADRAO.test(String(o.escopo).trim())
         ? "<small>A área <b>" + esc(s.areaOrigem) + "</b> ainda não escreveu o que precisa de você: o escopo ainda é o texto padrão do pedido. Peça a ela para preencher a seção ESCOPO do card dela com o que espera da sua área.</small>"
         : o.escopo ? escopoHtml(o.escopo) : "<small>Não encontrei a seção \"Escopo\" na descrição do projeto de origem (ou ela está vazia). Peça ao dono do projeto para preenchê-la.</small>") +
-      "<h4>Andamento da origem</h4>" + barra(o.pct) + "<br><small>" + itens(o) + " · Prazo: " + esc(dataBr(o.prazo)) + "</small>" + espera(s, o) + "</div>" +
-      "<small>Você vê só este resumo. O quadro da área de origem continua privado. As atividades de execução da sua área ficam neste card.</small>" +
-      "<br><small>" + (s.existente ? "A área solicitante vê só os itens do checklist chamado <b>Visível ao solicitante</b> deste card." : "A área solicitante, e as áreas acima dela na cadeia do projeto, veem o <b>nome e o andamento das atividades</b> deste card (não veem comentários, anexos nem membros).") + "</small>" +
+      "<h4>Andamento do projeto</h4>" + barra(o.pct) + "<br><small>" + itens(o) + " · Prazo: " + esc(dataBr(o.prazo)) + "</small>" + espera(s, o) + "</div>" +
+      "<small>Você vê só um resumo do projeto: o quadro do dono continua privado. As atividades da sua área ficam neste card.</small>" +
+      "<br><small>" + (s.existente ? "<b>" + esc(nomeArea(s.areaOrigem)) + "</b> vê só o andamento dos itens que você marcar no checklist chamado <b>Visível ao solicitante</b> deste card." : "A área solicitante, e as áreas acima dela na cadeia do projeto, veem o <b>nome e o andamento das atividades</b> deste card (não veem comentários, anexos nem membros).") + "</small>" +
       blocoFilhos(s) +
-      '<br><button data-acao="desfazer"' + (s.existente ? ' data-existente="1"' : "") + ">Desfazer este vínculo</button>" +
-      (s.existente ? "<br><small>Este é um card que a sua área já tinha: desfazer só tira o vínculo, o card não é arquivado.</small>" : "");
+      "<br>" + maisAcoes({ existente: s.existente }, s.existente ? "<br><small>Este é um card que a sua área já tinha: desfazer só tira o vínculo, o card não é arquivado.</small>" : "");
   }
 
   function htmlOrigem(s) {
-    return "<h4>Áreas que executam atividades para este projeto</h4>" + linhasDestinos(s.destinos) +
-      "<small>Você vê só o andamento. Quem cria e executa as atividades é a área de destino.</small>";
+    return "<h4>Quem apoia este projeto</h4>" + linhasDestinos(s.destinos) +
+      "<small>Você vê só o andamento. O plano e as atividades são da área que apoia.</small>" + notaExistentes(s.destinos);
   }
 
   function htmlNenhum() {
