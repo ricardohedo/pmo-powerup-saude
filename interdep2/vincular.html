@@ -24,7 +24,7 @@ async function montar() {
   const { url } = await t.board("url");
   const atual = (/\/b\/([A-Za-z0-9]+)/.exec(url || "") || [])[1];
   if (!(cfg.AREAS || []).concat(cfg.ORIGENS_EXTRAS || []).some((a) => a.key === atual)) { c.innerHTML = "<small>Este quadro ainda não está liberado para vínculos entre áreas.</small>"; return ajustar(); }
-  const outras = (cfg.AREAS || []).filter((a) => a.key !== atual);
+  const outras = (cfg.AREAS || []).filter((a) => a.key !== atual && !a.oculta);   // quadros de teste (oculta) nao aparecem na lista
   if (!outras.length) { c.innerHTML = "<small>Não há outra área liberada para este quadro.</small>"; return ajustar(); }
   // So ajuda de tela: esconde as areas que ja estao na cadeia ou ja tem gancho deste card. O servidor recusa de qualquer jeito.
   // Sem autorizacao ainda, nao chama o servidor (nao forca a janela de autorizacao ao abrir).

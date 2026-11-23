@@ -102,6 +102,13 @@
   // Gancho que a area ainda nao tocou (nenhum item feito e sem prazo): "Aguardando", nao uma barra em 0% que parece atraso.
   const aguardando = (d) => !d.feitos && !d.prazo && d.situacao === "sem_prazo";
 
+  // Ha quantos dias a area que apoia nao mexe no card (so numero do backend).
+  function ultimaAtividade(d) {
+    if (!Number.isInteger(d.paradoDias) || d.paradoDias < 0) { return ""; }
+    return d.paradoDias === 0 ? "<br><small>A área mexeu no card hoje.</small>" : "<br><small>A área não mexe no card há " + dias(d.paradoDias) + ".</small>";
+  }
+  const AVISO_SEM_VISIVEL = '<div class="aviso"><small>⚠ Esta área ainda não definiu quais atividades você pode ver: falta o checklist <b>Visível ao solicitante</b> no card dela.</small></div>';
+
   // somenteLeitura = linhas dos niveis de baixo da cadeia (sem Desfazer: quem esta na origem nao e membro desses quadros).
   function linhasDestinos(destinos, somenteLeitura) {
     return (destinos || []).map((d) => {
@@ -112,7 +119,8 @@
       const corpo = aguardando(d)
         ? '<span class="t gray">Aguardando a área</span><br><small>' + (d.itens ? "Ela ainda não começou o plano deste projeto." : "Esta área ainda não montou o checklist.") + "</small>"
         : etiqueta(d.situacao) + barra(d.pct) + "<br><small>" + itens(d, "Esta área ainda não montou o checklist.") + " · Prazo: " + esc(dataBr(d.prazo)) + "</small>";
-      return '<div class="l"><b>' + esc(nomeArea(d.area)) + "</b> " + corpo +
+      return '<div class="l"><b>' + esc(nomeArea(d.area)) + "</b> " + corpo + ultimaAtividade(d) +
+        (d.semVisivel ? AVISO_SEM_VISIVEL : "") +
         atividadesHtml(d.atividades) +
         (somenteLeitura ? "" : "<br>" + maisAcoes(d)) +
         (d.filhos && d.filhos.length ? '<div class="sub"><small>↳ depende de:</small>' + linhasDestinos(d.filhos, true) + "</div>" : "") + "</div>";
@@ -153,21 +161,52 @@
       (cadeia
         ? "<br><small>Dono do projeto: <b>" + esc(nomeArea(s.donoRaiz)) + "</b> (você está no nível " + esc(Number(s.nivel) + 1) + " da cadeia)</small>"
         : "<br><small>Dono do projeto: <b>" + esc(nomeArea(s.areaOrigem)) + "</b></small>") +
+      (o.objetivo && o.situacao !== "arquivado" ? "<h4>Objetivo do projeto</h4><p>" + esc(o.objetivo) + "</p>" : "") +
       "<h4>Escopo do projeto</h4>" + (o.situacao === "arquivado"
         ? "<small>O projeto de origem foi arquivado, então o escopo não é mostrado. Fale com o dono do projeto (" + esc(s.donoRaiz || s.areaOrigem) + ") para saber se este pedido ainda vale.</small>"
         : o.escopo && ESCOPO_PADRAO.test(String(o.escopo).trim())
         ? "<small>A área <b>" + esc(s.areaOrigem) + "</b> ainda não escreveu o que precisa de você: o escopo ainda é o texto padrão do pedido. Peça a ela para preencher a seção ESCOPO do card dela com o que espera da sua área.</small>"
         : o.escopo ? escopoHtml(o.escopo) : "<small>Não encontrei a seção \"Escopo\" na descrição do projeto de origem (ou ela está vazia). Peça ao dono do projeto para preenchê-la.</small>") +
+      (o.dependencias && o.situacao !== "arquivado" ? "<h4>Dependências registradas pelo dono</h4><p>" + esc(o.dependencias) + "</p>" : "") +
       "<h4>Andamento do projeto</h4>" + barra(o.pct) + "<br><small>" + itens(o) + " · Prazo: " + esc(dataBr(o.prazo)) + "</small>" + espera(s, o) + "</div>" +
+      (s.existente && s.semVisivel ? '<div class="aviso"><small>⚠ Seu card ainda não tem o checklist <b>Visível ao solicitante</b>: sem ele, <b>' + esc(nomeArea(s.areaOrigem)) + "</b> vê só o percentual e o prazo. Crie esse checklist com as atividades que o dono pode acompanhar.</small></div>" : "") +
       "<small>Você vê só um resumo do projeto: o quadro do dono continua privado. As atividades da sua área ficam neste card.</small>" +
       "<br><small>" + (s.existente ? "<b>" + esc(nomeArea(s.areaOrigem)) + "</b> vê só o andamento dos itens que você marcar no checklist chamado <b>Visível ao solicitante</b> deste card." : "A área solicitante, e as áreas acima dela na cadeia do projeto, veem o <b>nome e o andamento das atividades</b> deste card (não veem comentários, anexos nem membros).") + "</small>" +
       blocoFilhos(s) +
       "<br>" + maisAcoes({ existente: s.existente }, s.existente ? "<br><small>Este é um card que a sua área já tinha: desfazer só tira o vínculo, o card não é arquivado.</small>" : "");
   }
 
+  // Convites de codigo ainda validos (so o dono ve): codigo, area e validade. Aceito ou vencido nao vem do backend.
+  function convitesHtml(convites) {
+    if (!convites || !convites.length) { return ""; }
+    return "<h4>Convites pendentes</h4>" + convites.map((c) =>
+      '<div class="l"><b>' + esc(nomeArea(c.area)) + '</b> · código <b class="cod">' + esc(c.codigo) + "</b><br><small>Ainda não foi aceito. Vale até " +
+      esc(dataBr(c.expiraEm)) + ". Gerar outro código para esta área invalida este.</small></div>").join("");
+  }
+
+  // Aviso ao DONO quando as areas que apoiam nao estao vendo o escopo (vazio, ausente ou comecando por subtitulo).
+  function avisoEscopoVazio(v) {
+    return v && v.escopoVazio
+      ? '<div class="l aviso"><b>⚠ As áreas que apoiam não estão vendo o escopo do projeto.</b><br><small>A seção ESCOPO do seu card está vazia ou começa direto por um subtítulo. ' +
+        "Escreva uma frase de abertura logo abaixo do título ESCOPO.</small></div>" : "";
+  }
+
+  // "Ver o que as areas veem do seu projeto": o mesmo recorte que elas recebem (objetivo, escopo e dependencias). Tudo escapado.
+  function visaoHtml(v) {
+    if (!v) { return ""; }
+    const corpo = (v.objetivo ? "<h5>Objetivo</h5><p>" + esc(v.objetivo) + "</p>" : "") +
+      "<h5>Escopo</h5>" + (v.escopo ? escopoHtml(v.escopo) : "<small>Vazio: as áreas não veem nada aqui.</small>") +
+      (v.dependencias ? "<h5>Dependências</h5><p>" + esc(v.dependencias) + "</p>" : "");
+    return "<details><summary>Ver o que as áreas veem do seu projeto</summary>" + corpo + "</details>";
+  }
+
   function htmlOrigem(s) {
-    return "<h4>Quem apoia este projeto</h4>" + linhasDestinos(s.destinos) +
-      "<small>Você vê só o andamento. O plano e as atividades são da área que apoia.</small>" + notaExistentes(s.destinos);
+    const temDestinos = s.destinos && s.destinos.length;
+    return avisoEscopoVazio(s.visao) + convitesHtml(s.convites) +
+      (temDestinos
+        ? "<h4>Quem apoia este projeto</h4>" + linhasDestinos(s.destinos) +
+          "<small>Você vê só o andamento. O plano e as atividades são da área que apoia.</small>" + notaExistentes(s.destinos)
+        : "") + visaoHtml(s.visao);
   }
 
   function htmlNenhum() {

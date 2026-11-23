@@ -9,16 +9,17 @@ window.INTERDEP2 = {
   APP_NAME: "PMO BigBox - Interdependência v2",
   // Mesmos quadros liberados no backend (AREAS em Codigo.gs). key = shortLink do quadro.
   AREAS: [
-    { key: "7uckGfR4", nome: "Comercial (teste)" },
-    { key: "b4kXgCbn", nome: "Processos (teste)" },
-    { key: "wlj9Xouh", nome: "Auditoria (teste)" },
-    { key: "FzpHY8K6", nome: "Processos (REAL)" },
-    { key: "G2jNWLwy", nome: "Auditoria (REAL)" },
-    { key: "0eMPWyaQ", nome: "Comercial (REAL)" },
-    { key: "bMiGYH4b", nome: "T.I (REAL)" },
-    { key: "VhjVFJfr", nome: "Manutenção e Expansão (REAL)" },
-    { key: "dDgw9qiH", nome: "RH (REAL)" },
-    { key: "rczcG6o3", nome: "Controladoria (REAL)" },
+    // oculta = quadro de teste: continua aceito, mas nao aparece na lista "Depende de outra area".
+    { key: "7uckGfR4", nome: "Comercial (teste)", oculta: true },
+    { key: "b4kXgCbn", nome: "Processos (teste)", oculta: true },
+    { key: "wlj9Xouh", nome: "Auditoria (teste)", oculta: true },
+    { key: "FzpHY8K6", nome: "Processos" },
+    { key: "G2jNWLwy", nome: "Auditoria" },
+    { key: "0eMPWyaQ", nome: "Comercial" },
+    { key: "bMiGYH4b", nome: "T.I" },
+    { key: "VhjVFJfr", nome: "Manutenção e Expansão" },
+    { key: "dDgw9qiH", nome: "RH" },
+    { key: "rczcG6o3", nome: "Controladoria" },
   ],
   // Quadros que so podem ser ORIGEM (nunca aparecem como destino). Mesmo criterio do backend (soOrigem).
   ORIGENS_EXTRAS: [
